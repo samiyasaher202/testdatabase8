@@ -41,8 +41,11 @@ Layout: the adjusting of the header image when needed
   
   create data pages for each dat queriy
   
-    make data queries on sql!!!!!
+  **make data queries on sql!!!!!**
     
   create a login page
+
+  **TIPS**
+  When making a new page, you need three things, a js file, a html file, and to add a page route in server.js. Use previous html and js files as reference for syntax.
 
   
