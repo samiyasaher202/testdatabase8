@@ -35,7 +35,7 @@ function EmployeeHome() {
 
          <button
           className="btn"
-          onClick={() => window.location.href = '/packages'}
+          onClick={() => window.location.href = 'package_list'}
         >
           Packages
         </button>

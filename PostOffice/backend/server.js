@@ -4,6 +4,9 @@ const mysql = require('mysql2')
 const path = require('path')
 const fs = require('fs')
 
+//db js files
+const packagesDB = require('./db/package') 
+
 // ── MYSQL CONNECTION ──
 const db = mysql.createPool({
   host: 'localhost',
@@ -62,16 +65,26 @@ const server = http.createServer(async (req, res) => {
   const url = req.url
   const method = req.method
 
+
+  //db connections
+  
+
   // ── PAGE ROUTES ──
   if (method === 'GET' && url === '/') {
     return sendFile(res, path.join(__dirname, '../frontend/public/html/home.html'))
   }
+
+
   if (method === 'GET' && url === '/customer_home') {
     return sendFile(res, path.join(__dirname, '../frontend/public/html/customer/customer_home.html'))
   }
   if (method === 'GET' && url === '/employee_home') {
     return sendFile(res, path.join(__dirname, '../frontend/public/html/employee/employee_home.html'))
   }
+  if (method === 'GET' && url === '/package_list') {
+     return sendFile(res, path.join(__dirname, '../frontend/public/html/employee/package_list.html'))
+  }
+
 
   // ── STATIC FILES ──
   if (method === 'GET' && url.startsWith('/css/')) {
@@ -79,6 +92,21 @@ const server = http.createServer(async (req, res) => {
   }
   if (method === 'GET' && url.startsWith('/js/')) {
     return sendFile(res, path.join(__dirname, '../frontend/public', url))
+  }
+
+
+  //query routes
+  if (method === 'GET' && url === '/qry_all_packages') {
+  packagesDB.getAllPackages(db, (err, results) => {
+    if (err) {
+      return sendJSON(res, 500, { error: 'Database error' });
+    }
+    if (results.length === 0) {
+      return sendJSON(res, 404, { message: 'No packages found' });
+    }
+    sendJSON(res, 200, results);
+  });
+  return;
   }
 
   // ── 404 ──
