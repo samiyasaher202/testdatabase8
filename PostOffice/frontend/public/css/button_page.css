@@ -6,6 +6,7 @@
 /* Holds the three buttons in a row with spacing between them */
 .button-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   margin-top: 2rem;
 }
@@ -25,9 +26,5 @@
 
 /* ── INDIVIDUAL BUTTON COLORS ── */
 .btn-a { background: var(--accent); color: white; }
-.btn-b { background: var(--dark);   color: white; }
-.btn-c { background: var(--border); color: var(--text); }
 
 .btn-a:hover { background: #a93226; }
-.btn-b:hover { background: #333333; }
-.btn-c:hover { background: #ccc9c0; }
