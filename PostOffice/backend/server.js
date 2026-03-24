@@ -70,7 +70,7 @@ const server = http.createServer(async (req, res) => {
   //db connections
   
 
-  // ── PAGE ROUTES ──
+  // ── PAGE ROUTES ── INSERT PAGE ROUTE HERE AFTER EACH PAGE CREATED
   if (method === 'GET' && url === '/') {
     return sendFile(res, path.join(__dirname, '../frontend/public/html/home.html'))
   }
