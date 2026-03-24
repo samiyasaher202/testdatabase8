@@ -1,5 +1,6 @@
 // post office phone number datatype fix
 alter table post_office modify Phone_Number Phone_Number varchar(20) not null;
+alter table post_office drop check post_office_chk_1;
   //post office time constraint fix
 alter table post_office modify Sun_Start_Time time not null default '00:00:00' check(Sun_Start_Time >= '00:00:00' and Sun_Start_Time <= '23:59:59');
 alter table post_office modify Sun_Finish_Time time not null default '00:00:00' check(Sun_Finish_Time >= '00:00:00' and Sun_Finish_Time <= '23:59:59');
@@ -21,3 +22,18 @@ alter table post_office modify sat_Finish_Time time not null default '00:00:00' 
 alter table employee add Password_Hash varchar(255) not null;
 alter table employee add Email_Address varchar(255) not null unique;
 alter table employee add Phone_Number varchar(20) null;
+
+create table package_pricing (
+    Pricing_ID INT NOT NULL AUTO_INCREMENT,
+    Package_Type_Code VARCHAR(50) NOT NULL,
+    Min_Weight DECIMAL(10,2) NOT NULL DEFAULT 0,
+    Max_Weight DECIMAL(10,2) NOT NULL DEFAULT 0,
+    Max_Length DECIMAL(10,2) DEFAULT NULL,
+    Max_Width DECIMAL(10,2) DEFAULT NULL,
+    Max_Height DECIMAL(10,2) DEFAULT NULL,
+    Zone tinyint not null check (Zone between 1 and 9),
+    Price DECIMAL(10,2) NOT NULL,
+    PRIMARY KEY (Pricing_ID),
+    FOREIGN KEY (Package_Type_Code) REFERENCES package_type(Package_Type_Code)
+        ON DELETE CASCADE
+);
