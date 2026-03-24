@@ -79,7 +79,7 @@ body {
   color: var(--accent);
 }
 
-/* Login button in the header */
+/* Login button in the header. Slightly smaller then regular buttons*/
 .login-btn {
   padding: 0.45rem 1.4rem;
   background: var(--accent);

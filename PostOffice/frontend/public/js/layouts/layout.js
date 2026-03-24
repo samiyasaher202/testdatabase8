@@ -29,7 +29,6 @@ function Layout({ children, buttonLabel = "Login", buttonHref = "/login" }) {
       <footer className="footer">
         <div className="footer-inner">
           <span className="footer-logo">Post Office 8</span>
-          <span className="footer-copy">© 2026 — All rights reserved</span>
         </div>
       </footer>
 

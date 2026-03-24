@@ -4,15 +4,25 @@ function Home() {
   return (
     <Layout buttonLabel="Login" buttonHref="/login">
 
+     {/* ── PAGE TITLE ── */}
       <h2>Welcome to Post Office 8</h2>
       <p>Please select how you are logging in.</p>
 
+    {/* ── NAVIGATION BUTTONS ── 
+    
+    TEMPORARY: Using to test other pages directing. Will be routed through login once set up*/}
       <div className="button-group">
         <button
-          className="login-btn"
-          onClick={() => window.location.href = '/customer-home'}
+          className="btn"
+          onClick={() => window.location.href = '/customer_home'}
         >
           Customer
+        </button>
+        <button
+          className="btn"
+          onClick={() => window.location.href = '/employee_home'}
+        >
+          Employee
         </button>
       </div>
 
@@ -21,57 +31,3 @@ function Home() {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<Home />)
-
-// function Header({ buttonLabel = "Login", buttonHref = "/login" }) {
-//   return (
-//     <header className="header">
-//       <div className="header-inner">
-//         <div className="logo">
-//           <span className="logo-mark">✦</span>
-//           Post Office 8
-//         </div>
-//         <button
-//           className="login-btn"
-//           onClick={() => window.location.href = buttonHref}
-//         >
-//           {buttonLabel}
-//         </button>
-//       </div>
-//     </header>
-//   )
-// }
-
-// function Home() {
-//   return (
-//     <div className="layout">
-
-//       {/* ── HEADER ── */}
-//       <Header buttonLabel="Login" buttonHref="/login" />
-
-//       {/* ── MAIN ── */}
-//       <main className="main">
-//         <h2>Welcome to Post Office 8</h2>
-//         <p>Please select how you are logging in.</p>
-
-//         <div className="button-group">
-//           <button
-//             className="login-btn"
-//             onClick={() => window.location.href = '/customer-home'}
-//           >
-//             Customer
-//           </button>
-//         </div>
-//       </main>
-
-//       {/* ── FOOTER ── */}
-//       <footer className="footer">
-//         <div className="footer-inner">
-//           <span className="footer-logo">Post Office 8</span>
-//         </div>
-//       </footer>
-
-//     </div>
-//   )
-// }
-
-// ReactDOM.createRoot(document.getElementById('root')).render(<Home />)

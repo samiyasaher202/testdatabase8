@@ -3,7 +3,7 @@
 function CustomerHome() {
   return (
     <Layout buttonLabel = "Logout" buttonHref = "/">
-      {/* <Header buttonLabel="Logout" buttonHref="/" /> */}
+      
       {/* ── PAGE TITLE ── */}
       <h2>Welcome to Post Office 8</h2>
       <p>What would you like to do today?</p>
@@ -12,29 +12,36 @@ function CustomerHome() {
       <div className="button-group">
 
         <button
-          className="btn btn-a"
-          onClick={() => window.location.href = '/Track my package'}
+          className="btn"
+          onClick={() => window.location.href = '/packages'}
         >
           My Packages
         </button>
 
         <button
-          className="btn btn-a"
-          onClick={() => window.location.href = '/Store'}
+          className="btn"
+          onClick={() => window.location.href = '/package_tacking'}
         >
-          Support Ticket
+           Track Package
         </button>
 
         <button
-          className="btn btn-a"
-          onClick={() => window.location.href = '/submit a ticket'}
+          className="btn"
+          onClick={() => window.location.href = '/Store'}
         >
-          Profile
+          Store
+        </button>
+
+        <button
+          className="btn"
+          onClick={() => window.location.href = '/submit_ticket'}
+        >
+          Submit Support Ticket
         </button>
 
          <button
-          className="btn btn-a"
-          onClick={() => window.location.href = '/customer-profile'}
+          className="btn"
+          onClick={() => window.location.href = '/customer_profile'}
         >
           Profile
         </button>

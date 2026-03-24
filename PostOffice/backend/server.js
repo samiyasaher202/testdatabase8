@@ -66,8 +66,11 @@ const server = http.createServer(async (req, res) => {
   if (method === 'GET' && url === '/') {
     return sendFile(res, path.join(__dirname, '../frontend/public/html/home.html'))
   }
-  if (method === 'GET' && url === '/customer-home') {
+  if (method === 'GET' && url === '/customer_home') {
     return sendFile(res, path.join(__dirname, '../frontend/public/html/customer/customer_home.html'))
+  }
+  if (method === 'GET' && url === '/employee_home') {
+    return sendFile(res, path.join(__dirname, '../frontend/public/html/employee/employee_home.html'))
   }
 
   // ── STATIC FILES ──
