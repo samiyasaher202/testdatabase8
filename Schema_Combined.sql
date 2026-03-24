@@ -13,7 +13,7 @@ Zip_Last2 char(2) not null,
 Zip_Plus4 char(4) null,
 Country varchar (50) not null default 'USA',
 
-Phone_Number int not null check(Phone_Number <= 999999999),
+Phone_Number varchar(20) not null,
 
 Sun_Start_Time time not null default '00:00:00' check(Sun_Start_Time >= '00:00:00' and Sun_Start_Time >= '23:59:59'),
 Sun_Finish_Time time not null default '00:00:00' check(Sun_Finish_Time >= '00:00:00' and Sun_Finish_Time >= '23:59:59'),
