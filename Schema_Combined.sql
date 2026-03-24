@@ -15,20 +15,20 @@ Country varchar (50) not null default 'USA',
 
 Phone_Number int not null check(Phone_Number <= 999999999),
 
-Sun_Start_Time time not null,
-Sun_Finish_Time time not null,
-Mon_Start_Time time not null,
-Mon_Finish_Time time not null,
-Tues_Start_Time time not null,
-Tue_Finish_Time time not null,
-Wed_Start_Time time not null,
-Wed_Finish_Time time not null,
-Thu_Start_Time time not null,
-Thu_Finish_Time time not null,
-Fri_Start_Time time not null,
-Fri_Finish_Time time not null,
-Sat_Start_Time time not null,
-Sat_Finish_Time time not null
+Sun_Start_Time time not null default '00:00:00' check(Sun_Start_Time >= '00:00:00' and Sun_Start_Time >= '23:59:59'),
+Sun_Finish_Time time not null default '00:00:00' check(Sun_Finish_Time >= '00:00:00' and Sun_Finish_Time >= '23:59:59'),
+Mon_Start_Time time not null default '00:00:00' check(Mon_Start_Time >= '00:00:00' and Mon_Start_Time >= '23:59:59'),
+Mon_Finish_Time time not null default '00:00:00' check(Mon_Finish_Time >= '00:00:00' and Mon_Finish_Time >= '23:59:59'),
+Tue_Start_Time time not null default '00:00:00' check(Tue_Start_Time >= '00:00:00' and Tue_Start_Time >= '23:59:59'),
+Tue_Finish_Time time not null default '00:00:00' check(Tue_Finish_Time >= '00:00:00' and Tue_Finish_Time >= '23:59:59'),
+Wed_Start_Time time not null default '00:00:00' check(Wed_Start_Time >= '00:00:00' and Wed_Start_Time >= '23:59:59'),
+Wed_Finish_Time time not null default '00:00:00' check(Wed_Finish_Time >= '00:00:00' and Wed_Finish_Time >= '23:59:59'),
+Thu_Start_Time time not null default '00:00:00' check(Thu_Start_Time >= '00:00:00' and Thu_Start_Time >= '23:59:59'),
+Thu_Finish_Time time not null default '00:00:00' check(Thu_Finish_Time >= '00:00:00' and Thu_Finish_Time >= '23:59:59'),
+Fri_Start_Time time not null default '00:00:00' check(Fri_Start_Time >= '00:00:00' and Fri_Start_Time >= '23:59:59'),
+Fri_Finish_Time time not null default '00:00:00' check(Fri_Finish_Time >= '00:00:00' and Fri_Finish_Time >= '23:59:59'),
+Sat_Start_Time time not null default '00:00:00' check(Sat_Start_Time >= '00:00:00' and Sat_Start_Time >= '23:59:59'),
+Sat_Finish_Time time not null default '00:00:00' check(Sat_Finish_Time >= '00:00:00' and Sat_Finish_Time >= '23:59:59'),
 );
 
 create table Store(
@@ -97,6 +97,10 @@ Last_Name varchar(30) not null,
 Birth_Day tinyint not null check (Birth_Day between 1 and 31),
 Birth_Month tinyint not null check (Birth_Month between 1 and 12),
 Birth_Year year not null,
+
+Password_Hash varchar(255) not null,
+Email_Address varchar(255) not null unique,
+Phone_Number varchar(20) null
 
 Sex char(1) not null,
 Salary decimal(10,2) not null,
