@@ -275,3 +275,19 @@ Primary key (Shipment_ID, Tracking_Number),
 foreign key (Shipment_ID) references Shipment(Shipment_ID),
 foreign key (Tracking_Number) references Package(Tracking_Number)
 );
+
+create table package_pricing (
+    Pricing_ID INT NOT NULL AUTO_INCREMENT,
+    Package_Type_Code VARCHAR(50) NOT NULL,
+    Min_Weight DECIMAL(10,2) NOT NULL DEFAULT 0,
+    Max_Weight DECIMAL(10,2) NOT NULL DEFAULT 0,
+    Max_Length DECIMAL(10,2) DEFAULT NULL,
+    Max_Width DECIMAL(10,2) DEFAULT NULL,
+    Max_Height DECIMAL(10,2) DEFAULT NULL,
+    Zone tinyint not null check (Zone between 1 and 9),
+    Price DECIMAL(10,2) NOT NULL,
+    PRIMARY KEY (Pricing_ID),
+    FOREIGN KEY (Package_Type_Code) REFERENCES package_type(Package_Type_Code)
+        ON DELETE CASCADE
+);
+
