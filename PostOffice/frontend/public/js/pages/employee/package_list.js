@@ -1,8 +1,15 @@
+window.onerror = function(msg, src, line) {
+  document.getElementById('root').innerHTML = 
+    '<p style="color:red;padding:2rem;">ERROR: ' + msg + ' (line ' + line + ')</p>'
+}
+
 function PackageList() {
   const [packages, setPackages] = React.useState([])
   const [loading, setLoading] = React.useState(true)
     const { filtered, filterValue, setFilterValue, sortValue, setSortValue } = DropdownLogic(packages)
 
+
+const [error, setError] = React.useState('This is a test popup and needs to be deleted later')
 React.useEffect(() => {
   fetch('qry_all_packages')
     .then(res => {
@@ -30,8 +37,10 @@ React.useEffect(() => {
 // }, []);
 
 return (
-  <Layout buttonLabel="Back" buttonHref="/employee_home">
+  <Layout buttonLabel="Back" buttonHref="/employee_home" width="full">
     <h2>Package List</h2>
+
+    <ErrorBanner message={error} onClose={() => setError(null)} />
 
     <div className="dropdowns-bar">
       <Dropdown
@@ -57,14 +66,13 @@ return (
     </div>
 
     {loading ? (
-  <p>Loading packages...</p>
-) : filtered.length === 0 ? (
-  <p>No packages found</p>
-) : (
-  <Table data={filtered} />
-)}
+      <p>Loading packages...</p>
+    ) : filtered.length === 0 ? (
+      <p>No packages found</p>
+    ) : (
+      <Table data={filtered} />
+    )}
 
-    
   </Layout>
 )
 }

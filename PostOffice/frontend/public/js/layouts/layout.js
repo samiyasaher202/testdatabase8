@@ -1,6 +1,6 @@
 // js/layouts/layout.js
 
-function Layout({ children, buttonLabel = "Login", buttonHref = "/login" }) {
+function Layout({ children, buttonLabel = "Login", buttonHref = "/login", width = "default" }) {
   return (
     <div className="layout">
 
@@ -21,7 +21,7 @@ function Layout({ children, buttonLabel = "Login", buttonHref = "/login" }) {
       </header>
 
       {/* ── MAIN ── */}
-      <main className="main">
+      <main className={`main main--${width}`}>
         {children}
       </main>
 
