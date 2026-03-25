@@ -1,6 +1,7 @@
 function DropdownLogic(data) {
     //====================================================================================
     // any other functions we want to add for the dropdown menu, add here
+    //add new types here and in dropdown.js const configs section
     //=======================================================================================
   const [filterValue, setFilterValue] = React.useState('')
   const [sortValue, setSortValue] = React.useState('')

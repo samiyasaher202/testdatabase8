@@ -99,6 +99,8 @@ body {
   min-height: calc(100vh - var(--header-h) - var(--footer-h));
 }
 
+/* the three types of body lengths you can have */
+
 .main--narrow {
   max-width: 600px;
   margin: 0 auto;
@@ -132,6 +134,8 @@ body {
   line-height: 1.7;
 }
 
+
+/*makes sure there is a space after each paragraph*/
 .main p + p {
   margin-top: 2rem;
 }
