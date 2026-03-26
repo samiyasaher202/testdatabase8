@@ -123,9 +123,37 @@ app.post('/api/auth/customer-login', async (req, res) => {
 })
 
 // Register - OLD ENDPOINT (DISABLED - For backward compatibility only)
-app.post('/api/auth/register', async (req, res) => {
-  // This endpoint is deprecated. Use /api/auth/admin-register instead.
-  return res.status(403).json({ message: 'Self-registration is disabled. Please contact management.' })
+// Customer Register
+app.post('/api/customer/register', async (req, res) => {
+  const { first_name, last_name, email, password, phone_number,
+          house_number, street, city, state, zip_first3, zip_last2 } = req.body
+
+  if (!first_name || !last_name || !email || !password)
+    return res.status(400).json({ message: 'Missing required fields' })
+
+  try {
+    const [exists] = await pool.query(
+      'SELECT Customer_ID FROM Customer WHERE Email_Address = ?', [email]
+    )
+    if (exists.length)
+      return res.status(400).json({ message: 'Email already registered' })
+
+    const hash = await bcrypt.hash(password, 10)
+    await pool.query(
+      `INSERT INTO Customer
+         (First_Name, Last_Name, House_Number, Street, City, State,
+          Zip_First3, Zip_Last2, Password_Hash, Email_Address, Phone_Number)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      [first_name, last_name, house_number || '0', street || 'Unknown',
+       city || 'Unknown', state || 'TX', zip_first3 || '000',
+       zip_last2 || '00', hash, email, phone_number || null]
+    )
+
+    res.status(201).json({ message: 'Customer registered successfully' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
 })
 
 // Admin/Manager Register New Employee (NEW ENDPOINT)
