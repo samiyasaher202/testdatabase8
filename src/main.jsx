@@ -12,6 +12,7 @@ import Login from './pages/Login'
 import Register from './pages/AdminRegister'
 import Profile from './pages/Profile'
 import SupportTicket from './pages/SupportTicket'
+import AdminRegister from './pages/AdminRegister'
 // global styles
 import './pages/css/index.css'
 import AllPackages from './pages/package_list'
@@ -38,7 +39,9 @@ function App() {
         <Route path="/profile" element={<Profile/>} />
         <Route path="/ship_package" element={<p>Ship Package — coming soon</p>} />
         <Route path="/customers" element={<p>Customers — coming soon</p>} />
-        <Route path="/register" element={<AdminRegister/>} />
+        <Route path="/register" element={<Register/>} />
+        <Route path="/admin-register" element={<AdminRegister />} />
+
         {/* ── 404 ── */}
         <Route path="*" element={<p>Page not found</p>} />
         <Route path="/support" element={<SupportTicket />} />
