@@ -253,6 +253,28 @@ app.get('/api/inventory', async (req, res) => {
   })
 })
 
+// Handle support ticket submission
+app.post('/api/tickets', (req, res) => {
+  const { name, email, transactionId, category, description, submittedAt } = req.body;
+
+  // Validate required fields
+  if (!name || !email || !transactionId || !category || !description) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  // TODO: Save to database here
+  console.log('New support ticket:', {
+    name,
+    email,
+    transactionId,
+    category,
+    description,
+    submittedAt
+  });
+
+  // Send success response
+  res.status(201).json({ message: 'Ticket submitted successfully' });
+});
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
