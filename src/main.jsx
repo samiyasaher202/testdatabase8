@@ -16,7 +16,7 @@ import AdminRegister from './pages/AdminRegister'
 // global styles
 import './pages/css/index.css'
 import AllPackages from './pages/package_list'
-import AdminRegister from './pages/AdminRegister'
+
 
 function App() {
   return (
