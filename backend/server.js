@@ -38,6 +38,16 @@ const authenticate = (req, res, next) => {
   })
 }
 
+// ── Admin/Manager authorization middleware ─────────────────────────────────
+const requireAdmin = (req, res, next) => {
+  // Check if user role is Manager or Director (role_id 3 or 4)
+  // Adjust role_ids based on your database
+  if (![3, 4].includes(req.user.role_id)) {
+    return res.status(403).json({ message: 'Access denied. Manager/Admin role required.' })
+  }
+  next()
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 //  AUTH ROUTES
 // ════════════════════════════════════════════════════════════════════════════
@@ -66,7 +76,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' })
 
     const token = jwt.sign(
-      { employee_id: emp.Employee_ID, email: emp.Email_Address, type: 'employee' },
+      { employee_id: emp.Employee_ID, email: emp.Email_Address, role_id: emp.Role_ID, type: 'employee' },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '24h' }
     )
@@ -112,44 +122,89 @@ app.post('/api/auth/customer-login', async (req, res) => {
   }
 })
 
-// Register (EXISTING)
+// Register - OLD ENDPOINT (DISABLED - For backward compatibility only)
 app.post('/api/auth/register', async (req, res) => {
-  const { first_name, middle_name = '', last_name, email, password,
-          post_office_id, role_id, department_id,
-          birth_day, birth_month, birth_year, sex, salary } = req.body
+  // This endpoint is deprecated. Use /api/auth/admin-register instead.
+  return res.status(403).json({ message: 'Self-registration is disabled. Please contact management.' })
+})
 
-  if (!first_name || !last_name || !email || !password)
+// Admin/Manager Register New Employee (NEW ENDPOINT)
+app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res) => {
+  const { name, email, department, position, phoneNumber, workAddress, hireDate } = req.body
+
+  // Validation
+  if (!name || !email || !department || !position || !phoneNumber || !workAddress || !hireDate) {
     return res.status(400).json({ message: 'Missing required fields' })
+  }
 
   try {
+    // Check if email already exists
     const [exists] = await pool.query(
-      'SELECT Employee_ID FROM Employee WHERE Email_Address = ?', [email]
+      'SELECT Employee_ID FROM Employee WHERE Email_Address = ?',
+      [email]
     )
-    if (exists.length)
+    if (exists.length) {
       return res.status(400).json({ message: 'Email already registered' })
+    }
 
-    const hash = await bcrypt.hash(password, 10)
+    // Generate temporary password
+    const tempPassword = Math.random().toString(36).slice(-10) + 'Temp1!'
+    const hash = await bcrypt.hash(tempPassword, 10)
+
+    // Map department and position to IDs (adjust based on your database)
+    const departmentMap = {
+      'Mail Sorting': 1,
+      'Customer Service': 2,
+      'Delivery': 3,
+      'Management': 4,
+      'Finance': 5,
+      'IT Support': 6
+    }
+
+    const positionMap = {
+      'Clerk': 1,
+      'Supervisor': 2,
+      'Manager': 3,
+      'Director': 4,
+      'Staff': 5
+    }
+
+    const department_id = departmentMap[department] || 1
+    const role_id = positionMap[position] || 1
+
+    // Parse hire date and extract name
+    const [firstName, ...lastNameParts] = name.split(' ')
+    const lastName = lastNameParts.join(' ') || 'Employee'
+
+    // Insert new employee
     const [result] = await pool.query(
       `INSERT INTO Employee
-         (Post_Office_ID, Role_ID, Department_ID, First_Name, Middle_Name, Last_Name,
+         (Post_Office_ID, Role_ID, Department_ID, First_Name, Last_Name,
           Birth_Day, Birth_Month, Birth_Year, Password_Hash, Email_Address,
           Phone_Number, Sex, Salary, Hours_Worked)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,0)`,
-      [post_office_id || 1, role_id || 1, department_id || 1,
-       first_name, middle_name, last_name,
-       birth_day || 1, birth_month || 1, birth_year || 2000,
-       hash, email, null, sex || 'M', salary || 0]
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0)`,
+      [1, role_id, department_id, firstName, lastName, 1, 1, 2000, hash, email, phoneNumber, 'M', 0]
     )
 
+    // TODO: Send email to employee with temporary password
+    // You can integrate a service like SendGrid, Nodemailer, etc.
+    console.log(`[TODO] Send email to ${email} with temporary password: ${tempPassword}`)
+
     const token = jwt.sign(
-      { employee_id: result.insertId, email, type: 'employee' },
+      { employee_id: result.insertId, email, role_id, type: 'employee' },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '24h' }
     )
-    res.status(201).json({ message: 'Registered successfully', token, employee_id: result.insertId })
+
+    res.status(201).json({
+      message: 'Employee registered successfully',
+      employee_id: result.insertId,
+      email,
+      note: 'Temporary password sent to employee email'
+    })
   } catch (err) {
     console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    res.status(500).json({ message: 'Server error', error: err.message })
   }
 })
 
@@ -178,7 +233,7 @@ app.get('/api/auth/profile', authenticate, async (req, res) => {
 
 // ════════════════════════════════════════════════════════════════════════════
 //  PACKAGES ROUTES
-// ══════════════════════════════════════════��═════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
 
 app.get('/api/packages', async (req, res) => {
   packagesDB.getAllPackages(pool, (err, results) => {
@@ -187,7 +242,7 @@ app.get('/api/packages', async (req, res) => {
   })
 })
 
-// ══════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
 //  INVENTORY ROUTES
 // ════════════════════════════════════════════════════════════════════════════
 
