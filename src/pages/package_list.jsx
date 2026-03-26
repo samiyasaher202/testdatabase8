@@ -11,7 +11,7 @@ export default function AllPackages() {
   const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
-    fetch("/qry_all_packages")
+    fetch("http://localhost:5000/api/packages")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load packages");
         return res.json();
@@ -67,7 +67,7 @@ export default function AllPackages() {
         <h1>Post Office 8</h1>
         <nav>
           <a href="/employee_home">Home</a>
-          <a href="/all_packages">Packages</a>
+          <a href="/package_list">Packages</a>
           <a href="/inventory">Inventory</a>
           <a href="/">Logout</a>
         </nav>
