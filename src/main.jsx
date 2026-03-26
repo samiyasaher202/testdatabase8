@@ -18,6 +18,7 @@ import Register from './pages/Register'
 import CustomerProfile from './pages/CustomerProfile'
 import AllCustomers from './pages/all_customers'
 
+// global styles
 
 
 function App() {
@@ -41,7 +42,7 @@ function App() {
         <Route path="/submit_ticket" element={<p>Submit Ticket — coming soon</p>} />
         <Route path="/support_tickets" element={<p>Support Tickets — coming soon</p>} />
         <Route path="/ship_package" element={<p>Ship Package — coming soon</p>} />
-        <Route path="/customers" element={<p>Customers — coming soon</p>} />
+        <Route path="/customers" element={<AllCustomers/>} />
         <Route path="/admin-register" element={<AdminRegister />} />
 
         {/* ── 404 ── */}
