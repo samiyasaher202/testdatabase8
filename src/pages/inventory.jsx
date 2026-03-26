@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import "./packages.css";
+import "./css/packages.css";
 
 const LOW_STOCK = 15;
 
