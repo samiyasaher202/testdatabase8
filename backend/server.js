@@ -91,16 +91,16 @@ app.post('/api/auth/login', async (req, res) => {
   }
 })
 
-// Customer Login (NEW)
+// Customer Login
 app.post('/api/auth/customer-login', async (req, res) => {
-  const { customerId, password } = req.body
-  if (!customerId || !password)
-    return res.status(400).json({ message: 'Customer ID and password required' })
+  const { email, password } = req.body
+  if (!email || !password)
+    return res.status(400).json({ message: 'Email and password required' })
 
   try {
     const [rows] = await pool.query(
-      `SELECT * FROM Customer WHERE Customer_ID = ?`,
-      [customerId]
+      'SELECT * FROM Customer WHERE Email_Address = ?',
+      [email]
     )
     if (!rows.length)
       return res.status(401).json({ message: 'Invalid credentials' })
@@ -111,7 +111,7 @@ app.post('/api/auth/customer-login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' })
 
     const token = jwt.sign(
-      { customer_id: customer.Customer_ID, type: 'customer' },
+      { customer_id: customer.Customer_ID, email: customer.Email_Address, type: 'customer' },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '24h' }
     )
@@ -238,23 +238,129 @@ app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res
   }
 })
 
-// Get profile (EXISTING)
+// Get employee profile
 app.get('/api/auth/profile', authenticate, async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT e.Employee_ID, e.First_Name, e.Middle_Name, e.Last_Name,
               e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked,
-              r.Role_Name, d.Department_Name, po.City AS Office_City
+              e.Supervisor_ID,
+              CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
+              r.Role_Name, d.Department_Name,
+              po.City AS Office_City, po.State AS Office_State
        FROM Employee e
        JOIN Role r         ON e.Role_ID        = r.Role_ID
        JOIN Department d   ON e.Department_ID  = d.Department_ID
        JOIN Post_Office po ON e.Post_Office_ID = po.Post_Office_ID
+       LEFT JOIN Employee s ON e.Supervisor_ID = s.Employee_ID
        WHERE e.Employee_ID = ?`,
       [req.user.employee_id]
     )
     if (!rows.length)
       return res.status(404).json({ message: 'Employee not found' })
     res.json({ user: rows[0] })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+// Update employee profile
+app.put('/api/auth/profile', authenticate, async (req, res) => {
+  const { Email_Address, Phone_Number } = req.body
+  try {
+    await pool.query(
+      'UPDATE Employee SET Phone_Number = ?, Email_Address = ? WHERE Employee_ID = ?',
+      [Phone_Number, Email_Address, req.user.employee_id]
+    )
+    const [rows] = await pool.query(
+      `SELECT e.Employee_ID, e.First_Name, e.Middle_Name, e.Last_Name,
+              e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked,
+              e.Supervisor_ID,
+              CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
+              r.Role_Name, d.Department_Name,
+              po.City AS Office_City, po.State AS Office_State
+       FROM Employee e
+       JOIN Role r         ON e.Role_ID        = r.Role_ID
+       JOIN Department d   ON e.Department_ID  = d.Department_ID
+       JOIN Post_Office po ON e.Post_Office_ID = po.Post_Office_ID
+       LEFT JOIN Employee s ON e.Supervisor_ID = s.Employee_ID
+       WHERE e.Employee_ID = ?`,
+      [req.user.employee_id]
+    )
+    res.json({ message: 'Profile updated successfully', user: rows[0] })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+// Change employee password
+app.post('/api/auth/change-password', authenticate, async (req, res) => {
+  const { currentPassword, newPassword } = req.body
+  if (!currentPassword || !newPassword)
+    return res.status(400).json({ message: 'Both passwords are required' })
+  if (newPassword.length < 6)
+    return res.status(400).json({ message: 'New password must be at least 6 characters' })
+  try {
+    const [rows] = await pool.query(
+      'SELECT Password_Hash FROM Employee WHERE Employee_ID = ?',
+      [req.user.employee_id]
+    )
+    if (!rows.length) return res.status(404).json({ message: 'Employee not found' })
+    const valid = await bcrypt.compare(currentPassword, rows[0].Password_Hash)
+    if (!valid) return res.status(401).json({ message: 'Current password is incorrect' })
+    const newHash = await bcrypt.hash(newPassword, 10)
+    await pool.query(
+      'UPDATE Employee SET Password_Hash = ? WHERE Employee_ID = ?',
+      [newHash, req.user.employee_id]
+    )
+    res.json({ message: 'Password changed successfully' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+// Customer profile
+app.get('/api/customer/profile', authenticate, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
+              Phone_Number, House_Number, Street, City, State,
+              Zip_First3, Zip_Last2
+       FROM Customer WHERE Customer_ID = ?`,
+      [req.user.customer_id]
+    )
+    if (!rows.length)
+      return res.status(404).json({ message: 'Customer not found' })
+    res.json({ user: rows[0] })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+// Update customer profile
+app.put('/api/customer/profile', authenticate, async (req, res) => {
+  const { Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2 } = req.body
+  try {
+    await pool.query(
+      `UPDATE Customer 
+       SET Email_Address = ?, Phone_Number = ?,
+           House_Number = ?, Street = ?, City = ?, State = ?,
+           Zip_First3 = ?, Zip_Last2 = ?
+       WHERE Customer_ID = ?`,
+      [Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2, req.user.customer_id]
+    )
+    const [rows] = await pool.query(
+      `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
+              Phone_Number, House_Number, Street, City, State,
+              Zip_First3, Zip_Last2
+       FROM Customer WHERE Customer_ID = ?`,
+      [req.user.customer_id]
+    )
+    res.json({ message: 'Profile updated successfully', user: rows[0] })
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: 'Server error' })
