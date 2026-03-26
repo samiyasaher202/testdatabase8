@@ -8,7 +8,7 @@ import CustomerHome from './pages/customer_home'
 import EmployeeHome from './pages/employee_home'
 import PackageList from './pages/package_list'
 import Inventory from './pages/inventory'
-import Login from './pages/login'
+import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile'
 // global styles
