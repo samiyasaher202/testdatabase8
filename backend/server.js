@@ -42,7 +42,7 @@ const authenticate = (req, res, next) => {
 //  AUTH ROUTES
 // ════════════════════════════════════════════════════════════════════════════
 
-// Login
+// Employee Login (EXISTING)
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body
   if (!email || !password)
@@ -66,7 +66,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' })
 
     const token = jwt.sign(
-      { employee_id: emp.Employee_ID, email: emp.Email_Address },
+      { employee_id: emp.Employee_ID, email: emp.Email_Address, type: 'employee' },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '24h' }
     )
@@ -79,7 +79,40 @@ app.post('/api/auth/login', async (req, res) => {
   }
 })
 
-// Register
+// Customer Login (NEW)
+app.post('/api/auth/customer-login', async (req, res) => {
+  const { customerId, password } = req.body
+  if (!customerId || !password)
+    return res.status(400).json({ message: 'Customer ID and password required' })
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT * FROM Customer WHERE Customer_ID = ?`,
+      [customerId]
+    )
+    if (!rows.length)
+      return res.status(401).json({ message: 'Invalid credentials' })
+
+    const customer = rows[0]
+    const valid = await bcrypt.compare(password, customer.Password_Hash)
+    if (!valid)
+      return res.status(401).json({ message: 'Invalid credentials' })
+
+    const token = jwt.sign(
+      { customer_id: customer.Customer_ID, type: 'customer' },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '24h' }
+    )
+
+    const { Password_Hash, ...safe } = customer
+    res.json({ message: 'Login successful', token, user: safe })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+// Register (EXISTING)
 app.post('/api/auth/register', async (req, res) => {
   const { first_name, middle_name = '', last_name, email, password,
           post_office_id, role_id, department_id,
@@ -109,7 +142,7 @@ app.post('/api/auth/register', async (req, res) => {
     )
 
     const token = jwt.sign(
-      { employee_id: result.insertId, email },
+      { employee_id: result.insertId, email, type: 'employee' },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '24h' }
     )
@@ -120,7 +153,7 @@ app.post('/api/auth/register', async (req, res) => {
   }
 })
 
-// Get profile
+// Get profile (EXISTING)
 app.get('/api/auth/profile', authenticate, async (req, res) => {
   try {
     const [rows] = await pool.query(
@@ -145,7 +178,7 @@ app.get('/api/auth/profile', authenticate, async (req, res) => {
 
 // ════════════════════════════════════════════════════════════════════════════
 //  PACKAGES ROUTES
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════��═════════════════════════════════
 
 app.get('/api/packages', async (req, res) => {
   packagesDB.getAllPackages(pool, (err, results) => {
@@ -154,7 +187,7 @@ app.get('/api/packages', async (req, res) => {
   })
 })
 
-// ════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
 //  INVENTORY ROUTES
 // ════════════════════════════════════════════════════════════════════════════
 
