@@ -3,15 +3,16 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 // pages
- import Home from './pages/home'
+import Home from './pages/home'
 import CustomerHome from './pages/customer_home'
- import EmployeeHome from './pages/employee_home'
+import EmployeeHome from './pages/employee_home'
 import AllPackages from './pages/package_list'
 import Inventory from './pages/inventory'
 import Login from './pages/Login'
- import Profile from './pages/Profile'
- import SupportTicket from './pages/SupportTicket'
+import Profile from './pages/Profile'
+import SupportTicket from './pages/SupportTicket'
 import AdminRegister from './pages/AdminRegister'
+import Register from './pages/Register'
 // // global styles
  import './pages/css/index.css'
 
@@ -32,6 +33,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/customer_home" element={<CustomerHome />} />
         <Route path="/employee_home" element={<EmployeeHome />} />
+        <Route path="/Register" element={<Register />} />
         {/* <Route path="/package_list" element={<PackageList />} /> */}
 
         {/* ── PLACEHOLDER ROUTES ── build these pages and add imports above */}
@@ -46,7 +48,6 @@ function App() {
         <Route path="/profile" element={<Profile/>} />
         <Route path="/ship_package" element={<p>Ship Package — coming soon</p>} />
         <Route path="/customers" element={<p>Customers — coming soon</p>} />
-        <Route path="/register" element={<p> Register not here yet</p>} />
         <Route path="/admin-register" element={<AdminRegister />} />
 
         {/* ── 404 ── */}
