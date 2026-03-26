@@ -26,6 +26,7 @@ import Register from './pages/Register'
 //   )
 // }
 import AllCustomers from './pages/all_customers'
+
 // global styles
 
 
@@ -50,7 +51,7 @@ function App() {
         <Route path="/customer_profile" element={<p>Customer Profile — coming soon</p>} />
         <Route path="/profile" element={<Profile/>} />
         <Route path="/ship_package" element={<p>Ship Package — coming soon</p>} />
-        <Route path="/customers" element={<p>Customers — coming soon</p>} />
+        <Route path="/customers" element={<AllCustomers/>} />
         <Route path="/admin-register" element={<AdminRegister />} />
 
         {/* ── 404 ── */}
