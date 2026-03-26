@@ -1,0 +1,31 @@
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--accent);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+}
+
+.error-banner-message {
+  flex: 1;
+}
+
+.error-banner-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  padding-left: 1rem;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.error-banner-close:hover {
+  opacity: 1;
+}
