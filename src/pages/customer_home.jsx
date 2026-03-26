@@ -15,7 +15,7 @@ export default function CustomerHome() {
       {/* ── NAVIGATION BUTTONS ── */}
       <div className="button-group">
 
-        <button className="btn" onClick={() => navigate('/packages')}>
+        <button className="btn" onClick={() => navigate('/Login')}>
           My Packages
         </button>
 
