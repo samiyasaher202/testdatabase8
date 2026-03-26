@@ -1,0 +1,252 @@
+.page-content {
+    padding: 30px;
+}
+
+.page-content h2 {
+    font-family: "Lucida Console";
+    color: #3333cc;
+    margin-bottom: 20px;
+}
+
+.error-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #cc0000;
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+.error-banner button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    padding-left: 12px;
+    opacity: 0.8;
+}
+
+.stats-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background-color: #f0f0f0;
+    border-radius: 12px;
+    padding: 14px 22px;
+    text-align: center;
+    min-width: 110px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-num {
+    font-family: "Lucida Console";
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #3333cc;
+}
+
+.stat-num.delivered { color: #065f46; }
+.stat-num.transit   { color: #1e40af; }
+.stat-num.pending   { color: #854d0e; }
+.stat-num.delayed   { color: #991b1b; }
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.controls-bar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.search-input {
+    padding: 9px 14px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    min-width: 240px;
+    transition: border-color 0.2s;
+}
+
+.search-input:focus {
+    border-color: #3333cc;
+}
+
+.filter-select {
+    padding: 9px 14px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    background-color: white;
+}
+
+.filter-select:focus {
+    border-color: #3333cc;
+}
+
+.result-count {
+    font-size: 0.85rem;
+    color: #666;
+    margin-left: auto;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    background-color: #f0f0f0;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.data-table thead tr {
+    background-color: #3333cc;
+    color: white;
+}
+
+.data-table th {
+    padding: 12px 14px;
+    text-align: left;
+    font-family: "Lucida Console";
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.data-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid #e0e0e0;
+    color: #333;
+    vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.data-table tbody tr:hover td {
+    background-color: #e8e8f8;
+}
+
+.table-footer {
+    padding: 8px 14px;
+    background-color: #e8e8f8;
+    border-top: 1px solid #ddd;
+    font-size: 0.78rem;
+    color: #888;
+    border-radius: 0 0 12px 12px;
+}
+
+.td-name {
+    font-weight: 600;
+    color: #222;
+}
+
+.td-sub {
+    font-size: 0.72rem;
+    color: #aaa;
+    margin-top: 2px;
+}
+
+.free-label {
+    color: #aaa;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.detail-row td {
+    background-color: #f8f8ff !important;
+    padding: 16px 20px;
+    border-top: 1px solid #ddd;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px 24px;
+}
+
+.detail-item label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #3333cc;
+    margin-bottom: 3px;
+}
+
+.detail-item p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: #333;
+}
+
+.stock-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stock-bar-bg {
+    flex: 1;
+    height: 7px;
+    background: #ddd;
+    border-radius: 999px;
+    overflow: hidden;
+    min-width: 60px;
+}
+
+.stock-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+.stock-bar-num {
+    font-size: 0.82rem;
+    font-weight: 600;
+    min-width: 28px;
+    text-align: right;
+}
+
+.state-msg {
+    text-align: center;
+    padding: 40px;
+    color: #888;
+    font-size: 1rem;
+}
