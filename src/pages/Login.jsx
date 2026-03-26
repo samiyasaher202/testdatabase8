@@ -4,10 +4,8 @@ import '../components/Auth.css';
 
 const Login = () => {
   const [userType, setUserType] = useState(null); // 'employee' or 'customer'
-  const [employeeId, setEmployeeId] = useState('');
-  const [customerId, setCustomerId] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [department, setDepartment] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,8 +13,6 @@ const Login = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetMessage, setResetMessage] = useState('');
   const navigate = useNavigate();
-
-  const departments = ['Mail Sorting', 'Customer Service', 'Delivery', 'Management', 'Finance', 'IT Support'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,8 +25,8 @@ const Login = () => {
         : 'http://localhost:5000/api/auth/customer-login';
 
       const payload = userType === 'employee'
-        ? { employeeId, password, department }
-        : { customerId, password };
+        ? { email, password }
+        : { email, password };
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -52,8 +48,7 @@ const Login = () => {
 
       if (rememberMe) {
         localStorage.setItem('rememberMe', 'true');
-        localStorage.setItem(userType === 'employee' ? 'employeeId' : 'customerId', 
-          userType === 'employee' ? employeeId : customerId);
+        localStorage.setItem('email', email);
       }
 
       navigate(userType === 'employee' ? '/profile' : '/customer-dashboard');
@@ -94,10 +89,8 @@ const Login = () => {
 
   const resetForm = () => {
     setUserType(null);
-    setEmployeeId('');
-    setCustomerId('');
+    setEmail('');
     setPassword('');
-    setDepartment('');
     setError('');
     setShowForgotPassword(false);
   };
@@ -145,49 +138,17 @@ const Login = () => {
 
               <h3>{userType === 'employee' ? 'Employee Login' : 'Customer Login'}</h3>
 
-              {userType === 'employee' ? (
-                <>
-                  <div className="form-group">
-                    <label htmlFor="employeeId">Employee ID</label>
-                    <input
-                      type="text"
-                      id="employeeId"
-                      value={employeeId}
-                      onChange={(e) => setEmployeeId(e.target.value)}
-                      required
-                      placeholder="Enter your employee ID"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="department">Department</label>
-                    <select
-                      id="department"
-                      value={department}
-                      onChange={(e) => setDepartment(e.target.value)}
-                      required
-                      className="form-select"
-                    >
-                      <option value="">Select your department</option>
-                      {departments.map((dept) => (
-                        <option key={dept} value={dept}>{dept}</option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              ) : (
-                <div className="form-group">
-                  <label htmlFor="customerId">Customer ID</label>
-                  <input
-                    type="text"
-                    id="customerId"
-                    value={customerId}
-                    onChange={(e) => setCustomerId(e.target.value)}
-                    required
-                    placeholder="Enter your customer ID"
-                  />
-                </div>
-              )}
+              <div className="form-group">
+                <label htmlFor="email">Email Address</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="Enter your email"
+                />
+              </div>
 
               <div className="form-group">
                 <label htmlFor="password">Password</label>
