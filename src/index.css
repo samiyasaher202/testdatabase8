@@ -1,0 +1,171 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=Instrument+Sans:wght@400;500&display=swap');
+
+/* ============================================================
+   CSS VARIABLES
+============================================================ */
+:root {
+  --bg:          #e8e4d9;
+  --dark:        #1c1c1e;
+  --accent:      #c22727;
+  --text:        #1c1c1e;
+  --text-muted:  #484848;
+  --border:      #a09f9e;
+  --font-head:   'Syne', sans-serif;
+  --font-body:   'Instrument Sans', sans-serif;
+  --header-h:    64px;
+  --footer-h:    56px;
+}
+
+/* ============================================================
+   RESET & BASE
+============================================================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   HEADER
+============================================================ */
+.header {
+  height: var(--header-h);
+  background: var(--dark);
+  border-bottom: 3px solid var(--accent);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;  /* Pushes logo left, button right */
+}
+
+.logo {
+  font-family: var(--font-head);
+  font-size: 1.25rem;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: -0.3px;
+}
+
+.logo-mark {
+  color: var(--accent);
+}
+
+/* Login button in the header. Slightly smaller then regular buttons*/
+.login-btn {
+  padding: 0.45rem 1.4rem;
+  background: var(--accent);
+  color: white;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.login-btn:hover {
+  background: #c22727;
+}
+
+/* ============================================================
+   MAIN CONTENT
+   This is where each page's unique content goes.
+   Grows to fill space between header and footer.
+============================================================ */
+.main {
+  flex: 1;
+  width: 100%;
+  padding: 3rem 2rem;
+  min-height: calc(100vh - var(--header-h) - var(--footer-h));
+}
+
+/* the three types of body lengths you can have */
+
+.main--narrow {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.main--default {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.main--full {
+  max-width: 100%;
+  margin: 0;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Page heading inside main */
+.main h2 {
+  font-family: var(--font-head);
+  font-size: 2rem;
+  color: var(--dark);
+  margin-bottom: 1rem;
+}
+
+/* Paragraph underneath */
+.main p {
+  font-size: 1rem;
+  color: var(--text-muted);
+  max-width: 600px;
+  line-height: 1.7;
+}
+
+
+/*makes sure there is a space after each paragraph*/
+.main p + p {
+  margin-top: 2rem;
+}
+
+/* ============================================================
+   FOOTER
+============================================================ */
+.footer {
+  height: var(--footer-h);
+  background: var(--dark);
+  border-top: 3px solid var(--accent);
+}
+
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-logo {
+  font-family: var(--font-head);
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.footer-copy {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+}
