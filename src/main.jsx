@@ -12,7 +12,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile'
 import AllCustomers from './pages/all_customers'
-import TestQuery from './pages/test'
+
 // global styles
 import './pages/css/index.css'
 import AllPackages from './pages/package_list'
