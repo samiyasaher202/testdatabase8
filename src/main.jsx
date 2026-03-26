@@ -25,6 +25,9 @@ import Register from './pages/Register'
 //     </BrowserRouter>
 //   )
 // }
+import AllCustomers from './pages/all_customers'
+// global styles
+
 
 function App() {
   return (

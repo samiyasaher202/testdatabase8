@@ -1,3 +1,4 @@
+
 const express = require('express')
 const cors    = require('cors')
 const mysql   = require('mysql2/promise')
@@ -7,6 +8,7 @@ require('dotenv').config()
 
 const packagesDB  = require('./db/packages')
 const inventoryDB = require('./db/inventory')
+const customerDB = require('./db/customers')
 
 const app = express()
 app.use(cors())
@@ -25,7 +27,7 @@ const pool = mysql.createPool({
 
 pool.getConnection()
   .then(c => { console.log('✅ MySQL connected'); c.release() })
-  .catch(e => console.error('❌ MySQL connection failed:', e.message))
+  .catch(e => console.error('❌ MySQL connection failed:', e))
 
 // ── Auth middleware ───────────────────────────────────────────────────────
 const authenticate = (req, res, next) => {
@@ -303,6 +305,23 @@ app.post('/api/tickets', (req, res) => {
   // Send success response
   res.status(201).json({ message: 'Ticket submitted successfully' });
 });
+// ════════════════════════════════════════════════════════════════════════════
+//  CUSTOMERS ROUTES
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/customers', (req, res) => {
+  customerDB.getAllCustomers(pool, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+app.get('/api/customers/:id/packages', (req, res) => {
+  customerDB.getCustomerPackages(pool, req.params.id, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
