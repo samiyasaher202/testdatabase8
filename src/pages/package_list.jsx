@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import "./css/packages.css";
+import React from "react";
+
 import skyline from "../assets/houston-skyline.jpeg";
 
 export default function AllPackages() {
@@ -161,7 +163,7 @@ export default function AllPackages() {
                 </thead>
                 <tbody>
                   {filtered.map((p) => (
-                    <>
+                    <React.Fragment key={p.Tracking_Number}>
                       <tr key={p.Tracking_Number}>
                         <td><code>{p.Tracking_Number}</code></td>
                         <td>{p.Package_Type_Code}</td>
@@ -212,7 +214,7 @@ export default function AllPackages() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

@@ -3,9 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import '../components/Auth.css';
 
 const Login = () => {
-  const [employeeId, setEmployeeId] = useState('');
+  const [userType, setUserType] = useState(null); // 'employee' or 'customer'
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [department, setDepartment] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,18 +14,24 @@ const Login = () => {
   const [resetMessage, setResetMessage] = useState('');
   const navigate = useNavigate();
 
-  const departments = ['Mail Sorting', 'Customer Service', 'Delivery', 'Management', 'Finance', 'IT Support'];
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const endpoint = userType === 'employee' 
+        ? 'http://localhost:5000/api/auth/login'
+        : 'http://localhost:5000/api/auth/customer-login';
+
+      const payload = userType === 'employee'
+        ? { email, password }
+        : { email, password };
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employeeId, password, department })
+        body: JSON.stringify(payload)
       });
 
       const data = await response.json();
@@ -38,13 +44,14 @@ const Login = () => {
       // Store token
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('userType', userType);
 
       if (rememberMe) {
         localStorage.setItem('rememberMe', 'true');
-        localStorage.setItem('employeeId', employeeId);
+        localStorage.setItem('email', email);
       }
 
-      navigate('/profile');
+      navigate(userType === 'employee' ? '/profile' : '/customer-dashboard');
     } catch (err) {
       setError('An error occurred. Please try again.');
       console.error('Login error:', err);
@@ -80,43 +87,67 @@ const Login = () => {
     }
   };
 
+  const resetForm = () => {
+    setUserType(null);
+    setEmail('');
+    setPassword('');
+    setError('');
+    setShowForgotPassword(false);
+  };
+
   return (
     <div className="login-container">
       <div className="login-card">
         <h2>📬 Post Office Database</h2>
-        <p className="subtitle">Employee Login Portal</p>
+        <p className="subtitle">Login Portal</p>
 
-        {!showForgotPassword ? (
+        {!userType ? (
+          // User Type Selection
+          <div className="user-type-selection">
+            <p className="user-type-prompt">Are you an Employee or Customer?</p>
+            <div className="button-group">
+              <button
+                type="button"
+                className="user-type-btn employee-btn"
+                onClick={() => setUserType('employee')}
+              >
+                👔 Employee
+              </button>
+              <button
+                type="button"
+                className="user-type-btn customer-btn"
+                onClick={() => setUserType('customer')}
+              >
+                👤 Customer
+              </button>
+            </div>
+          </div>
+        ) : !showForgotPassword ? (
+          // Login Form
           <>
             <form onSubmit={handleSubmit}>
               {error && <div className="error-message">{error}</div>}
 
-              <div className="form-group">
-                <label htmlFor="employeeId">Employee ID</label>
-                <input
-                  type="text"
-                  id="employeeId"
-                  value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
-                  required
-                  placeholder="Enter your employee ID"
-                />
-              </div>
+              <button
+                type="button"
+                className="back-button-top"
+                onClick={resetForm}
+              >
+                ← Back
+              </button>
+
+              <h3>{userType === 'employee' ? 'Employee Login' : 'Customer Login'}</h3>
 
               <div className="form-group">
-                <label htmlFor="department">Department</label>
-                <select
-                  id="department"
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
+                <label htmlFor="email">Email Address</label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="form-select"
-                >
-                  <option value="">Select your department</option>
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
+                  placeholder="Enter your email"
+                />
               </div>
 
               <div className="form-group">
@@ -154,14 +185,24 @@ const Login = () => {
               >
                 Forgot Password?
               </button>
-              <p className="signup-link">
-                Don't have an account? <Link to="/register">Sign up</Link>
-              </p>
+              {userType === 'customer' && (
+                <p className="signup-link">
+                  Don't have an account? <Link to="/register">Sign up</Link>
+                </p>
+              )}
             </div>
           </>
         ) : (
+          // Forgot Password Form
           <>
             <form onSubmit={handleForgotPassword}>
+              <button
+                type="button"
+                className="back-button-top"
+                onClick={() => setShowForgotPassword(false)}
+              >
+                ← Back
+              </button>
               <h3>Reset Password</h3>
               {resetMessage && (
                 <div className={resetMessage.includes('sent') ? 'success-message' : 'error-message'}>
@@ -180,13 +221,6 @@ const Login = () => {
                 />
               </div>
               <button type="submit">Send Reset Email</button>
-              <button
-                type="button"
-                className="back-button"
-                onClick={() => setShowForgotPassword(false)}
-              >
-                Back to Login
-              </button>
             </form>
           </>
         )}
