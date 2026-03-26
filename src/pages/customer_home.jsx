@@ -1,42 +1,56 @@
-import { useNavigate } from 'react-router-dom'
-import Layout from '../layout'
-import '../components/button.css'
+import "./customer_home.css";
 
 export default function CustomerHome() {
-  const navigate = useNavigate();
-
   return (
-    <Layout buttonLabel="Logout" buttonHref="/">
+    <>
+      <header className="navbar">
+        <h1>Post Office 8</h1>
 
-      {/* ── PAGE TITLE ── */}
-      <h2>Welcome to Post Office 8</h2>
-      <p>What would you like to do today?</p>
+        <nav>
+          <a href="/home.html">Home</a>
+          <a href="#">Track Package</a>
+          <a href="#">Send Package</a>
+          <a href="#">History</a>
+          <a href="#">Store</a>
+          <a href="#">Logout</a>
+        </nav>
+      </header>
 
-      {/* ── NAVIGATION BUTTONS ── */}
-      <div className="button-group">
+      <main>
+        {/* Top Image */}
+        <div className="hero">
+          <img src="houston-skyline.jpeg" alt="Post Office" />
+        </div>
 
-        <button className="btn" onClick={() => navigate('/Login')}>
-          My Packages
-        </button>
+        <div className="welcome">
+          <h2>Welcome, Customer!</h2>
+        </div>
 
-        <button className="btn" onClick={() => navigate('/package_tracking')}>
-          Track Package
-        </button>
+        {/* Dashboard Cards */}
+        <div className="dashboard">
+          <div className="card">
+            <h2>Track a Package</h2>
+            <p>See where your package is in real time.</p>
+            <a href="#" className="button">Track Now</a>
+          </div>
 
-        <button className="btn" onClick={() => navigate('/store')}>
-          Store
-        </button>
+          <div className="card">
+            <h2>Send a Package</h2>
+            <p>Ship your packages quickly and safely</p>
+            <a href="#" className="button">Send Now</a>
+          </div>
 
-        <button className="btn" onClick={() => navigate('/submit_ticket')}>
-          Submit Support Ticket
-        </button>
+          <div className="card">
+            <h2>Account Info</h2>
+            <p>View your address, saved packages, and profile settings.</p>
+            <a href="#" className="button">View Account</a>
+          </div>
+        </div>
+      </main>
 
-        <button className="btn" onClick={() => navigate('/customer_profile')}>
-          Profile
-        </button>
-
-      </div>
-
-    </Layout>
-  )
+      <footer>
+        <p>Database Team 8</p>
+      </footer>
+    </>
+  );
 }
