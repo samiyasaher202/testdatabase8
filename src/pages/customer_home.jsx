@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import "./customer_home.css";
+import "./css/customer_home.css";
 
 export default function CustomerHome() {
   const navigate = useNavigate();

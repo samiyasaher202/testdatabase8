@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import "./packages.css";
+import "./css/packages.css";
 
 export default function AllPackages() {
   const [packages, setPackages] = useState([]);
