@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { RequireEmployee, RequireCustomer, RequireAuth } from './AuthGuard'
 
 // pages
 import Home from './pages/home'
@@ -27,10 +28,10 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/customer_home" element={<CustomerHome />} />
-        <Route path="/employee_home" element={<EmployeeHome />} />
+        <Route path="/employee_home" element={<RequireEmployee><EmployeeHome /></RequireEmployee>} />
         <Route path="/Register" element={<Register />} />
         <Route path="/CustomerProfile" element={<CustomerProfile />} />
-        <Route path="/profile" element={<Profile/>} />
+        <Route path="/profile" element={<RequireEmployee><Profile/></RequireEmployee>} />
         {/* <Route path="/package_list" element={<PackageList />} /> */}
 
         {/* ── PLACEHOLDER ROUTES ── build these pages and add imports above */}
@@ -46,8 +47,8 @@ function App() {
         <Route path="/admin-register" element={<AdminRegister />} />
 
         {/* ── 404 ── */}
+        <Route path="/support" element={<RequireAuth><SupportTicket /></RequireAuth>} />
         <Route path="*" element={<p>Page not found</p>} />
-        <Route path="/support" element={<SupportTicket />} />
       </Routes>
     </BrowserRouter>
   )
