@@ -11,6 +11,8 @@ import Inventory from './pages/inventory'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile'
+import AllCustomers from './pages/all_customers'
+import TestQuery from './pages/test'
 // global styles
 import './pages/css/index.css'
 import AllPackages from './pages/package_list'
@@ -35,7 +37,7 @@ function App() {
         <Route path="/customer_profile" element={<p>Customer Profile — coming soon</p>} />
         <Route path="/profile" element={<Profile/>} />
         <Route path="/ship_package" element={<p>Ship Package — coming soon</p>} />
-        <Route path="/customers" element={<p>Customers — coming soon</p>} />
+        <Route path="/customers" element={<AllCustomers/>} />
         <Route path="/register" element={<Register/>} />
         {/* ── 404 ── */}
         <Route path="*" element={<p>Page not found</p>} />
