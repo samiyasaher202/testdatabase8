@@ -19,7 +19,7 @@ export default function EmployeeHome() {
           Profile
         </button>
 
-        <button className="btn" onClick={() => navigate('/store')}>
+        <button className="btn" onClick={() => navigate('/inventory')}>
           Stock
         </button>
 
