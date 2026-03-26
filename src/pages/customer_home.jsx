@@ -1,18 +1,20 @@
+import { useNavigate } from 'react-router-dom'
 import "./customer_home.css";
 
 export default function CustomerHome() {
+  const navigate = useNavigate();
   return (
     <>
       <header className="navbar">
-        <h1>Post Office 8</h1>
+        <h1>National Postal Service</h1>
 
-        <nav>
-          <a href="/home.html">Home</a>
-          <a href="#">Track Package</a>
-          <a href="#">Send Package</a>
-          <a href="#">History</a>
-          <a href="#">Store</a>
-          <a href="#">Logout</a>
+        <nav className="top-nav">
+          <a onClick={() => navigate('/')}>Home</a>
+          <a onClick={() => navigate('/track')}>Track Package</a>
+          <a onClick={() => navigate('/send')}>Send Package</a>
+          <a onClick={() => navigate('/history')}>History</a>
+          <a onClick={() => navigate('/store')}>Store</a>
+          <a onClick={() => navigate('/logout')}>Logout</a>
         </nav>
       </header>
 
@@ -31,25 +33,25 @@ export default function CustomerHome() {
           <div className="card">
             <h2>Track a Package</h2>
             <p>See where your package is in real time.</p>
-            <a href="#" className="button">Track Now</a>
+            <a onClick={() => navigate('/track')} className="button">Track Now</a>
           </div>
 
           <div className="card">
             <h2>Send a Package</h2>
             <p>Ship your packages quickly and safely</p>
-            <a href="#" className="button">Send Now</a>
+            <a onClick={() => navigate('/send')} className="button">Send Now</a>
           </div>
 
           <div className="card">
             <h2>Account Info</h2>
             <p>View your address, saved packages, and profile settings.</p>
-            <a href="#" className="button">View Account</a>
+            <a onClick={() => navigate('/account')} className="button">View Account</a>
           </div>
         </div>
       </main>
 
       <footer>
-        <p>Database Team 8</p>
+        <p>© National Postal Service</p>
       </footer>
     </>
   );

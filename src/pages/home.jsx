@@ -13,6 +13,7 @@ import './home.css'
           <nav className="top-nav">
             <a onClick={() => navigate('/customer_home')}>Customer</a>
             <a onClick={() => navigate('/employee_home')}>Employee</a>
+            <a onClick={() => navigate('/Login')}>Login</a>
             <a href="#services">Services</a>
             <a href="#track">Track</a>
           </nav>
@@ -21,10 +22,6 @@ import './home.css'
           <div className="hero-left">
             <h1>Reliable mail and shipping services</h1>
             <p>Send, receive, and track packages nationwide with confidence.</p>
-            <div className="quick-actions">
-              <a className="btn primary" href="#track">Track a Package</a>
-              <a className="btn" href="#services">Find Services</a>
-            </div>
           </div>
           <div className="hero-right">
             <div className="track-card" id="track">
