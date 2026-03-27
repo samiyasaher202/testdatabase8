@@ -1,3 +1,4 @@
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import './css/home.css'
 // import Layout from '../layout'
@@ -5,6 +6,14 @@ import './css/home.css'
 
  export default function Home() {
   const navigate = useNavigate();
+  const [trackingNumber, setTrackingNumber] = React.useState('');
+
+  const onTrack = () => {
+    const value = trackingNumber.trim();
+    if (!value) return;
+    navigate(`/package_tracking?tracking=${encodeURIComponent(value)}`);
+  }
+
     return (
     <div>
       <header className="site-header">
@@ -27,8 +36,13 @@ import './css/home.css'
             <div className="track-card" id="track">
               <h3>Track a Package</h3>
               <div className="track-form">
-                <input type="text" placeholder="Enter tracking number" />
-                <button className="btn primary">Track</button>
+                <input
+                  type="text"
+                  placeholder="Enter tracking number"
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                />
+                <button className="btn primary" onClick={onTrack}>Track</button>
               </div>
             </div>
           </div>

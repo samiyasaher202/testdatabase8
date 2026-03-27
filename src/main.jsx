@@ -14,6 +14,7 @@ import Profile from './pages/Profile'
 // global styles
 import './pages/css/index.css'
 import AllPackages from './pages/package_list'
+import PackageTracking from './pages/package_tracking'
 
 function App() {
   return (
@@ -27,7 +28,7 @@ function App() {
         {/* ── PLACEHOLDER ROUTES ── build these pages and add imports above */}
         <Route path="/login" element={<Login/>} />
         <Route path="/packages" element={<AllPackages/>} />
-        <Route path="/package_tracking" element={<p>Package Tracking — coming soon</p>} />
+        <Route path="/package_tracking" element={<PackageTracking />} />
         <Route path="/package_history" element={<p>Package History — coming soon</p>} />
         <Route path="/inventory" element={<Inventory/>} />
         <Route path="/submit_ticket" element={<p>Submit Ticket — coming soon</p>} />

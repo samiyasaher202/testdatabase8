@@ -19,8 +19,8 @@ const pool = mysql.createPool({
   host:               process.env.DB_HOST     || 'localhost',
   port:               process.env.DB_PORT     || 3306,
   user:               process.env.DB_USER     || 'root',
-  password:           process.env.DB_PASSWORD || '',
-  database:           process.env.DB_NAME     || 'post_office_8',
+  password:           process.env.DB_PASSWORD || 'MBobanza#2205',
+  database:           process.env.DB_NAME     || 'post_officedb',
   waitForConnections: true,
   connectionLimit:    10,
 })
@@ -375,6 +375,38 @@ app.get('/api/packages', async (req, res) => {
   packagesDB.getAllPackages(pool, (err, results) => {
     if (err) return res.status(500).json({ error: 'Database error' })
     res.json(results)
+  })
+})
+
+// Track package by tracking number
+app.get('/api/packages/track/:trackingNumber', async (req, res) => {
+  console.log('Received tracking request for:', req.params.trackingNumber)
+  const trackingNumber = (req.params.trackingNumber || '').trim()
+  if (!trackingNumber) {
+    return res.status(400).json({ error: 'trackingNumber is required' })
+  }
+
+  packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
+    if (err) {
+      console.error('Database error:', err)
+      return res.status(500).json({ error: 'Database error' })
+    }
+    if (!result) return res.status(404).json({ error: 'Package not found' })
+    res.json(result)
+  })
+})
+
+// Compatibility endpoint for existing query-style frontend calls
+app.get('/qry_track_package', async (req, res) => {
+  const trackingNumber = (req.query.tracking_number || req.query.trackingNumber || '').trim()
+  if (!trackingNumber) {
+    return res.status(400).json({ error: 'tracking_number query parameter is required' })
+  }
+
+  packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
+    if (err) return res.status(500).json({ error: 'Database error' })
+    if (!result) return res.status(404).json({ error: 'Package not found' })
+    res.json(result)
   })
 })
 
