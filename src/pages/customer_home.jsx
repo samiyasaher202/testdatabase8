@@ -34,7 +34,7 @@ export default function CustomerHome() {
           <div className="card">
             <h2>Track a Package</h2>
             <p>See where your package is in real time.</p>
-            <a onClick={() => navigate('/track')} className="button">Track Now</a>
+            <a onClick={() => navigate('/package_tracking')} className="button">Track Now</a>
           </div>
 
           <div className="card">

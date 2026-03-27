@@ -1,4 +1,3 @@
-
 const express = require('express')
 const cors    = require('cors')
 const mysql   = require('mysql2/promise')
@@ -9,6 +8,7 @@ require('dotenv').config()
 const packagesDB  = require('./db/packages')
 const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
+const packageTrackDB = require('./db/package_track')
 
 const app = express()
 app.use(cors())
@@ -427,6 +427,19 @@ app.get('/api/customers/:id/packages', (req, res) => {
     res.json(results);
   });
 });
+
+//======================================================
+//package tracking
+//================================================================
+
+
+app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
+  const { tracking_number } = req.params
+  packageTrackDB.getPackageTracking(pool, tracking_number, (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error' })
+    res.json(results)
+  })
+})
 
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
