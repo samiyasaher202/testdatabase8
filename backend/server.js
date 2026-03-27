@@ -454,7 +454,7 @@ app.get('/api/customers/:id/packages', (req, res) => {
 app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
   const { tracking_number } = req.params
   packageTrackDB.getPackageTracking(pool, tracking_number, (err, results) => {
-    if (err) return res.status(500).json({ error: 'Database error' })
+    if (err) return res.status(500).json({ error: 'Database error', details: err.message })
     res.json(results)
   })
 })
