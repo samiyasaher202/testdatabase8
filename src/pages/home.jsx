@@ -1,19 +1,14 @@
-import React from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './css/home.css'
 // import Layout from '../layout'
 // import '../components/button.css'
+// export default function Home() {
+//   return <h1>Hello from Home</h1>
+// }
 
  export default function Home() {
-  const navigate = useNavigate();
-  const [trackingNumber, setTrackingNumber] = React.useState('');
-
-  const onTrack = () => {
-    const value = trackingNumber.trim();
-    if (!value) return;
-    navigate(`/package_tracking?tracking=${encodeURIComponent(value)}`);
-  }
-
+  const navigate = useNavigate()
     return (
     <div>
       <header className="site-header">
@@ -36,13 +31,17 @@ import './css/home.css'
             <div className="track-card" id="track">
               <h3>Track a Package</h3>
               <div className="track-form">
-                <input
-                  type="text"
+                {/* <input 
+                  type="text" 
                   placeholder="Enter tracking number"
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 />
-                <button className="btn primary" onClick={onTrack}>Track</button>
+                <button className="btn primary" onClick = {handleSubmit}>Track</button> */}
+                <button className="btn primary" onClick={() => navigate('/package_tracking')}>
+                  Track a Package
+                </button>
               </div>
             </div>
           </div>
@@ -93,3 +92,4 @@ import './css/home.css'
     </div>
   )
  }
+

@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import "./css/packages.css";
+import React from "react";
+
+import skyline from "../assets/houston-skyline.jpeg";
 
 export default function AllPackages() {
   const [packages, setPackages] = useState([]);
@@ -11,7 +14,7 @@ export default function AllPackages() {
   const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
-    fetch("/qry_all_packages")
+    fetch("http://localhost:5000/api/packages")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load packages");
         return res.json();
@@ -67,7 +70,7 @@ export default function AllPackages() {
         <h1>Post Office 8</h1>
         <nav>
           <a href="/employee_home">Home</a>
-          <a href="/all_packages">Packages</a>
+          <a href="/package_list">Packages</a>
           <a href="/inventory">Inventory</a>
           <a href="/">Logout</a>
         </nav>
@@ -76,7 +79,7 @@ export default function AllPackages() {
       <main>
         {/* Hero image */}
         <div className="hero">
-          <img src="houston-skyline.jpeg" alt="Post Office" />
+          <img src={skyline} alt="Post Office" />
         </div>
 
         <div className="page-content">
@@ -160,7 +163,7 @@ export default function AllPackages() {
                 </thead>
                 <tbody>
                   {filtered.map((p) => (
-                    <>
+                    <React.Fragment key={p.Tracking_Number}>
                       <tr key={p.Tracking_Number}>
                         <td><code>{p.Tracking_Number}</code></td>
                         <td>{p.Package_Type_Code}</td>
@@ -211,7 +214,7 @@ export default function AllPackages() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

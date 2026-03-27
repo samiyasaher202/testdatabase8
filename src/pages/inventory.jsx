@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./css/packages.css";
+import skyline from "../assets/houston-skyline.jpeg";
 
 const LOW_STOCK = 15;
 
@@ -12,7 +13,7 @@ export default function Inventory() {
   const [stockFilter, setStockFilter] = useState("");
 
   useEffect(() => {
-    fetch("/qry_inventory")
+    fetch("http://localhost:5000/api/inventory")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load inventory");
         return res.json();
@@ -65,7 +66,7 @@ export default function Inventory() {
         <h1>Post Office 8</h1>
         <nav>
           <a href="/employee_home">Home</a>
-          <a href="/all_packages">Packages</a>
+          <a href="/package_list">Packages</a>
           <a href="/inventory">Inventory</a>
           <a href="/">Logout</a>
         </nav>
@@ -74,7 +75,7 @@ export default function Inventory() {
       <main>
         {/* Hero image */}
         <div className="hero">
-          <img src="houston-skyline.jpeg" alt="Post Office" />
+          <img src={skyline} alt="Post Office" />
         </div>
 
         <div className="page-content">

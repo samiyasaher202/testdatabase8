@@ -1,92 +1,170 @@
-import React from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useState, useEffect } from "react";
+import "./css/packages.css";
+import skyline from "../assets/houston-skyline.jpeg";
+import React from "react";
+//import { useParams } from 'react-router-dom' 
 
 export default function PackageTracking() {
-  const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
+  const [ trackingNumber, setTrackingNumber ] = useState("")
+  const [results, setResults] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const [tracking, setTracking] = React.useState(searchParams.get('tracking') || '')
-  const [result, setResult] = React.useState(null)
-  const [error, setError] = React.useState('')
-  const [loading, setLoading] = React.useState(false)
+  function handleSearch() {
+    console.log("handleSearch fired, trackingNumber:", trackingNumber)
+    if (!trackingNumber.trim()) return;
+    setLoading(true);
+    setError(null);
+    setResults(null);
 
-  const fetchTracking = async (trackingNumber) => {
-    if (!trackingNumber) {
-      setError('Please enter a tracking number.')
-      setResult(null)
-      return
-    }
-    setLoading(true)
-    setError('')
-    setResult(null)
-
-    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-    const url = `${apiBase}/api/packages/track/${encodeURIComponent(trackingNumber)}`
-
-    try {
-      const response = await fetch(url)
-      const contentType = response.headers.get('content-type') || ''
-
-      let data
-      if (contentType.includes('application/json')) {
-        data = await response.json()
-      } else {
-        const text = await response.text()
-        throw new Error(`Expected JSON response, got: ${text.slice(0, 240)}`)
-      }
-
-      if (!response.ok) {
-        setError(data.error || 'Failed to fetch package')
-      } else {
-        setResult(data)
-      }
-    } catch (err) {
-      setError(err.message || 'Network error')
-    } finally {
-      setLoading(false)
-    }
+    fetch(`http://localhost:5000/api/packages/${trackingNumber.trim()}/tracking`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch tracking info");
+        return res.json();
+      })
+      .then((data) => {
+        setResults(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
   }
 
-  React.useEffect(() => {
-    if (tracking) {
-      fetchTracking(tracking)
-    }
-  }, [])
+  function statusBadge(status) {
+    const s = (status || "").toLowerCase();
+    const style = s.includes("deliver") ? { background: "#d1fae5", color: "#065f46" }
+      : s.includes("transit")           ? { background: "#dbeafe", color: "#1e40af" }
+      : s.includes("delay")             ? { background: "#fee2e2", color: "#991b1b" }
+      :                                   { background: "#fef9c3", color: "#854d0e" };
+    return (
+      <span className="status-badge" style={style}>
+        {status || "Unknown"}
+      </span>
+    );
+  }
+
+  const shipments = (results || []).filter(r => r.Instance_Type === "Shipment");
+  const delivery  = (results || []).find(r  => r.Instance_Type === "Delivery");
 
   return (
-    <div style={{ padding: '1.2rem' }}>
-      <button onClick={() => navigate(-1)} style={{ marginBottom: '1rem' }}>&larr; Back</button>
-      <h2>Package Tracking</h2>
-      <div style={{ maxWidth: '420px', marginBottom: '1rem' }}>
-        <input
-          value={tracking}
-          onChange={(e) => setTracking(e.target.value)}
-          placeholder="Enter tracking number (e.g., TRK0000001)"
-          style={{ width: '100%', padding: '0.6rem', marginBottom: '0.5rem' }}
-        />
-        <button onClick={() => fetchTracking(tracking)} style={{ padding: '0.6rem 0.8rem' }}>
-          {loading ? 'Loading...' : 'Lookup'}
-        </button>
-      </div>
+    <>
+      <header className="navbar">
+        <h1>Post Office 8</h1>
+        <nav>
+          <a href="/">Home</a>
+          <a href="/login">Login</a>
+        </nav>
+      </header>
 
-      {error && <p style={{ color: 'crimson' }}>{error}</p>}
-
-      {result && (
-        <div style={{ border: '1px solid #ccc', borderRadius: '8px', padding: '1rem', maxWidth: '700px' }}>
-          <h3>Tracking Results</h3>
-          <p><strong>Tracking Number: </strong>{result.Tracking_Number}</p>
-          <p><strong>Package Type: </strong>{result.Type_Name} ({result.Package_Type_Code})</p>
-          <p><strong>Status: </strong>{result.Status_Name || 'No status yet'}</p>
-          <p><strong>Weight: </strong>{result.Weight} lbs</p>
-          <p><strong>Dimensions: </strong>{result.Dim_X} x {result.Dim_Y} x {result.Dim_Z}</p>
-          <p><strong>Zone: </strong>{result.Zone}</p>
-          <p><strong>Price: </strong>${result.Price}</p>
-          <p><strong>Sender: </strong>{result.Sender_Name}</p>
-          <p><strong>Recipient: </strong>{result.Recipient_Name}</p>
-          <p><strong>Delivered On: </strong>{result.Delivered_Date || 'Not delivered yet'}</p>
-          <p><strong>Signature Required: </strong>{result.Signature_Required ? 'Yes' : 'No'}</p>
+      <main>
+        <div className="hero">
+          <img src={skyline} alt="Post Office" />
         </div>
-      )}
-    </div>
-  )
+
+        <div className="page-content">
+          <h2>Package Tracking</h2>
+
+          Search bar
+          <div className="controls-bar">
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Enter tracking number..."
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            />
+            <button className="button" onClick={handleSearch}>
+              Track
+            </button>
+            
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="error-banner">
+              <span>{error}</span>
+              <button onClick={() => setError(null)}>✕</button>
+            </div>
+          )}
+
+          {/* Loading */}
+          {loading && <p className="state-msg">Looking up tracking number...</p>}
+
+          {/* No results */}
+          {results && results.length === 0 && (
+            <p className="state-msg">No tracking information found for <code>{trackingNumber}</code>.</p>
+          )}
+
+          {/* Shipments table */}
+          {shipments.length > 0 && (
+            <>
+              <h3 style={{ marginTop: "2rem" }}>Shipment Legs</h3>
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Shipment ID</th>
+                      <th>Status</th>
+                      <th>From Address</th>
+                      <th>To Address</th>
+                      <th>Departed</th>
+                      <th>Arrived</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shipments.map((s) => (
+                      <tr key={s.Shipment_ID}>
+                        <td><code>{s.Shipment_ID}</code></td>
+                        <td>{statusBadge(s.Status_Name)}</td>
+                        <td>{s.From_Full_Address || "—"}</td>
+                        <td>{s.To_Full_Address || "—"}</td>
+                        <td>{s.Departure_Time_Stamp ? new Date(s.Departure_Time_Stamp).toLocaleString() : "—"}</td>
+                        <td>{s.Arrival_Time_Stamp   ? new Date(s.Arrival_Time_Stamp).toLocaleString()   : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
+          {/* Delivery section */}
+          {delivery && (
+            <>
+              <h3 style={{ marginTop: "2rem" }}>Delivery</h3>
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Delivery ID</th>
+                      <th>Status</th>
+                      <th>Delivered Date</th>
+                      <th>Signature Received</th>
+                      <th>Final</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><code>{delivery.Shipment_ID}</code></td>
+                      <td>{statusBadge(delivery.Status_Name)}</td>
+                      <td>{delivery.Delivered_Date ? new Date(delivery.Delivered_Date).toLocaleString() : "—"}</td>
+                      <td>{delivery.Signature_Received || "—"}</td>
+                      <td>{delivery.Is_Final_Status ? "✅ Final" : "🔄 In Progress"}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      </main>
+
+      <footer>
+        <p>Database Team 8</p>
+      </footer>
+    </>
+  );
 }
