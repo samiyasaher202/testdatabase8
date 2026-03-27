@@ -15,11 +15,8 @@ import './css/home.css'
         <div className="header-inner">
           <a className="logo" href="/">National Postal Service</a>
           <nav className="top-nav">
-            <a onClick={() => navigate('/customer_home')}>Customer</a>
-            <a onClick={() => navigate('/employee_home')}>Employee</a>
             <a onClick={() => navigate('/login')}>Login</a>
             <a href="#services">Services</a>
-            <a href="#track">Track</a>
           </nav>
         </div>
         <div className="hero">
