@@ -15,23 +15,41 @@ const app = express()
 
 
 // ── CORS ──────────────────────────────────────────────────────────────────
+// const allowedOrigins = [
+//   'http://localhost:3000',
+//   'http://localhost:5173',
+//   'https://database-team8.vercel.app',
+//   'https://database-team8-qpd85osxz-erinbryants-projects.vercel.app',
+//   process.env.FRONTEND_URL, // e.g. https://your-app.vercel.app
+// ].filter(Boolean)
+ 
+// app.use(cors({
+//   origin: (origin, callback) => {
+//     if (!origin || allowedOrigins.includes(origin)) callback(null, true)
+//     else callback(new Error('Not allowed by CORS'))
+//   },
+//   credentials: true
+// }))
+ 
+// app.use(express.json())
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'https://database-team8.vercel.app',
-  'https://database-team8-qpd85osxz-erinbryants-projects.vercel.app',
-  process.env.FRONTEND_URL, // e.g. https://your-app.vercel.app
+  /\.vercel\.app$/,              // ← covers ALL vercel preview URLs
+  process.env.FRONTEND_URL,
 ].filter(Boolean)
- 
+
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) callback(null, true)
-    else callback(new Error('Not allowed by CORS'))
+    if (!origin) return callback(null, true) // allow non-browser requests
+    const allowed = allowedOrigins.some(o =>
+      o instanceof RegExp ? o.test(origin) : o === origin
+    )
+    allowed ? callback(null, true) : callback(new Error('Not allowed by CORS'))
   },
   credentials: true
 }))
- 
-app.use(express.json())
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
