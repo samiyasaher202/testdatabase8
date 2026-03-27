@@ -14,15 +14,33 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+// ── CORS ──────────────────────────────────────────────────────────────────
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  process.env.FRONTEND_URL, // e.g. https://your-app.vercel.app
+].filter(Boolean)
+ 
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) callback(null, true)
+    else callback(new Error('Not allowed by CORS'))
+  },
+  credentials: true
+}))
+ 
+app.use(express.json())
+
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
-  host:               process.env.DB_HOST     || 'localhost',
-  port:               process.env.DB_PORT     || 3306,
-  user:               process.env.DB_USER     || 'root',
-  password:           process.env.DB_PASSWORD || '',
-  database:           process.env.DB_NAME     || 'post_office_8',
+  host:     process.env.MYSQL_HOST,
+  port:     process.env.MYSQL_PORT     || 3306,
+  user:     process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
   waitForConnections: true,
   connectionLimit:    10,
+  queueLimit:         0,
 })
 
 pool.getConnection()
