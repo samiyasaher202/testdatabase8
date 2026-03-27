@@ -5,6 +5,11 @@ const bcrypt  = require('bcryptjs')
 const jwt     = require('jsonwebtoken')
 require('dotenv').config()
 
+console.log('MYSQLHOST:', process.env.MYSQLHOST)
+console.log('MYSQLPORT:', process.env.MYSQLPORT)
+console.log('MYSQLUSER:', process.env.MYSQLUSER)
+console.log('MYSQL_DATABASE:', process.env.MYSQL_DATABASE)
+
 const packagesDB  = require('./db/packages')
 const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
@@ -53,10 +58,10 @@ app.use(cors({
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
-  host:     process.env.MYSQL_HOST,
-  port:     process.env.MYSQL_PORT     || 3306,
-  user:     process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
+  host:     process.env.MYSQLHOST,
+  port:     process.env.MYSQLPORT     || 3306,
+  user:     process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQL_DATABASE,
   waitForConnections: true,
   connectionLimit:    10,
