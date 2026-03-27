@@ -5,11 +5,6 @@ const bcrypt  = require('bcryptjs')
 const jwt     = require('jsonwebtoken')
 require('dotenv').config()
 
-console.log('MYSQLHOST:', process.env.MYSQLHOST)
-console.log('MYSQLPORT:', process.env.MYSQLPORT)
-console.log('MYSQLUSER:', process.env.MYSQLUSER)
-console.log('MYSQL_DATABASE:', process.env.MYSQL_DATABASE)
-
 const packagesDB  = require('./db/packages')
 const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
