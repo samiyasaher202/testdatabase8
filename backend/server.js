@@ -11,8 +11,8 @@ const customerDB = require('./db/customers')
 const packageTrackDB = require('./db/package_track')
 
 const app = express()
-app.use(cors())
-app.use(express.json())
+
+
 
 // ── CORS ──────────────────────────────────────────────────────────────────
 const allowedOrigins = [

@@ -17,7 +17,7 @@ export default function PackageTracking() {
     setError(null);
     setResults(null);
 
-    fetch(`http://localhost:5000/api/packages/${trackingNumber.trim()}/tracking`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/packages/${trackingNumber.trim()}/tracking`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch tracking info");
         return res.json();

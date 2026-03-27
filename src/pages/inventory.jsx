@@ -13,7 +13,7 @@ export default function Inventory() {
   const [stockFilter, setStockFilter] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/inventory")
+    fetch(`${import.meta.env.VITE_API_URL}/api/inventory`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load inventory");
         return res.json();

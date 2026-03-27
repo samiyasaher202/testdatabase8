@@ -14,7 +14,7 @@ export default function AllPackages() {
   const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/packages")
+    fetch(`${import.meta.env.VITE_API_URL}/api/packages`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load packages");
         return res.json();
