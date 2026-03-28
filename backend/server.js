@@ -124,37 +124,53 @@ app.post('/api/auth/customer-login', async (req, res) => {
   }
 })
 
-// Register - OLD ENDPOINT (DISABLED - For backward compatibility only)
-// Customer Register
+// Customer registration (full profile; see customers.registerCustomer)
 app.post('/api/customer/register', async (req, res) => {
-  const { first_name, last_name, email, password, phone_number,
-          house_number, street, city, state, zip_first3, zip_last2 } = req.body
-
-  if (!first_name || !last_name || !email || !password)
-    return res.status(400).json({ message: 'Missing required fields' })
+  console.log('Register request payload', {
+    email: req.body?.email,
+    first_name: req.body?.first_name,
+    last_name: req.body?.last_name,
+    phone_number: req.body?.phone_number,
+    city: req.body?.city,
+    state: req.body?.state,
+    zip_first3: req.body?.zip_first3,
+    zip_last2: req.body?.zip_last2,
+    birth_day: req.body?.birth_day,
+    birth_month: req.body?.birth_month,
+    birth_year: req.body?.birth_year,
+    sex: req.body?.sex,
+  })
 
   try {
-    const [exists] = await pool.query(
-      'SELECT Customer_ID FROM Customer WHERE Email_Address = ?', [email]
-    )
-    if (exists.length)
-      return res.status(400).json({ message: 'Email already registered' })
+    const { customer_id, user } = await customerDB.registerCustomer(pool, req.body)
 
-    const hash = await bcrypt.hash(password, 10)
-    await pool.query(
-      `INSERT INTO Customer
-         (First_Name, Last_Name, House_Number, Street, City, State,
-          Zip_First3, Zip_Last2, Password_Hash, Email_Address, Phone_Number)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-      [first_name, last_name, house_number || '0', street || 'Unknown',
-       city || 'Unknown', state || 'TX', zip_first3 || '000',
-       zip_last2 || '00', hash, email, phone_number || null]
+    const token = jwt.sign(
+      { customer_id, email: user.Email_Address, type: 'customer' },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '24h' }
     )
 
-    res.status(201).json({ message: 'Customer registered successfully' })
+    res.status(201).json({
+      message: 'Customer registered successfully',
+      token,
+      user,
+    })
   } catch (err) {
+    if (err.status === 400 || err.code === 'VALIDATION' || err.code === 'DUPLICATE_EMAIL') {
+      return res.status(err.status || 400).json({ message: err.message })
+    }
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ message: 'Email already registered' })
+    }
+    if (err.code === 'ER_BAD_FIELD_ERROR' || /Unknown column/i.test(String(err.message))) {
+      console.error(err)
+      return res.status(500).json({
+        message:
+          'Database schema is missing Customer columns (Birth_Day, Birth_Month, Birth_Year, Sex). Run backend/db/migrations/001_add_customer_demographics.sql',
+      })
+    }
     console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    res.status(500).json({ message: err.message || 'Server error' })
   }
 })
 

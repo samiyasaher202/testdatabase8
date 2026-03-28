@@ -30,8 +30,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/customer_home" element={<CustomerHome />} />
         <Route path="/employee_home" element={<RequireEmployee><EmployeeHome /></RequireEmployee>} />
-        <Route path="/Register" element={<Register />} />
-        <Route path="/CustomerProfile" element={<CustomerProfile />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/customer_profile" element={<CustomerProfile />} />
         <Route path="/profile" element={<RequireEmployee><Profile/></RequireEmployee>} />
         {/* <Route path="/package_list" element={<PackageList />} /> */}
 

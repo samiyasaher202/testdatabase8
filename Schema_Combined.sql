@@ -47,6 +47,7 @@ CREATE TABLE Product (
 
 
 CREATE TABLE Customer(
+-- Customer_ID is system-generated; do not INSERT manually.
 Customer_ID int auto_increment primary key,
 
 First_Name varchar(30) not null,
@@ -65,7 +66,12 @@ Country varchar (50) not null default 'USA',
 
 Password_Hash varchar(255) not null,
 Email_Address varchar(255) not null unique,
-Phone_Number varchar(20) null
+Phone_Number varchar(20) null,
+
+Birth_Day tinyint not null check (Birth_Day between 1 and 31),
+Birth_Month tinyint not null check (Birth_Month between 1 and 12),
+Birth_Year year not null,
+Sex char(1) not null check (Sex in ('M','F','O','U'))
 );
 
 CREATE TABLE Role (
