@@ -1,3 +1,4 @@
+
 const express = require('express')
 const cors    = require('cors')
 const mysql   = require('mysql2/promise')
@@ -8,7 +9,7 @@ require('dotenv').config()
 const packagesDB  = require('./db/packages')
 const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
-const packageTrackDB = require('./db/package_track')
+const packageTrackDB = require('./db/package_track') 
 
 const app = express()
 //server
@@ -50,6 +51,7 @@ app.use(cors({
   },
   credentials: true
 }))
+app.use(express.json())
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
@@ -58,6 +60,13 @@ const pool = mysql.createPool({
   user:     process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQL_DATABASE,
+
+  // host:               process.env.DB_HOST     || 'localhost',
+  // port:               process.env.DB_PORT     || 3306,
+  // user:               process.env.DB_USER     || 'root',
+  // password:           process.env.DB_PASSWORD || 
+  // database:           process.env.DB_NAME     || 
+
   waitForConnections: true,
   connectionLimit:    10,
   queueLimit:         0,
@@ -101,9 +110,9 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT e.*, r.Role_Name, d.Department_Name
-       FROM Employee e
-       JOIN Role r       ON e.Role_ID       = r.Role_ID
-       JOIN Department d ON e.Department_ID = d.Department_ID
+       FROM employee e
+       JOIN role r       ON e.Role_ID       = r.Role_ID
+       JOIN department d ON e.Department_ID = d.Department_ID
        WHERE e.Email_Address = ?`,
       [email]
     )
@@ -137,16 +146,18 @@ app.post('/api/auth/customer-login', async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM Customer WHERE Email_Address = ?',
+      'SELECT * FROM customer WHERE Email_Address = ?',
       [email]
     )
+    console.log('Email searched:', email)       
+    console.log('Rows found:', rows.length)    
     if (!rows.length)
-      return res.status(401).json({ message: 'Invalid credentials' })
+      return res.status(401).json({ message: 'Invalid credentials: no user found with email' })
 
     const customer = rows[0]
     const valid = await bcrypt.compare(password, customer.Password_Hash)
     if (!valid)
-      return res.status(401).json({ message: 'Invalid credentials' })
+      return res.status(401).json({ message: 'Invalid credentials: password does not match' })
 
     const token = jwt.sign(
       { customer_id: customer.Customer_ID, email: customer.Email_Address, type: 'customer' },
@@ -162,37 +173,53 @@ app.post('/api/auth/customer-login', async (req, res) => {
   }
 })
 
-// Register - OLD ENDPOINT (DISABLED - For backward compatibility only)
-// Customer Register
+// Customer registration (full profile; see customers.registerCustomer)
 app.post('/api/customer/register', async (req, res) => {
-  const { first_name, last_name, email, password, phone_number,
-          house_number, street, city, state, zip_first3, zip_last2 } = req.body
-
-  if (!first_name || !last_name || !email || !password)
-    return res.status(400).json({ message: 'Missing required fields' })
+  console.log('Register request payload', {
+    email: req.body?.email,
+    first_name: req.body?.first_name,
+    last_name: req.body?.last_name,
+    phone_number: req.body?.phone_number,
+    city: req.body?.city,
+    state: req.body?.state,
+    zip_first3: req.body?.zip_first3,
+    zip_last2: req.body?.zip_last2,
+    birth_day: req.body?.birth_day,
+    birth_month: req.body?.birth_month,
+    birth_year: req.body?.birth_year,
+    sex: req.body?.sex,
+  })
 
   try {
-    const [exists] = await pool.query(
-      'SELECT Customer_ID FROM Customer WHERE Email_Address = ?', [email]
-    )
-    if (exists.length)
-      return res.status(400).json({ message: 'Email already registered' })
+    const { customer_id, user } = await customerDB.registerCustomer(pool, req.body)
 
-    const hash = await bcrypt.hash(password, 10)
-    await pool.query(
-      `INSERT INTO Customer
-         (First_Name, Last_Name, House_Number, Street, City, State,
-          Zip_First3, Zip_Last2, Password_Hash, Email_Address, Phone_Number)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-      [first_name, last_name, house_number || '0', street || 'Unknown',
-       city || 'Unknown', state || 'TX', zip_first3 || '000',
-       zip_last2 || '00', hash, email, phone_number || null]
+    const token = jwt.sign(
+      { customer_id, email: user.Email_Address, type: 'customer' },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '24h' }
     )
 
-    res.status(201).json({ message: 'Customer registered successfully' })
+    res.status(201).json({
+      message: 'Customer registered successfully',
+      token,
+      user,
+    })
   } catch (err) {
+    if (err.status === 400 || err.code === 'VALIDATION' || err.code === 'DUPLICATE_EMAIL') {
+      return res.status(err.status || 400).json({ message: err.message })
+    }
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ message: 'Email already registered' })
+    }
+    if (err.code === 'ER_BAD_FIELD_ERROR' || /Unknown column/i.test(String(err.message))) {
+      console.error(err)
+      return res.status(500).json({
+        message:
+          'Database schema is missing Customer columns (Birth_Day, Birth_Month, Birth_Year, Sex). Run backend/db/migrations/001_add_customer_demographics.sql',
+      })
+    }
     console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    res.status(500).json({ message: err.message || 'Server error' })
   }
 })
 
@@ -208,7 +235,7 @@ app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res
   try {
     // Check if email already exists
     const [exists] = await pool.query(
-      'SELECT Employee_ID FROM Employee WHERE Email_Address = ?',
+      'SELECT Employee_ID FROM employee WHERE Email_Address = ?',
       [email]
     )
     if (exists.length) {
@@ -246,7 +273,7 @@ app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res
 
     // Insert new employee
     const [result] = await pool.query(
-      `INSERT INTO Employee
+      `INSERT INTO employee
          (Post_Office_ID, Role_ID, Department_ID, First_Name, Last_Name,
           Birth_Day, Birth_Month, Birth_Year, Password_Hash, Email_Address,
           Phone_Number, Sex, Salary, Hours_Worked)
@@ -286,11 +313,11 @@ app.get('/api/auth/profile', authenticate, async (req, res) => {
               CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
               r.Role_Name, d.Department_Name,
               po.City AS Office_City, po.State AS Office_State
-       FROM Employee e
-       JOIN Role r         ON e.Role_ID        = r.Role_ID
-       JOIN Department d   ON e.Department_ID  = d.Department_ID
-       JOIN Post_Office po ON e.Post_Office_ID = po.Post_Office_ID
-       LEFT JOIN Employee s ON e.Supervisor_ID = s.Employee_ID
+       FROM employee e
+       JOIN role r         ON e.Role_ID        = r.Role_ID
+       JOIN department d   ON e.Department_ID  = d.Department_ID
+       JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+       LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
        WHERE e.Employee_ID = ?`,
       [req.user.employee_id]
     )
@@ -308,7 +335,7 @@ app.put('/api/auth/profile', authenticate, async (req, res) => {
   const { Email_Address, Phone_Number } = req.body
   try {
     await pool.query(
-      'UPDATE Employee SET Phone_Number = ?, Email_Address = ? WHERE Employee_ID = ?',
+      'UPDATE employee SET Phone_Number = ?, Email_Address = ? WHERE Employee_ID = ?',
       [Phone_Number, Email_Address, req.user.employee_id]
     )
     const [rows] = await pool.query(
@@ -318,11 +345,11 @@ app.put('/api/auth/profile', authenticate, async (req, res) => {
               CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
               r.Role_Name, d.Department_Name,
               po.City AS Office_City, po.State AS Office_State
-       FROM Employee e
-       JOIN Role r         ON e.Role_ID        = r.Role_ID
-       JOIN Department d   ON e.Department_ID  = d.Department_ID
-       JOIN Post_Office po ON e.Post_Office_ID = po.Post_Office_ID
-       LEFT JOIN Employee s ON e.Supervisor_ID = s.Employee_ID
+       FROM employee e
+       JOIN role r         ON e.Role_ID        = r.Role_ID
+       JOIN department d   ON e.Department_ID  = d.Department_ID
+       JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+       LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
        WHERE e.Employee_ID = ?`,
       [req.user.employee_id]
     )
@@ -342,7 +369,7 @@ app.post('/api/auth/change-password', authenticate, async (req, res) => {
     return res.status(400).json({ message: 'New password must be at least 6 characters' })
   try {
     const [rows] = await pool.query(
-      'SELECT Password_Hash FROM Employee WHERE Employee_ID = ?',
+      'SELECT Password_Hash FROM employee WHERE Employee_ID = ?',
       [req.user.employee_id]
     )
     if (!rows.length) return res.status(404).json({ message: 'Employee not found' })
@@ -350,7 +377,7 @@ app.post('/api/auth/change-password', authenticate, async (req, res) => {
     if (!valid) return res.status(401).json({ message: 'Current password is incorrect' })
     const newHash = await bcrypt.hash(newPassword, 10)
     await pool.query(
-      'UPDATE Employee SET Password_Hash = ? WHERE Employee_ID = ?',
+      'UPDATE employee SET Password_Hash = ? WHERE Employee_ID = ?',
       [newHash, req.user.employee_id]
     )
     res.json({ message: 'Password changed successfully' })
@@ -367,7 +394,7 @@ app.get('/api/customer/profile', authenticate, async (req, res) => {
       `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
               Phone_Number, House_Number, Street, City, State,
               Zip_First3, Zip_Last2
-       FROM Customer WHERE Customer_ID = ?`,
+       FROM customer WHERE Customer_ID = ?`,
       [req.user.customer_id]
     )
     if (!rows.length)
@@ -384,7 +411,7 @@ app.put('/api/customer/profile', authenticate, async (req, res) => {
   const { Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2 } = req.body
   try {
     await pool.query(
-      `UPDATE Customer 
+      `UPDATE customer 
        SET Email_Address = ?, Phone_Number = ?,
            House_Number = ?, Street = ?, City = ?, State = ?,
            Zip_First3 = ?, Zip_Last2 = ?
@@ -395,7 +422,7 @@ app.put('/api/customer/profile', authenticate, async (req, res) => {
       `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
               Phone_Number, House_Number, Street, City, State,
               Zip_First3, Zip_Last2
-       FROM Customer WHERE Customer_ID = ?`,
+       FROM customer WHERE Customer_ID = ?`,
       [req.user.customer_id]
     )
     res.json({ message: 'Profile updated successfully', user: rows[0] })
@@ -413,6 +440,38 @@ app.get('/api/packages', async (req, res) => {
   packagesDB.getAllPackages(pool, (err, results) => {
     if (err) return res.status(500).json({ error: 'Database error' })
     res.json(results)
+  })
+})
+
+// Track package by tracking number
+app.get('/api/packages/track/:trackingNumber', async (req, res) => {
+  console.log('Received tracking request for:', req.params.trackingNumber)
+  const trackingNumber = (req.params.trackingNumber || '').trim()
+  if (!trackingNumber) {
+    return res.status(400).json({ error: 'trackingNumber is required' })
+  }
+
+  packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
+    if (err) {
+      console.error('Database error:', err)
+      return res.status(500).json({ error: 'Database error' })
+    }
+    if (!result) return res.status(404).json({ error: 'Package not found' })
+    res.json(result)
+  })
+})
+
+// Compatibility endpoint for existing query-style frontend calls
+app.get('/qry_track_package', async (req, res) => {
+  const trackingNumber = (req.query.tracking_number || req.query.trackingNumber || '').trim()
+  if (!trackingNumber) {
+    return res.status(400).json({ error: 'tracking_number query parameter is required' })
+  }
+
+  packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
+    if (err) return res.status(500).json({ error: 'Database error' })
+    if (!result) return res.status(404).json({ error: 'Package not found' })
+    res.json(result)
   })
 })
 
