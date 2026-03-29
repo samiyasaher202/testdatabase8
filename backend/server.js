@@ -1,3 +1,4 @@
+
 const express = require('express')
 const cors    = require('cors')
 const mysql   = require('mysql2/promise')
@@ -8,7 +9,6 @@ require('dotenv').config()
 const packagesDB  = require('./db/packages')
 const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
-const packageTrackDB = require('./db/package_track')
 
 const app = express()
 //server
@@ -58,6 +58,13 @@ const pool = mysql.createPool({
   user:     process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQL_DATABASE,
+
+  // host:               process.env.DB_HOST     || 'localhost',
+  // port:               process.env.DB_PORT     || 3306,
+  // user:               process.env.DB_USER     || 'root',
+  // password:           process.env.DB_PASSWORD || 
+  // database:           process.env.DB_NAME     || 
+
   waitForConnections: true,
   connectionLimit:    10,
   queueLimit:         0,
@@ -162,37 +169,53 @@ app.post('/api/auth/customer-login', async (req, res) => {
   }
 })
 
-// Register - OLD ENDPOINT (DISABLED - For backward compatibility only)
-// Customer Register
+// Customer registration (full profile; see customers.registerCustomer)
 app.post('/api/customer/register', async (req, res) => {
-  const { first_name, last_name, email, password, phone_number,
-          house_number, street, city, state, zip_first3, zip_last2 } = req.body
-
-  if (!first_name || !last_name || !email || !password)
-    return res.status(400).json({ message: 'Missing required fields' })
+  console.log('Register request payload', {
+    email: req.body?.email,
+    first_name: req.body?.first_name,
+    last_name: req.body?.last_name,
+    phone_number: req.body?.phone_number,
+    city: req.body?.city,
+    state: req.body?.state,
+    zip_first3: req.body?.zip_first3,
+    zip_last2: req.body?.zip_last2,
+    birth_day: req.body?.birth_day,
+    birth_month: req.body?.birth_month,
+    birth_year: req.body?.birth_year,
+    sex: req.body?.sex,
+  })
 
   try {
-    const [exists] = await pool.query(
-      'SELECT Customer_ID FROM Customer WHERE Email_Address = ?', [email]
-    )
-    if (exists.length)
-      return res.status(400).json({ message: 'Email already registered' })
+    const { customer_id, user } = await customerDB.registerCustomer(pool, req.body)
 
-    const hash = await bcrypt.hash(password, 10)
-    await pool.query(
-      `INSERT INTO Customer
-         (First_Name, Last_Name, House_Number, Street, City, State,
-          Zip_First3, Zip_Last2, Password_Hash, Email_Address, Phone_Number)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-      [first_name, last_name, house_number || '0', street || 'Unknown',
-       city || 'Unknown', state || 'TX', zip_first3 || '000',
-       zip_last2 || '00', hash, email, phone_number || null]
+    const token = jwt.sign(
+      { customer_id, email: user.Email_Address, type: 'customer' },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '24h' }
     )
 
-    res.status(201).json({ message: 'Customer registered successfully' })
+    res.status(201).json({
+      message: 'Customer registered successfully',
+      token,
+      user,
+    })
   } catch (err) {
+    if (err.status === 400 || err.code === 'VALIDATION' || err.code === 'DUPLICATE_EMAIL') {
+      return res.status(err.status || 400).json({ message: err.message })
+    }
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ message: 'Email already registered' })
+    }
+    if (err.code === 'ER_BAD_FIELD_ERROR' || /Unknown column/i.test(String(err.message))) {
+      console.error(err)
+      return res.status(500).json({
+        message:
+          'Database schema is missing Customer columns (Birth_Day, Birth_Month, Birth_Year, Sex). Run backend/db/migrations/001_add_customer_demographics.sql',
+      })
+    }
     console.error(err)
-    res.status(500).json({ message: 'Server error' })
+    res.status(500).json({ message: err.message || 'Server error' })
   }
 })
 
@@ -413,6 +436,38 @@ app.get('/api/packages', async (req, res) => {
   packagesDB.getAllPackages(pool, (err, results) => {
     if (err) return res.status(500).json({ error: 'Database error' })
     res.json(results)
+  })
+})
+
+// Track package by tracking number
+app.get('/api/packages/track/:trackingNumber', async (req, res) => {
+  console.log('Received tracking request for:', req.params.trackingNumber)
+  const trackingNumber = (req.params.trackingNumber || '').trim()
+  if (!trackingNumber) {
+    return res.status(400).json({ error: 'trackingNumber is required' })
+  }
+
+  packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
+    if (err) {
+      console.error('Database error:', err)
+      return res.status(500).json({ error: 'Database error' })
+    }
+    if (!result) return res.status(404).json({ error: 'Package not found' })
+    res.json(result)
+  })
+})
+
+// Compatibility endpoint for existing query-style frontend calls
+app.get('/qry_track_package', async (req, res) => {
+  const trackingNumber = (req.query.tracking_number || req.query.trackingNumber || '').trim()
+  if (!trackingNumber) {
+    return res.status(400).json({ error: 'tracking_number query parameter is required' })
+  }
+
+  packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
+    if (err) return res.status(500).json({ error: 'Database error' })
+    if (!result) return res.status(404).json({ error: 'Package not found' })
+    res.json(result)
   })
 })
 
