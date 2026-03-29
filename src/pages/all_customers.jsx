@@ -160,7 +160,7 @@ function toggleExpand(id) {
                                          <label>Sending</label>
                                         <p>
                                             {(customerPackages[c.Customer_ID] || [])
-                                            .filter(p => p.Role === 'Sending')
+                                            .filter(p => p.role === 'Sending')
                                             .map(p => <code key={p.Tracking_Number} style={{ display: 'block' }}>{p.Tracking_Number}</code>)
                                             }
                                             {!(customerPackages[c.Customer_ID] || []).some(p => p.Role === 'Sending') && "—"}
@@ -170,7 +170,7 @@ function toggleExpand(id) {
                                         <label>Receiving</label>
                                         <p>
                                         {(customerPackages[c.Customer_ID] || [])
-                                        .filter(p => p.Role === 'Receiving')
+                                        .filter(p => p.role === 'Receiving')
                                         .map(p => <code key={p.Tracking_Number} style={{ display: 'block' }}>{p.Tracking_Number}</code>)
                                         }
                                         {!(customerPackages[c.Customer_ID] || []).some(p => p.Role === 'Receiving') && "—"}
