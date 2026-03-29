@@ -13,7 +13,7 @@ export default function AllCustomers() {
   const [customerPackages, setCustomerPackages] = useState({});
 
   useEffect(() => {
-    fetch("${import.meta.env.VITE_API_URL}/api/customers")
+    fetch(`${import.meta.env.VITE_API_URL}/api/customers`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load customers");
         return res.json();
