@@ -513,7 +513,9 @@ app.post('/api/tickets', (req, res) => {
 // ════════════════════════════════════════════════════════════════════════════
 app.get('/api/customers', (req, res) => {
   customerDB.getAllCustomers(pool, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+    //console.error('Customers error:', err)
+    if (err) 
+      return res.status(500).json({ error: err.message });
     res.json(results);
   });
 });
