@@ -4,6 +4,14 @@ import skyline from "../assets/houston-skyline.jpeg";
 
 export default function CustomerHome() {
   const navigate = useNavigate();
+
+  function handleLogout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userType');
+    navigate('/');
+  }
+
   return (
     <>
       <header className="navbar">
@@ -15,7 +23,15 @@ export default function CustomerHome() {
           <a onClick={() => navigate('/send')}>Send Package</a>
           <a onClick={() => navigate('/history')}>History</a>
           <a onClick={() => navigate('/store')}>Store</a>
-          <a onClick={() => navigate('/logout')}>Logout</a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              handleLogout();
+            }}
+          >
+            Logout
+          </a>
         </nav>
       </header>
 
