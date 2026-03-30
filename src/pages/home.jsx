@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './css/home.css'
 // import Layout from '../layout'
@@ -7,17 +7,51 @@ import './css/home.css'
 //   return <h1>Hello from Home</h1>
 // }
 
- export default function Home() {
+export default function Home() {
   const navigate = useNavigate()
-    return (
+  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('token'))
+
+  useEffect(() => {
+    const sync = () => setLoggedIn(!!localStorage.getItem('token'))
+    window.addEventListener('storage', sync)
+    return () => window.removeEventListener('storage', sync)
+  }, [])
+
+  function handleLogout(e) {
+    e.preventDefault()
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('userType')
+    setLoggedIn(false)
+    navigate('/')
+  }
+
+  return (
     <div>
       <header className="site-header">
         <div className="header-inner">
           <a className="logo" href="/">National Postal Service</a>
           <nav className="top-nav">
-            <a onClick={() => navigate('/login')}>Login</a>
-            <a href="#services">Services</a>
-            <a href="#track">Track</a>
+            {loggedIn ? (
+              <>
+                {localStorage.getItem('userType') === 'customer' && (
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      navigate('/customer_home')
+                    }}
+                  >
+                    Customer Portal
+                  </a>
+                )}
+                <a href="#" onClick={handleLogout}>
+                  Logout
+                </a>
+              </>
+            ) : (
+              <a onClick={() => navigate('/login')}>Login</a>
+            )}
           </nav>
         </div>
         <div className="hero">

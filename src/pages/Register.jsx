@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import './css/home.css'
 import '../components/Auth.css'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
@@ -66,7 +67,6 @@ const Register = () => {
     setLoading(true)
 
     try {
-      //const response = await fetch('${import.meta.env.VITE_API_URL}/api/customer/register', {
       const url = `${import.meta.env.VITE_API_URL}/api/customer/register`
       const response = await fetch(url, {
         method: 'POST',
@@ -127,11 +127,28 @@ const Register = () => {
   }
 
   return (
-    <div className="register-container">
-      <div className="register-card">
-        <h2>Create a Post Office 8 account</h2>
-        <p className="subtitle">Customer registration</p>
+    <div className="login-page">
+      <header className="site-header">
+        <div className="header-inner">
+          <Link className="logo" to="/">
+            National Postal Service
+          </Link>
+          <nav className="top-nav">
+            <button
+              type="button"
+              className="nav-back-btn"
+              onClick={() => navigate('/')}
+            >
+              ← Back
+            </button>
+          </nav>
+        </div>
+      </header>
 
+      <div className="login-page-body">
+        <div className="login-card login-card--branded register-card-wide">
+        <h2>Create an account</h2>
+        
         <form onSubmit={handleSubmit}>
           {error && <div className="error-message">{error}</div>}
 
@@ -391,14 +408,15 @@ const Register = () => {
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="submit-btn">
+          <button type="submit" disabled={loading}>
             {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
-        <p className="login-link">
-          Already have an account? <Link to="/login">Login</Link>
+        <p className="login-link register-footer-link">
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
+        </div>
       </div>
     </div>
   )

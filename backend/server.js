@@ -37,13 +37,13 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'https://database-team8.vercel.app',
-  /\.vercel\.app$/,              // ← covers ALL vercel preview URLs
+  /\.vercel\.app$/,              // covers all vercel preview URLs
   process.env.FRONTEND_URL,
 ].filter(Boolean)
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true) // allow non-browser requests
+    if (!origin) return callback(null, true) 
     const allowed = allowedOrigins.some(o =>
       o instanceof RegExp ? o.test(origin) : o === origin
     )
@@ -76,7 +76,10 @@ pool.getConnection()
   .then(c => { console.log('✅ MySQL connected'); c.release() })
   .catch(e => console.error('❌ MySQL connection failed:', e))
 
-// ── Auth middleware ───────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+//  AUTH MIDDLEWARE
+// ════════════════════════════════════════════════════════════════════════════
+
 const authenticate = (req, res, next) => {
   const token = (req.headers['authorization'] || '').split(' ')[1]
   if (!token) return res.status(401).json({ message: 'No token provided' })
@@ -101,7 +104,7 @@ const requireAdmin = (req, res, next) => {
 //  AUTH ROUTES
 // ════════════════════════════════════════════════════════════════════════════
 
-// Employee Login (EXISTING)
+// ── Employee Login (EXISTING)───────────────────────────────────────────────────
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body
   if (!email || !password)
@@ -138,7 +141,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 })
 
-// Customer Login
+// ── Customer Login ──────────────────────────────────────────────────────────
 app.post('/api/auth/customer-login', async (req, res) => {
   const { email, password } = req.body
   if (!email || !password)
@@ -173,7 +176,7 @@ app.post('/api/auth/customer-login', async (req, res) => {
   }
 })
 
-// Customer registration (full profile; see customers.registerCustomer)
+//── Customer registration (full profile; see customers.registerCustomer) ──────────────────────────────────
 app.post('/api/customer/register', async (req, res) => {
   console.log('Register request payload', {
     email: req.body?.email,
@@ -223,7 +226,7 @@ app.post('/api/customer/register', async (req, res) => {
   }
 })
 
-// Admin/Manager Register New Employee (NEW ENDPOINT)
+// ── Admin/Manager Register New Employee (NEW ENDPOINT) ──────────────────────────────────────────────────────────────
 app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res) => {
   const { name, email, department, position, phoneNumber, workAddress, hireDate } = req.body
 
@@ -303,6 +306,9 @@ app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res
   }
 })
 
+// ════════════════════════════════════════════════════════════════════════════
+//  PROFILE (EMPLOYEE)
+// ════════════════════════════════════════════════════════════════════════════
 // Get employee profile
 app.get('/api/auth/profile', authenticate, async (req, res) => {
   try {
@@ -387,6 +393,9 @@ app.post('/api/auth/change-password', authenticate, async (req, res) => {
   }
 })
 
+// ════════════════════════════════════════════════════════════════════════════
+//  PROFILE (Customer)
+// ════════════════════════════════════════════════════════════════════════════
 // Customer profile
 app.get('/api/customer/profile', authenticate, async (req, res) => {
   try {
@@ -433,7 +442,7 @@ app.put('/api/customer/profile', authenticate, async (req, res) => {
 })
 
 // ════════════════════════════════════════════════════════════════════════════
-//  PACKAGES ROUTES
+//  ALL PACKAGES ROUTES
 // ════════════════════════════════════════════════════════════════════════════
 
 app.get('/api/packages', async (req, res) => {
@@ -508,8 +517,9 @@ app.post('/api/tickets', (req, res) => {
   // Send success response
   res.status(201).json({ message: 'Ticket submitted successfully' });
 });
+
 // ════════════════════════════════════════════════════════════════════════════
-//  CUSTOMERS ROUTES
+//  ALL CUSTOMERS ROUTES
 // ════════════════════════════════════════════════════════════════════════════
 app.get('/api/customers', (req, res) => {
   customerDB.getAllCustomers(pool, (err, results) => {
@@ -527,9 +537,9 @@ app.get('/api/customers/:id/packages', (req, res) => {
   });
 });
 
-//======================================================
-//package tracking
-//================================================================
+// ════════════════════════════════════════════════════════════════════════════
+//  PACKAGE TRACKING
+// ════════════════════════════════════════════════════════════════════════════
 
 
 app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
