@@ -310,3 +310,164 @@ button:disabled {
 .submit-btn:hover {
   background: #5568d3;
 }
+
+/* Login page — layout + card aligned with home.css (import home.css before Auth on Login) */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at top left, #eaf3ff 0%, transparent 40%), #f3f7fc;
+}
+
+.login-page-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px 48px;
+}
+
+.login-page .login-card--branded {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #dbe4ef;
+  border-radius: 20px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+  padding: 40px;
+}
+
+.login-page .login-card--branded h2 {
+  color: #0f172a;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.login-page .login-card--branded .subtitle {
+  color: #475569;
+}
+
+.site-header .top-nav .nav-back-btn {
+  width: auto;
+  margin: 0;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.site-header .top-nav .nav-back-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.site-header .top-nav .nav-back-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.45);
+}
+
+.login-page .user-type-prompt {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.login-page .user-type-btn {
+  width: 100%;
+  margin-top: 0;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font-size: 1rem;
+  border: 1px solid #dbe4ef;
+  background: #fff;
+  color: #0f172a;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login-page .user-type-btn:hover {
+  background: #f8fafc;
+  border-color: #c7d8ef;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.login-page .employee-btn {
+  border-color: rgba(29, 78, 216, 0.35);
+}
+
+.login-page .customer-btn {
+  border-color: rgba(14, 165, 233, 0.45);
+}
+
+.login-page .login-card--branded button[type="submit"] {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  border: none;
+  margin-top: 12px;
+}
+
+.login-page .login-card--branded button[type="submit"]:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1e40af, #172554);
+}
+
+.login-page .login-card--branded .back-button-top {
+  width: auto;
+  margin: 0 0 12px 0;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #dbe4ef;
+  font-size: 0.9rem;
+}
+
+.login-page .login-card--branded .back-button-top:hover {
+  background: #e2e8f0;
+}
+
+.login-page .login-card--branded h3 {
+  color: #1e40af;
+}
+
+.login-page .forgot-password-link {
+  color: #1d4ed8;
+}
+
+.login-page .signup-link a {
+  color: #1d4ed8;
+}
+
+/* Register page — wide card (many fields), same shell as Login */
+.login-page .register-card-wide {
+  max-width: 720px;
+}
+
+.login-page .register-footer-link {
+  text-align: center;
+  margin-top: 1.25rem;
+  color: #475569;
+}
+
+.login-page .register-footer-link a {
+  color: #1d4ed8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-page .register-footer-link a:hover {
+  text-decoration: underline;
+}
+
+.login-page .register-card-wide input:focus,
+.login-page .register-card-wide select:focus {
+  outline: none;
+  border-color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.18);
+}
+
+.login-page .register-card-wide label {
+  color: #334155;
+}
