@@ -19,20 +19,6 @@ export default function PackageTracking() {
     return () => window.removeEventListener('storage', onStorage)
   }, [])
 
-    fetch(`${import.meta.env.VITE_API_URL}/api/packages/${trackingNumber.trim()}/tracking`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch tracking info");
-        return res.json();
-      })
-      .then((data) => {
-        setResults(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-      
   const handleLogout = (e) => {
     e.preventDefault()
     localStorage.removeItem('token')

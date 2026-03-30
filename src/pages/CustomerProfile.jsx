@@ -25,7 +25,7 @@ export default function CustomerProfile() {
     const token = localStorage.getItem('token');
     if (!token) { navigate('/login'); return; }
 
-    fetch('${import.meta.env.VITE_API_URL}/api/customer/profile', {
+    fetch(`${import.meta.env.VITE_API_URL}/api/customer/profile`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(r => r.json())
@@ -57,7 +57,7 @@ export default function CustomerProfile() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('${import.meta.env.VITE_API_URL}/api/customer/profile', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/customer/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

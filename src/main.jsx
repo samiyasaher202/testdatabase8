@@ -5,20 +5,28 @@ import { RequireEmployee, RequireCustomer, RequireAuth } from './AuthGuard'
 
 // pages
 import Home from './pages/home'
+import Login from './pages/Login'
+
 import CustomerHome from './pages/customer_home'
 import EmployeeHome from './pages/employee_home'
+
+import Profile from './pages/Profile'
+import CustomerProfile from './pages/CustomerProfile'
+
+import Register from './pages/Register'
+import AdminRegister from './pages/AdminRegister'
+
 import AllPackages from './pages/package_list'
 import Inventory from './pages/inventory'
-import Login from './pages/Login'
-import Profile from './pages/Profile'
-import SupportTicket from './pages/SupportTicket'
-import AdminRegister from './pages/AdminRegister'
-import Register from './pages/Register'
+import AllCustomers from './pages/all_customers'
 import PackageTracking from './pages/package_tracking'
+
+import SupportTicket from './pages/SupportTicket'
+
 // // global styles
  import './pages/css/index.css'
-import CustomerProfile from './pages/CustomerProfile'
-import AllCustomers from './pages/all_customers'
+
+
 
 // global styles
 
