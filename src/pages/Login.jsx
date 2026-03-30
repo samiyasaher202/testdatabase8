@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import '../components/Auth.css';
+import React, { useState, useEffect } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import './css/home.css'
+import '../components/Auth.css'
+
+const API_BASE = import.meta.env.VITE_API_URL || ''
 
 const Login = () => {
   const [userType, setUserType] = useState(null); // 'employee' or 'customer'
@@ -28,9 +31,10 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const endpoint = userType === 'employee' 
-        ? 'http://localhost:5000/api/auth/login'
-        : 'http://localhost:5000/api/auth/customer-login';
+      const endpoint =
+        userType === 'employee'
+          ? `${API_BASE}/api/auth/login`
+          : `${API_BASE}/api/auth/customer-login`
 
       const payload = userType === 'employee'
         ? { email, password }
@@ -73,7 +77,7 @@ const Login = () => {
     setResetMessage('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+      const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: resetEmail })
@@ -104,11 +108,28 @@ const Login = () => {
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <h2>📬 Post Office Database</h2>
-        <p className="subtitle">Login Portal</p>
+    <div className="login-page">
+      <header className="site-header">
+        <div className="header-inner">
+          <Link className="logo" to="/">
+            National Postal Service
+          </Link>
+          <nav className="top-nav">
+            <button
+              type="button"
+              className="nav-back-btn"
+              onClick={() => navigate('/')}
+            >
+              ← Back
+            </button>
+          </nav>
+        </div>
+      </header>
 
+      <div className="login-page-body">
+        <div className="login-card login-card--branded">
+        <h2>Sign in</h2>
+        
         {!userType ? (
           // User Type Selection
           <div className="user-type-selection">
@@ -232,9 +253,10 @@ const Login = () => {
             </form>
           </>
         )}
+        </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 export default Login;

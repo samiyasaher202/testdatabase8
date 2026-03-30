@@ -1,75 +1,134 @@
-import { useNavigate } from 'react-router-dom'
-import "./css/customer_home.css";
-import skyline from "../assets/houston-skyline.jpeg";
+import { useNavigate, Link } from 'react-router-dom'
+import './css/home.css'
+import './css/customer_home.css'
+import skyline from '../assets/houston-skyline.jpeg'
+
+/** Name from localStorage `user` (customer login / register API shape). */
+function getStoredCustomerFullName() {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw) return null
+    const u = JSON.parse(raw)
+    const first = (u.First_Name ?? u.first_name ?? '').toString().trim()
+    const last = (u.Last_Name ?? u.last_name ?? '').toString().trim()
+    const full = [first, last].filter(Boolean).join(' ')
+    return full || null
+  } catch {
+    return null
+  }
+}
 
 export default function CustomerHome() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   function handleLogout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('userType');
-    navigate('/');
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('userType')
+    navigate('/')
   }
 
   return (
-    <>
-      <header className="navbar">
-        <h1>National Postal Service</h1>
-
-        <nav className="top-nav">
-          <a onClick={() => navigate('/')}>Home</a>
-          <a onClick={() => navigate('/track')}>Track Package</a>
-          <a onClick={() => navigate('/send')}>Send Package</a>
-          <a onClick={() => navigate('/history')}>History</a>
-          <a onClick={() => navigate('/store')}>Store</a>
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              handleLogout();
-            }}
-          >
-            Logout
-          </a>
-        </nav>
+    <div className="customer-home">
+      <header className="site-header">
+        <div className="header-inner">
+          <Link className="logo" to="/">
+            National Postal Service
+          </Link>
+          <nav className="top-nav">
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/')
+              }}
+            >
+              Home
+            </a>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/package_history')
+              }}
+            >
+              History
+            </a>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/package_list')
+              }}
+            >
+              Store
+            </a>
+            <button type="button" className="customer-nav-logout" onClick={handleLogout}>
+              Logout
+            </button>
+          </nav>
+        </div>
       </header>
 
       <main>
-        {/* Top Image */}
-        <div className="hero">
-          <img src={skyline} alt="Post Office" />
+        <div className="customer-hero">
+          <img src={skyline} alt="Post Office skyline" />
         </div>
 
-        <div className="welcome">
-          <h2>Welcome, Customer!</h2>
-        </div>
+        <section className="customer-welcome">
+          <h2>
+            Welcome, {getStoredCustomerFullName() ?? 'Customer'}
+          </h2>
+          <p className="customer-welcome-sub">Manage shipments and your account from one place.</p>
+        </section>
 
-        {/* Dashboard Cards */}
-        <div className="dashboard">
-          <div className="card">
-            <h2>Track a Package</h2>
-            <p>See where your package is in real time.</p>
-            <a onClick={() => navigate('/package_tracking')} className="button">Track Now</a>
-          </div>
+        <section className="customer-dashboard">
+          <div className="cards">
+            <div className="card">
+              <h3>Track a package</h3>
+              <p>See where your package is in real time.</p>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => navigate('/package_tracking')}
+              >
+                Track now
+              </button>
+            </div>
 
-          <div className="card">
-            <h2>Send a Package</h2>
-            <p>Ship your packages quickly and safely</p>
-            <a onClick={() => navigate('/send')} className="button">Send Now</a>
-          </div>
+            <div className="card">
+              <h3>Send a package</h3>
+              <p>Ship your packages quickly and safely.</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/ship_package')}>
+                Send now
+              </button>
+            </div>
 
-          <div className="card">
-            <h2>Account Info</h2>
-            <p>View your address, saved packages, and profile settings.</p>
-            <a onClick={() => navigate('/account')} className="button">View Account</a>
+            <div className="card">
+              <h3>Account info</h3>
+              <p>View your address, saved packages, and profile settings.</p>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => navigate('/customer_profile')}
+              >
+                View account
+              </button>
+            </div>
           </div>
-        </div>
+        </section>
       </main>
 
-      <footer>
-        <p>© National Postal Service</p>
+      <footer className="site-footer">
+        <div className="footer-inner">
+          <div>© National Postal Service</div>
+          <div className="footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Contact</a>
+            <a href="#">Locations</a>
+          </div>
+        </div>
       </footer>
-    </>
-  );
+    </div>
+  )
 }
