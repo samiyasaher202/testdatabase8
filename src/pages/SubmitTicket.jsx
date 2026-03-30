@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import './css/SupportTicket.css';
+import './css/SubmitTicket.css';
 
-function SupportTicket() {
+function SubmitTicket() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -133,4 +133,4 @@ function SupportTicket() {
   );
 }
 
-export default SupportTicket;
+export default SubmitTicket;

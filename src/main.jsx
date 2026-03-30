@@ -17,11 +17,12 @@ import Register from './pages/Register'
 import AdminRegister from './pages/AdminRegister'
 
 import AllPackages from './pages/package_list'
-import Inventory from './pages/inventory'
 import AllCustomers from './pages/all_customers'
+
+import Inventory from './pages/inventory'
 import PackageTracking from './pages/package_tracking'
 
-import SupportTicket from './pages/SupportTicket'
+import SubmitTicket from './pages/SubmitTicket'
 
 // // global styles
  import './pages/css/index.css'
@@ -49,14 +50,15 @@ function App() {
         <Route path="/package_list" element={<AllPackages/>} />
         <Route path="/package_history" element={<p>Package History — coming soon</p>} />
         <Route path="/inventory" element={<Inventory/>} />
-        <Route path="/submit_ticket" element={<p>Submit Ticket — coming soon</p>} />
-        <Route path="/support_tickets" element={<p>Support Tickets — coming soon</p>} />
+        <Route path="/submit_ticket" element={<SubmitTicket/>} />
+        <Route path="/support_tickets" element={<p> view all/ Select support ticket coming soon</p>}/>
         <Route path="/ship_package" element={<p>Ship Package — coming soon</p>} />
         <Route path="/customers" element={<AllCustomers/>} />
         <Route path="/admin-register" element={<AdminRegister />} />
+        <Route path="/customer_packages" element={<p>Customer packages, coming soon</p>} />
 
         {/* ── 404 ── */}
-        <Route path="/support" element={<RequireAuth><SupportTicket /></RequireAuth>} />
+        <Route path="/support" element={<RequireAuth><SubmitTicket /></RequireAuth>} />
         <Route path="*" element={<p>Page not found</p>} />
       </Routes>
     </BrowserRouter>

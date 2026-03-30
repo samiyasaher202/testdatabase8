@@ -49,16 +49,16 @@ export default function CustomerHome() {
               href="#"
               onClick={(e) => {
                 e.preventDefault()
-                navigate('/package_history')
+                navigate('/customer_packages')
               }}
             >
-              History
+              My Packages
             </a>
             <a
               href="#"
               onClick={(e) => {
                 e.preventDefault()
-                navigate('/package_list')
+                navigate('/inventory')
               }}
             >
               Store
@@ -113,6 +113,17 @@ export default function CustomerHome() {
                 onClick={() => navigate('/customer_profile')}
               >
                 View account
+              </button>
+            </div>
+            <div className="card">
+              <h3>Submit Support Ticket</h3>
+              <p>Submit a Support ticket for issues with your package.</p>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => navigate('/submit_ticket')}
+              >
+                Send now
               </button>
             </div>
           </div>
