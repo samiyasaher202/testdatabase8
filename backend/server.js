@@ -9,20 +9,67 @@ require('dotenv').config()
 const packagesDB  = require('./db/packages')
 const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
+const packageTrackDB = require('./db/package_track') 
 
 const app = express()
-app.use(cors())
+//server
+
+
+// ── CORS ──────────────────────────────────────────────────────────────────
+// const allowedOrigins = [
+//   'http://localhost:3000',
+//   'http://localhost:5173',
+//   'https://database-team8.vercel.app',
+//   'https://database-team8-qpd85osxz-erinbryants-projects.vercel.app',
+//   process.env.FRONTEND_URL, // e.g. https://your-app.vercel.app
+// ].filter(Boolean)
+ 
+// app.use(cors({
+//   origin: (origin, callback) => {
+//     if (!origin || allowedOrigins.includes(origin)) callback(null, true)
+//     else callback(new Error('Not allowed by CORS'))
+//   },
+//   credentials: true
+// }))
+ 
+// app.use(express.json())
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://database-team8.vercel.app',
+  /\.vercel\.app$/,              // ← covers ALL vercel preview URLs
+  process.env.FRONTEND_URL,
+].filter(Boolean)
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true) // allow non-browser requests
+    const allowed = allowedOrigins.some(o =>
+      o instanceof RegExp ? o.test(origin) : o === origin
+    )
+    allowed ? callback(null, true) : callback(new Error('Not allowed by CORS'))
+  },
+  credentials: true
+}))
 app.use(express.json())
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
-  host:               process.env.DB_HOST     || 'localhost',
-  port:               process.env.DB_PORT     || 3306,
-  user:               process.env.DB_USER     || 'root',
-  password:           process.env.DB_PASSWORD || 'MBobanza#2205',
-  database:           process.env.DB_NAME     || 'post_officedb',
+  host:     process.env.MYSQLHOST,
+  port:     process.env.MYSQLPORT     || 3306,
+  user:     process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQL_DATABASE,
+
+  // host:               process.env.DB_HOST     || 'localhost',
+  // port:               process.env.DB_PORT     || 3306,
+  // user:               process.env.DB_USER     || 'root',
+  // password:           process.env.DB_PASSWORD || 
+  // database:           process.env.DB_NAME     || 
+
   waitForConnections: true,
   connectionLimit:    10,
+  queueLimit:         0,
 })
 
 pool.getConnection()
@@ -63,9 +110,9 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT e.*, r.Role_Name, d.Department_Name
-       FROM Employee e
-       JOIN Role r       ON e.Role_ID       = r.Role_ID
-       JOIN Department d ON e.Department_ID = d.Department_ID
+       FROM employee e
+       JOIN role r       ON e.Role_ID       = r.Role_ID
+       JOIN department d ON e.Department_ID = d.Department_ID
        WHERE e.Email_Address = ?`,
       [email]
     )
@@ -99,16 +146,18 @@ app.post('/api/auth/customer-login', async (req, res) => {
 
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM Customer WHERE Email_Address = ?',
+      'SELECT * FROM customer WHERE Email_Address = ?',
       [email]
     )
+    console.log('Email searched:', email)       
+    console.log('Rows found:', rows.length)    
     if (!rows.length)
-      return res.status(401).json({ message: 'Invalid credentials' })
+      return res.status(401).json({ message: 'Invalid credentials: no user found with email' })
 
     const customer = rows[0]
     const valid = await bcrypt.compare(password, customer.Password_Hash)
     if (!valid)
-      return res.status(401).json({ message: 'Invalid credentials' })
+      return res.status(401).json({ message: 'Invalid credentials: password does not match' })
 
     const token = jwt.sign(
       { customer_id: customer.Customer_ID, email: customer.Email_Address, type: 'customer' },
@@ -186,7 +235,7 @@ app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res
   try {
     // Check if email already exists
     const [exists] = await pool.query(
-      'SELECT Employee_ID FROM Employee WHERE Email_Address = ?',
+      'SELECT Employee_ID FROM employee WHERE Email_Address = ?',
       [email]
     )
     if (exists.length) {
@@ -224,7 +273,7 @@ app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res
 
     // Insert new employee
     const [result] = await pool.query(
-      `INSERT INTO Employee
+      `INSERT INTO employee
          (Post_Office_ID, Role_ID, Department_ID, First_Name, Last_Name,
           Birth_Day, Birth_Month, Birth_Year, Password_Hash, Email_Address,
           Phone_Number, Sex, Salary, Hours_Worked)
@@ -264,11 +313,11 @@ app.get('/api/auth/profile', authenticate, async (req, res) => {
               CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
               r.Role_Name, d.Department_Name,
               po.City AS Office_City, po.State AS Office_State
-       FROM Employee e
-       JOIN Role r         ON e.Role_ID        = r.Role_ID
-       JOIN Department d   ON e.Department_ID  = d.Department_ID
-       JOIN Post_Office po ON e.Post_Office_ID = po.Post_Office_ID
-       LEFT JOIN Employee s ON e.Supervisor_ID = s.Employee_ID
+       FROM employee e
+       JOIN role r         ON e.Role_ID        = r.Role_ID
+       JOIN department d   ON e.Department_ID  = d.Department_ID
+       JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+       LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
        WHERE e.Employee_ID = ?`,
       [req.user.employee_id]
     )
@@ -286,7 +335,7 @@ app.put('/api/auth/profile', authenticate, async (req, res) => {
   const { Email_Address, Phone_Number } = req.body
   try {
     await pool.query(
-      'UPDATE Employee SET Phone_Number = ?, Email_Address = ? WHERE Employee_ID = ?',
+      'UPDATE employee SET Phone_Number = ?, Email_Address = ? WHERE Employee_ID = ?',
       [Phone_Number, Email_Address, req.user.employee_id]
     )
     const [rows] = await pool.query(
@@ -296,11 +345,11 @@ app.put('/api/auth/profile', authenticate, async (req, res) => {
               CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
               r.Role_Name, d.Department_Name,
               po.City AS Office_City, po.State AS Office_State
-       FROM Employee e
-       JOIN Role r         ON e.Role_ID        = r.Role_ID
-       JOIN Department d   ON e.Department_ID  = d.Department_ID
-       JOIN Post_Office po ON e.Post_Office_ID = po.Post_Office_ID
-       LEFT JOIN Employee s ON e.Supervisor_ID = s.Employee_ID
+       FROM employee e
+       JOIN role r         ON e.Role_ID        = r.Role_ID
+       JOIN department d   ON e.Department_ID  = d.Department_ID
+       JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+       LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
        WHERE e.Employee_ID = ?`,
       [req.user.employee_id]
     )
@@ -320,7 +369,7 @@ app.post('/api/auth/change-password', authenticate, async (req, res) => {
     return res.status(400).json({ message: 'New password must be at least 6 characters' })
   try {
     const [rows] = await pool.query(
-      'SELECT Password_Hash FROM Employee WHERE Employee_ID = ?',
+      'SELECT Password_Hash FROM employee WHERE Employee_ID = ?',
       [req.user.employee_id]
     )
     if (!rows.length) return res.status(404).json({ message: 'Employee not found' })
@@ -328,7 +377,7 @@ app.post('/api/auth/change-password', authenticate, async (req, res) => {
     if (!valid) return res.status(401).json({ message: 'Current password is incorrect' })
     const newHash = await bcrypt.hash(newPassword, 10)
     await pool.query(
-      'UPDATE Employee SET Password_Hash = ? WHERE Employee_ID = ?',
+      'UPDATE employee SET Password_Hash = ? WHERE Employee_ID = ?',
       [newHash, req.user.employee_id]
     )
     res.json({ message: 'Password changed successfully' })
@@ -345,7 +394,7 @@ app.get('/api/customer/profile', authenticate, async (req, res) => {
       `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
               Phone_Number, House_Number, Street, City, State,
               Zip_First3, Zip_Last2
-       FROM Customer WHERE Customer_ID = ?`,
+       FROM customer WHERE Customer_ID = ?`,
       [req.user.customer_id]
     )
     if (!rows.length)
@@ -362,7 +411,7 @@ app.put('/api/customer/profile', authenticate, async (req, res) => {
   const { Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2 } = req.body
   try {
     await pool.query(
-      `UPDATE Customer 
+      `UPDATE customer 
        SET Email_Address = ?, Phone_Number = ?,
            House_Number = ?, Street = ?, City = ?, State = ?,
            Zip_First3 = ?, Zip_Last2 = ?
@@ -373,7 +422,7 @@ app.put('/api/customer/profile', authenticate, async (req, res) => {
       `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
               Phone_Number, House_Number, Street, City, State,
               Zip_First3, Zip_Last2
-       FROM Customer WHERE Customer_ID = ?`,
+       FROM customer WHERE Customer_ID = ?`,
       [req.user.customer_id]
     )
     res.json({ message: 'Profile updated successfully', user: rows[0] })
@@ -464,7 +513,9 @@ app.post('/api/tickets', (req, res) => {
 // ════════════════════════════════════════════════════════════════════════════
 app.get('/api/customers', (req, res) => {
   customerDB.getAllCustomers(pool, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
+    //console.error('Customers error:', err)
+    if (err) 
+      return res.status(500).json({ error: err.message });
     res.json(results);
   });
 });
@@ -475,6 +526,19 @@ app.get('/api/customers/:id/packages', (req, res) => {
     res.json(results);
   });
 });
+
+//======================================================
+//package tracking
+//================================================================
+
+
+app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
+  const { tracking_number } = req.params
+  packageTrackDB.getPackageTracking(pool, tracking_number, (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error', details: err.message })
+    res.json(results)
+  })
+})
 
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000

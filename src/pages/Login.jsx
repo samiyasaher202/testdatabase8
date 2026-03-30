@@ -31,10 +31,9 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const endpoint =
-        userType === 'employee'
-          ? `${API_BASE}/api/auth/login`
-          : `${API_BASE}/api/auth/customer-login`
+      const endpoint = userType === 'employee' 
+        ? `${import.meta.env.VITE_API_URL}/api/auth/login`
+        : `${import.meta.env.VITE_API_URL}/api/auth/customer-login`;
 
       const payload = userType === 'employee'
         ? { email, password }
@@ -77,7 +76,7 @@ const Login = () => {
     setResetMessage('');
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+      const response = await fetch('${import.meta.env.VITE_API_URL}/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: resetEmail })

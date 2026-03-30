@@ -38,36 +38,36 @@ export default function PackageTracking() {
     setError(null)
     setPackageData(null)
 
-    try {
-      const id = encodeURIComponent(trackingNumber.trim())
-      const response = await fetch(`${API_BASE}/api/packages/track/${id}`)
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}))
-        throw new Error(errData.error || `Failed to fetch tracking information (${response.status})`)
-      }
-
-      const data = await response.json()
-      setPackageData(data)
-    } catch (err) {
-      setError(err.message || 'Failed to load tracking information')
-    } finally {
-      setLoading(false)
-    }
+    fetch(`${import.meta.env.VITE_API_URL}/api/packages/${trackingNumber.trim()}/tracking`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch tracking info");
+        return res.json();
+      })
+      .then((data) => {
+        setResults(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
   }
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') handleSearch()
+  function statusBadge(status) {
+    const s = (status || "").toLowerCase();
+    const style = s.includes("deliver") ? { background: "#d1fae5", color: "#065f46" }
+      : s.includes("transit")           ? { background: "#dbeafe", color: "#1e40af" }
+      : s.includes("delay")             ? { background: "#fee2e2", color: "#991b1b" }
+      :                                   { background: "#fef9c3", color: "#854d0e" };
+    return (
+      <span className="status-badge" style={style}>
+        {status || "Unknown"}
+      </span>
+    );
   }
 
-  const getStatusBadgeClass = (status) => {
-    const s = (status || '').toLowerCase()
-    if (s.includes('delivered')) return 'status-delivered'
-    if (s.includes('transit') || s.includes('shipping')) return 'status-transit'
-    if (s.includes('pending') || s.includes('processing')) return 'status-pending'
-    if (s.includes('delay') || s.includes('exception')) return 'status-delayed'
-    return 'status-default'
-  }
+  const shipments = (results || []).filter(r => r.Instance_Type === "Shipment");
+  const delivery  = (results || []).find(r  => r.Instance_Type === "Delivery");
 
   return (
     <div className="tracking-page">
