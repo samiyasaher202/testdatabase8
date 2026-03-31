@@ -1,4 +1,3 @@
-
 const express = require('express')
 const cors    = require('cors')
 const mysql   = require('mysql2/promise')
@@ -529,6 +528,38 @@ app.get('/api/customers', (req, res) => {
     res.json(results);
   });
 });
+// ── GET all support tickets ────────────────────────────────────────────────
+app.get('/api/tickets', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT st.Ticket_ID,
+             c.First_Name AS Customer_First, c.Last_Name AS Customer_Last,
+             p.Tracking_Number,
+             e.First_Name AS Employee_First, e.Last_Name AS Employee_Last,
+             st.Issue_Type, st.Description, st.Resolution_Note, st.Ticket_Status_Code
+      FROM Support_Ticket st
+      JOIN Customer c ON st.User_ID = c.Customer_ID
+      JOIN Employee e ON st.Assigned_Employee_ID = e.Employee_ID
+      JOIN Package p ON st.Package_ID = p.Tracking_Number
+      ORDER BY st.Ticket_ID DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching tickets:', err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  CUSTOMERS ROUTES
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/customers', (req, res) => {
+  customerDB.getAllCustomers(pool, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
 
 app.get('/api/customers/:id/packages', (req, res) => {
   customerDB.getCustomerPackages(pool, req.params.id, (err, results) => {
@@ -549,6 +580,42 @@ app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
     res.json(results)
   })
 })
+
+// ── Start ─────────────────────────────────────────────────────────────────
+// const PORT = process.env.PORT || 5000
+// app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
+// AUTO CALCULATE PRICES FOR PACKAGES
+
+// AUTO CALCULATE PRICES FOR PACKAGES
+app.get("/price", async (req, res) => {
+  const { weight, zone, packageType } = req.query;
+
+  if (!weight || !zone || !packageType) {
+    return res.status(400).json({ error: "Missing query parameters" });
+  }
+
+  try {
+    const query = `
+      SELECT Price
+      FROM package_pricing
+      WHERE Package_Type_Code = ?
+        AND ? BETWEEN Min_Weight AND Max_Weight
+        AND Zone = ?
+      LIMIT 1
+    `;
+
+    const [rows] = await pool.execute(query, [packageType, weight, zone]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Price not found for given inputs" });
+    }
+
+    res.json({ price: rows[0].Price });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
 
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
