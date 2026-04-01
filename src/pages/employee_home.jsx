@@ -41,7 +41,7 @@ export default function EmployeeHome() {
           Package History
         </button>
 
-        <button className="btn" onClick={() => navigate('/ship_package')}>
+        <button className="btn" onClick={() => navigate('/price_calculator')}>
           Ship Package
         </button>
 

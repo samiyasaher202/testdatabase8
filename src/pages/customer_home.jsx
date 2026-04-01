@@ -98,13 +98,13 @@ export default function CustomerHome() {
               </button>
             </div>
 
-            <div className="card">
+            {/* <div className="card">
               <h3>Send a package</h3>
               <p>Ship your packages quickly and safely.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/ship_package')}>
                 Send now
               </button>
-            </div>
+            </div> */}
 
             <div className="card">
               <h3>Account info</h3>
@@ -128,6 +128,19 @@ export default function CustomerHome() {
                 Send now
               </button>
             </div>
+
+            <div className="card">
+              <h3>Package Pricing</h3>
+              <p>Submit your package's information and recieve an estemated shipping price.</p>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => navigate('/price_calculator')}
+              >
+                Calculate
+              </button>
+            </div>
+            
           </div>
         </section>
       </main>

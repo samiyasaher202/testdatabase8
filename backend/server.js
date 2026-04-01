@@ -10,7 +10,7 @@ const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
 const packageTrackDB = require('./db/package_track') 
 
-const makePackage = require('./db/package_type')
+const calcPrice = require('./db/package_type')
 
 const app = express()
 //server
@@ -40,7 +40,7 @@ const allowedOrigins = [
   'http://localhost:5000',
   'http://localhost:4173',
   'https://database-team8.vercel.app',
-  /\.vercel\.app$/,              // covers all vercel preview URLs
+  /\.vercel\.app$/,              
   process.env.FRONTEND_URL,
 ].filter(Boolean)
 
@@ -601,31 +601,58 @@ app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
 
 // AUTO CALCULATE PRICES FOR PACKAGES
 
-app.get('/api/package_types', (req, res) => {
-  makePackage.getPackageTypes(pool, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
-  });
-});
+// app.get('/api/package_types', (req, res) => {
+//   makePackage.getPackageTypes(pool, (err, results) => {
+//     if (err) return res.status(500).json({ error: err.message });
+//     res.json(results);
+//   });
+// });
 
-app.get('/api/excess_fees', (req, res) => {
-  makePackage.getExcessFees(pool, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
-  });
-});
+// app.get('/api/excess_fees', (req, res) => {
+//   makePackage.getExcessFees(pool, (err, results) => {
+//     if (err) return res.status(500).json({ error: err.message });
+//     res.json(results);
+//   });
+// });
+
+// app.get('/api/price', async (req, res) => {
+//   const { excess_fee, package_type, weight, zone } = req.query;
+
+//   if (!weight || !zone || !package_type) {
+//     return res.status(400).json({ error: "Missing query parameters" });
+//   }
+
+//   const numWeight = parseFloat(weight);
+//   const numZone = parseInt(zone);
+//   calcPrice.getPrice(pool, excess_fee || null, package_type, numWeight, numZone, (err, results) => {
+//     if (err) return res.status(500).json({error: 'Database error in packagePrice server', details: err.message})
+//       res.json(results[0] || {});
+//   })
+
+// });
+
 
 app.get('/api/price', async (req, res) => {
   const { excess_fee, package_type, weight, zone } = req.query;
-
+  console.log('Price query params:', { excess_fee, package_type, weight, zone });
   if (!weight || !zone || !package_type) {
-    return res.status(400).json({ error: "Missing query parameters" });
+    return res.status(400).json({ error: "Missing required parameters" });
   }
-  makePackage.getPrice(pool, excess_fee || null, package_type, weight, zone, (err, results) => {
-    if (err) return res.status(500).json({errpr: 'Database error in packagePrice server', details: err.message})
-      res.json(results)
-  })
 
+  const numWeight = parseFloat(weight);
+  const numZone = parseInt(zone);
+
+  calcPrice.getPrice( pool, excess_fee || null, package_type, numWeight,numZone,
+    (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: "Database error", details: err.message });
+      }
+      if (!results || results.length === 0) {
+        return res.status(404).json({ error: "No pricing found for given parameters" });
+      }
+      res.json(results[0] || {});
+    }
+  );
 });
 //   try {
 //     const query = `
@@ -652,7 +679,7 @@ app.get('/api/price', async (req, res) => {
 
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
-app._router.stack
-  .filter(r => r.route)
-  .forEach(r => console.log(Object.keys(r.route.methods)[0].toUpperCase(), r.route.path))
+// app._router.stack
+//  .filter(r => r.route)
+//  .forEach(r => console.log(Object.keys(r.route.methods)[0].toUpperCase(), r.route.path))
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))

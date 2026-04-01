@@ -26,7 +26,7 @@ import SubmitTicket from './pages/SubmitTicket'
 
 //import SupportTicket from './pages/SupportTicket'
 //import EmployeeSupport from './pages/EmployeeSupport'
-import NewPackage from './pages/NewPackage'
+import PriceCalculator from './pages/price_calculator'
 
 
 // global styles
@@ -67,7 +67,7 @@ function App() {
         <Route path="/package_history" element={<p>Package History — coming soon</p>} />
         
         <Route path="/support_tickets" element={<p>Support Tickets — coming soon</p>} />
-        <Route path="/ship_package" element={<NewPackage/>} />
+        <Route path="/price_calculator" element={<PriceCalculator/>} />
 
         {/* 404 */}
         <Route path="*" element={<p>Page not found</p>} />
