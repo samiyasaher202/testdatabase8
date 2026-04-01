@@ -1,39 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export default function BarebonesPriceCalculator() {
+
+export default function PriceCalculator() {
+  const [packageTypes, setPackageTypes] = useState([]);
+  const [excessFees, setExcessFees] = useState([]);
+  const [packageType, setPackageType] = useState("");
+  const [excessFee, setExcessFee] = useState("");
   const [weight, setWeight] = useState("");
   const [zone, setZone] = useState("");
-  const [packageType, setPackageType] = useState("GEN");
   const [price, setPrice] = useState(null);
   const [error, setError] = useState(null);
 
-  const fetchPrice = async () => {
-    if (!weight || !zone) {
-      setError("Please select weight and zone");
-      setPrice(null);
-      return;
-    }
+  useEffect(() => {
+      fetch(`${import.meta.env.VITE_API_URL}/api/package_types`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to load packages");
+          return res.json();
+        })
+        //.then((data) => setPackageTypes(data))
+        
+        .then((data) => {
+         console.log("package types:", data); // add this
+        setPackageTypes(data);
+        //.catch((err) => setError(err.message));
+})
 
-    try {
-      const response = await fetch(
-        `http://localhost:5000/price?weight=${weight}&zone=${zone}&packageType=${packageType}`
-      );
+      fetch(`${import.meta.env.VITE_API_URL}/api/excess_fees`)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load excess fees");
+        return res.json();
+      })
+      .then(data => setExcessFees(data))
+      .catch(err => setError(err.message));
+  }, []);
 
-      if (!response.ok) {
-        const errData = await response.json();
-        setError(errData.error || "Failed to fetch price");
-        setPrice(null);
-        return;
-      }
-
-      const data = await response.json();
-      setPrice(data.price);
-      setError(null);
-    } catch (err) {
-      console.error(err);
-      setError("Server error");
-      setPrice(null);
-    }
+  const fetchPrice =() =>{
+    fetch(`${import.meta.env.VITE_API_URL}/api/price?excess_fee=${excessFee}&package_type=${packageType}&weight=${weight}&zone=${zone}`)
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load package Price");
+        return res.json();
+      })
+      .then(data => setPrice(data.Tot_Price))
+      .catch(err => setError(err.message));
   };
 
   return (
@@ -55,6 +63,7 @@ export default function BarebonesPriceCalculator() {
       <div>
         <label>
           Zone:
+{/*need to fix later so that the zone calc comes from two zipcodes, from zipcode and to zipcode */}
           <select value={zone} onChange={(e) => setZone(e.target.value)}>
             <option value="">Select Zone</option>
             {[...Array(9)].map((_, i) => (
@@ -73,9 +82,24 @@ export default function BarebonesPriceCalculator() {
             value={packageType}
             onChange={(e) => setPackageType(e.target.value)}
           >
-            <option value="GEN">General</option>
-            <option value="EXP">Expedited</option>
-            <option value="OVR">Oversized</option>
+            <option value="">Select Package Type</option>
+            {packageTypes.map(row =>(
+              <option key={row.Type_Name} value={row.Type_Name}>{row.Type_Name}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div>
+        <label>
+          Excess Fee:
+          <select
+            value={excessFee}
+            onChange={(e) => setExcessFee(e.target.value)}
+          >
+            <option value="">Select Excess Fee</option>
+            {excessFees.map(row =>(
+              <option key = {row.Type_Name} value={row.Type_Name}>{row.Type_Name}</option>
+            ))}
           </select>
         </label>
       </div>

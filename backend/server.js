@@ -10,6 +10,8 @@ const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
 const packageTrackDB = require('./db/package_track') 
 
+const makePackage = require('./db/package_type')
+
 const app = express()
 //server
 
@@ -35,6 +37,7 @@ const app = express()
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
+  'http://localhost:5000',
   'https://database-team8.vercel.app',
   /\.vercel\.app$/,              // covers all vercel preview URLs
   process.env.FRONTEND_URL,
@@ -42,6 +45,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
+    console.log('Request origin:', origin)
     if (!origin) return callback(null, true) 
     const allowed = allowedOrigins.some(o =>
       o instanceof RegExp ? o.test(origin) : o === origin
@@ -70,6 +74,14 @@ const pool = mysql.createPool({
   connectionLimit:    10,
   queueLimit:         0,
 })
+
+pool.query('SELECT DATABASE() AS db')
+  .then(([rows]) => {
+    console.log('Currently connected to database:', rows[0].db);
+  })
+  .catch(err => {
+    console.error('Error connecting to DB:', err);
+  });
 
 pool.getConnection()
   .then(c => { console.log('✅ MySQL connected'); c.release() })
@@ -587,36 +599,59 @@ app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
 // AUTO CALCULATE PRICES FOR PACKAGES
 
 // AUTO CALCULATE PRICES FOR PACKAGES
-app.get("/price", async (req, res) => {
-  const { weight, zone, packageType } = req.query;
 
-  if (!weight || !zone || !packageType) {
+app.get('/api/package_types', (req, res) => {
+  makePackage.getPackageTypes(pool, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+app.get('/api/excess_fees', (req, res) => {
+  makePackage.getExcessFees(pool, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+app.get('/api/price', async (req, res) => {
+  const { excess_fee, package_type, weight, zone } = req.query;
+
+  if (!weight || !zone || !package_type) {
     return res.status(400).json({ error: "Missing query parameters" });
   }
+  makePackage.getPrice(pool, excess_fee || null, package_type, weight, zone, (err, results) => {
+    if (err) return res.status(500).json({errpr: 'Database error in packagePrice server', details: err.message})
+      res.json(results)
+  })
 
-  try {
-    const query = `
-      SELECT Price
-      FROM package_pricing
-      WHERE Package_Type_Code = ?
-        AND ? BETWEEN Min_Weight AND Max_Weight
-        AND Zone = ?
-      LIMIT 1
-    `;
-
-    const [rows] = await pool.execute(query, [packageType, weight, zone]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: "Price not found for given inputs" });
-    }
-
-    res.json({ price: rows[0].Price });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Database error" });
-  }
 });
+//   try {
+//     const query = `
+//       SELECT Price
+//       FROM package_pricing
+//       WHERE Package_Type_Code = ?
+//         AND ? BETWEEN Min_Weight AND Max_Weight
+//         AND Zone = ?
+//       LIMIT 1
+//     `;
+
+//     const [rows] = await pool.execute(query, [packageType, weight, zone]);
+
+//     if (rows.length === 0) {
+//       return res.status(404).json({ error: "Price not found for given inputs" });
+//     }
+
+//     res.json({ price: rows[0].Price });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Database error" });
+//   }
+//});
 
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
+app._router.stack
+  .filter(r => r.route)
+  .forEach(r => console.log(Object.keys(r.route.methods)[0].toUpperCase(), r.route.path))
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))

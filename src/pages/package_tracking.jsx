@@ -6,6 +6,10 @@ import './css/package_tracking.css'
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export default function PackageTracking() {
+console.log("VITE_API_URL =", import.meta.env.VITE_API_URL);
+//console.log(import.meta.env.VITE_TEST);
+console.log("API_BASE", API_BASE);
+//console.log(import.meta.env.VITE_API_URL);
   const navigate = useNavigate()
   const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('token'))
   const [trackingNumber, setTrackingNumber] = useState('')
