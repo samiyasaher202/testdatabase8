@@ -38,6 +38,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5000',
+  'http://localhost:4173',
   'https://database-team8.vercel.app',
   /\.vercel\.app$/,              // covers all vercel preview URLs
   process.env.FRONTEND_URL,
