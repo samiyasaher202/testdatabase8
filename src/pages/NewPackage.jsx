@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export default function PriceCalculator() {
   const [packageTypes, setPackageTypes] = useState([]);
@@ -12,7 +13,7 @@ export default function PriceCalculator() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-      fetch(`${import.meta.env.VITE_API_URL}/api/package_types`)
+      fetch(`${API_BASE}/api/package_types`)
         .then((res) => {
           if (!res.ok) throw new Error("Failed to load packages");
           return res.json();
@@ -25,7 +26,7 @@ export default function PriceCalculator() {
         //.catch((err) => setError(err.message));
 })
 
-      fetch(`${import.meta.env.VITE_API_URL}/api/excess_fees`)
+      fetch(`${API_BASE}/api/excess_fees`)
       .then(res => {
         if (!res.ok) throw new Error("Failed to load excess fees");
         return res.json();
@@ -35,7 +36,7 @@ export default function PriceCalculator() {
   }, []);
 
   const fetchPrice =() =>{
-    fetch(`${import.meta.env.VITE_API_URL}/api/price?excess_fee=${excessFee}&package_type=${packageType}&weight=${weight}&zone=${zone}`)
+    fetch(`${API_BASE}/api/price?excess_fee=${excessFee}&package_type=${packageType}&weight=${weight}&zone=${zone}`)
       .then(res => {
         if (!res.ok) throw new Error("Failed to load package Price");
         return res.json();

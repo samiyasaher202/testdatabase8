@@ -17,7 +17,7 @@ export default function Inventory() {
   const [stockFilter, setStockFilter] = useState("");
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/inventory`)
+    fetch(`${API_BASE}/api/inventory`)
     //fetch(`${API_BASE}/api/inventory`)
     
       .then((res) => {

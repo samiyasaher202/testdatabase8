@@ -2,6 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../layout'
 import '../components/button.css'
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 export default function EmployeeHome() {
   const navigate = useNavigate();
 
