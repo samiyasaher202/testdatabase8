@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './css/SubmitTicket.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 function SubmitTicket() {
   const [formData, setFormData] = useState({
     name: '',
@@ -24,7 +26,7 @@ function SubmitTicket() {
     e.preventDefault();
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/tickets`, {
+      const response = await fetch(`${API_BASE}/api/tickets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

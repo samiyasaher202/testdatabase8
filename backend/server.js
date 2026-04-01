@@ -1,4 +1,3 @@
-
 const express = require('express')
 const cors    = require('cors')
 const mysql   = require('mysql2/promise')
@@ -10,6 +9,8 @@ const packagesDB  = require('./db/packages')
 const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
 const packageTrackDB = require('./db/package_track') 
+
+const calcPrice = require('./db/package_type')
 
 const app = express()
 //server
@@ -36,13 +37,16 @@ const app = express()
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
+  'http://localhost:5000',
+  'http://localhost:4173',
   'https://database-team8.vercel.app',
-  /\.vercel\.app$/,              // covers all vercel preview URLs
+  /\.vercel\.app$/,              
   process.env.FRONTEND_URL,
 ].filter(Boolean)
 
 app.use(cors({
   origin: (origin, callback) => {
+    console.log('Request origin:', origin)
     if (!origin) return callback(null, true) 
     const allowed = allowedOrigins.some(o =>
       o instanceof RegExp ? o.test(origin) : o === origin
@@ -71,6 +75,14 @@ const pool = mysql.createPool({
   connectionLimit:    10,
   queueLimit:         0,
 })
+
+pool.query('SELECT DATABASE() AS db')
+  .then(([rows]) => {
+    console.log('Currently connected to database:', rows[0].db);
+  })
+  .catch(err => {
+    console.error('Error connecting to DB:', err);
+  });
 
 pool.getConnection()
   .then(c => { console.log('✅ MySQL connected'); c.release() })
@@ -529,6 +541,38 @@ app.get('/api/customers', (req, res) => {
     res.json(results);
   });
 });
+// ── GET all support tickets ────────────────────────────────────────────────
+app.get('/api/tickets', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT st.Ticket_ID,
+             c.First_Name AS Customer_First, c.Last_Name AS Customer_Last,
+             p.Tracking_Number,
+             e.First_Name AS Employee_First, e.Last_Name AS Employee_Last,
+             st.Issue_Type, st.Description, st.Resolution_Note, st.Ticket_Status_Code
+      FROM Support_Ticket st
+      JOIN Customer c ON st.User_ID = c.Customer_ID
+      JOIN Employee e ON st.Assigned_Employee_ID = e.Employee_ID
+      JOIN Package p ON st.Package_ID = p.Tracking_Number
+      ORDER BY st.Ticket_ID DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching tickets:', err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  CUSTOMERS ROUTES
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/customers', (req, res) => {
+  customerDB.getAllCustomers(pool, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
 
 app.get('/api/customers/:id/packages', (req, res) => {
   customerDB.getCustomerPackages(pool, req.params.id, (err, results) => {
@@ -551,5 +595,91 @@ app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
 })
 
 // ── Start ─────────────────────────────────────────────────────────────────
+// const PORT = process.env.PORT || 5000
+// app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
+// AUTO CALCULATE PRICES FOR PACKAGES
+
+// AUTO CALCULATE PRICES FOR PACKAGES
+
+// app.get('/api/package_types', (req, res) => {
+//   makePackage.getPackageTypes(pool, (err, results) => {
+//     if (err) return res.status(500).json({ error: err.message });
+//     res.json(results);
+//   });
+// });
+
+// app.get('/api/excess_fees', (req, res) => {
+//   makePackage.getExcessFees(pool, (err, results) => {
+//     if (err) return res.status(500).json({ error: err.message });
+//     res.json(results);
+//   });
+// });
+
+// app.get('/api/price', async (req, res) => {
+//   const { excess_fee, package_type, weight, zone } = req.query;
+
+//   if (!weight || !zone || !package_type) {
+//     return res.status(400).json({ error: "Missing query parameters" });
+//   }
+
+//   const numWeight = parseFloat(weight);
+//   const numZone = parseInt(zone);
+//   calcPrice.getPrice(pool, excess_fee || null, package_type, numWeight, numZone, (err, results) => {
+//     if (err) return res.status(500).json({error: 'Database error in packagePrice server', details: err.message})
+//       res.json(results[0] || {});
+//   })
+
+// });
+
+
+app.get('/api/price', async (req, res) => {
+  const { excess_fee, package_type, weight, zone } = req.query;
+  console.log('Price query params:', { excess_fee, package_type, weight, zone });
+  if (!weight || !zone || !package_type) {
+    return res.status(400).json({ error: "Missing required parameters" });
+  }
+
+  const numWeight = parseFloat(weight);
+  const numZone = parseInt(zone);
+
+  calcPrice.getPrice( pool, excess_fee || null, package_type, numWeight,numZone,
+    (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: "Database error", details: err.message });
+      }
+      if (!results || results.length === 0) {
+        return res.status(404).json({ error: "No pricing found for given parameters" });
+      }
+      res.json(results[0] || {});
+    }
+  );
+});
+//   try {
+//     const query = `
+//       SELECT Price
+//       FROM package_pricing
+//       WHERE Package_Type_Code = ?
+//         AND ? BETWEEN Min_Weight AND Max_Weight
+//         AND Zone = ?
+//       LIMIT 1
+//     `;
+
+//     const [rows] = await pool.execute(query, [packageType, weight, zone]);
+
+//     if (rows.length === 0) {
+//       return res.status(404).json({ error: "Price not found for given inputs" });
+//     }
+
+//     res.json({ price: rows[0].Price });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Database error" });
+//   }
+//});
+
+// ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
+// app._router.stack
+//  .filter(r => r.route)
+//  .forEach(r => console.log(Object.keys(r.route.methods)[0].toUpperCase(), r.route.path))
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))

@@ -3,6 +3,8 @@ import "./css/packages.css";
 import skyline from "../assets/houston-skyline.jpeg";
 import React from 'react'
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 export default function AllCustomers() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +15,7 @@ export default function AllCustomers() {
   const [customerPackages, setCustomerPackages] = useState({});
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/customers`)
+    fetch(`${API_BASE}/api/customers`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load customers");
         return res.json();
@@ -49,7 +51,7 @@ function toggleExpand(id) {
     return;
     }
     setExpanded(id);
-    fetch(`${import.meta.env.VITE_API_URL}/api/customers/${id}/packages`)
+    fetch(`${API_BASE}/api/customers/${id}/packages`)
     .then(res => res.json())
     .then(data => setCustomerPackages(prev => ({ ...prev, [id]: data })))
     .catch(() => setCustomerPackages(prev => ({ ...prev, [id]: [] })));
