@@ -67,8 +67,8 @@ const Register = () => {
     setLoading(true)
 
     try {
-      //const response = await fetch('${import.meta.env.VITE_API_URL}/api/customer/register', {
-      const url = `${import.meta.env.VITE_API_URL}/api/customer/register`
+      const url = `${API_BASE}/api/customer/register`
+      console.log('Fetching:', url)
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
