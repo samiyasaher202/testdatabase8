@@ -1,26 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import './css/home.css'
 import '../components/Auth.css'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
-
-/** User-friendly message when fetch returns !ok (502 = proxy cannot reach backend). */
-function getRegistrationErrorMessage(status, data) {
-  if (data && typeof data.message === 'string' && data.message.trim()) {
-    return data.message
-  }
-  if (status === 502 || status === 503) {
-    return (
-      'Cannot reach the API server (502). Start the backend: open a terminal in the project, run "cd backend" then "npm start" ' +
-      '(server must listen on the same port as Vite’s proxy, usually 5000), then try again.'
-    )
-  }
-  if (status === 504) {
-    return 'The registration request timed out. Try again or check that the backend is running.'
-  }
-  return `Registration failed (status ${status})`
-}
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -68,7 +50,6 @@ const Register = () => {
 
     try {
       const url = `${API_BASE}/api/customer/register`
-      console.log('Fetching:', url)
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,7 +87,8 @@ const Register = () => {
       }
 
       if (!response.ok) {
-        setError(getRegistrationErrorMessage(response.status, data))
+        const errorMsg = data.message || `Registration failed (status ${response.status})`
+        setError(errorMsg)
         console.error('Registration failed', { status: response.status, body: data })
         return
       }
@@ -128,28 +110,11 @@ const Register = () => {
   }
 
   return (
-    <div className="login-page">
-      <header className="site-header">
-        <div className="header-inner">
-          <Link className="logo" to="/">
-            National Postal Service
-          </Link>
-          <nav className="top-nav">
-            <button
-              type="button"
-              className="nav-back-btn"
-              onClick={() => navigate('/')}
-            >
-              ← Back
-            </button>
-          </nav>
-        </div>
-      </header>
+    <div className="register-container">
+      <div className="register-card">
+        <h2>Create a Post Office 8 account</h2>
+        <p className="subtitle">Customer registration</p>
 
-      <div className="login-page-body">
-        <div className="login-card login-card--branded register-card-wide">
-        <h2>Create an account</h2>
-        
         <form onSubmit={handleSubmit}>
           {error && <div className="error-message">{error}</div>}
 
@@ -409,15 +374,14 @@ const Register = () => {
             </div>
           </div>
 
-          <button type="submit" disabled={loading}>
+          <button type="submit" disabled={loading} className="submit-btn">
             {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
-        <p className="login-link register-footer-link">
-          Already have an account? <Link to="/login">Sign in</Link>
+        <p className="login-link">
+          Already have an account? <Link to="/login">Login</Link>
         </p>
-        </div>
       </div>
     </div>
   )

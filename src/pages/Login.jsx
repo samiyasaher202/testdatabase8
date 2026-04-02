@@ -18,17 +18,21 @@ const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-  const token = localStorage.getItem('token');
-  const userType = localStorage.getItem('userType');
-  if (token) {
-    navigate(userType === 'employee' ? '/employee_home' : '/customer_home');
-  }
-}, []);
+    const token = localStorage.getItem('token')
+    const storedType = localStorage.getItem('userType')
+    if (token) {
+      navigate(storedType === 'employee' ? '/employee_home' : '/customer_home')
+    }
+  }, [navigate])
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+    e.preventDefault()
+    if (!userType) {
+      setError('Please choose Employee or Customer.')
+      return
+    }
+    setError('')
+    setLoading(true)
 
     try {
       // const endpoint = userType === 'employee' 
@@ -49,10 +53,25 @@ const Login = () => {
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      const raw = await response.text();
+      const contentType = response.headers.get('content-type') || '';
+      let data = {};
+      if (raw && contentType.includes('application/json')) {
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          // If the server responded with invalid/partial JSON, fall back to a generic error below.
+          data = {};
+        }
+      }
 
       if (!response.ok) {
-        setError(data.message || 'Login failed');
+        setError(data.message || raw || 'Login failed');
+        return;
+      }
+
+      if (!data.token || !data.user) {
+        setError('Invalid response from server. Please try again.');
         return;
       }
 
