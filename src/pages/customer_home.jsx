@@ -56,15 +56,6 @@ export default function CustomerHome() {
             >
               My Packages
             </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/inventory')
-              }}
-            >
-              Store
-            </a>
             <button type="button" className="customer-nav-logout" onClick={handleLogout}>
               Logout
             </button>
