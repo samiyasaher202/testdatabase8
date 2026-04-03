@@ -1,10 +1,10 @@
-
+const path = require('path')
 const express = require('express')
 const cors    = require('cors')
 const mysql   = require('mysql2/promise')
 const bcrypt  = require('bcryptjs')
 const jwt     = require('jsonwebtoken')
-require('dotenv').config()
+require('dotenv').config({ path: path.join(__dirname, '.env') })
 
 const packagesDB  = require('./db/packages')
 const inventoryDB = require('./db/inventory')

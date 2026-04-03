@@ -42,6 +42,17 @@ export default function Home() {
                     Customer Portal
                   </a>
                 )}
+                {localStorage.getItem('userType') === 'employee' && (
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      navigate('/employee_home')
+                    }}
+                  >
+                    Dashboard
+                  </a>
+                )}
                 <a href="#" onClick={handleLogout}>
                   Logout
                 </a>

@@ -1,0 +1,84 @@
+/* All packages — extends inventory.css / home.css */
+
+.package-list-page .pkg-expand-btn {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  margin: 0;
+  width: auto;
+  background: linear-gradient(135deg, var(--primary, #1d4ed8), var(--primary-strong, #1e40af));
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.package-list-page .pkg-expand-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(30, 64, 175, 0.25);
+}
+
+.package-list-page .detail-row td {
+  background: #f8fafc !important;
+  padding: 18px 20px !important;
+  border-top: 1px solid var(--border, #dbe4ef);
+}
+
+.package-list-page .detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px 24px;
+}
+
+.package-list-page .detail-item label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary-strong, #1e40af);
+  margin-bottom: 4px;
+}
+
+.package-list-page .detail-item p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text, #0f172a);
+}
+
+.package-list-page .status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.package-list-page .status-badge.status-delivered {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.package-list-page .status-badge.status-transit {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.package-list-page .status-badge.status-pending {
+  background: #fef3c7;
+  color: #854d0e;
+}
+
+.package-list-page .status-badge.status-delayed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.package-list-page .status-badge.status-default {
+  background: #f1f5f9;
+  color: #475569;
+}

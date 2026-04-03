@@ -1,0 +1,71 @@
+/* Employee home — matches customer_home / home.css */
+
+.employee-home main {
+  padding: 0;
+  background: var(--bg, #f3f7fc);
+}
+
+.employee-hero {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  line-height: 0;
+}
+
+.employee-hero img {
+  width: 100%;
+  max-width: 100%;
+  height: min(400px, 42vh);
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.employee-welcome {
+  text-align: center;
+  padding: 40px 20px 12px;
+  max-width: var(--container, 1180px);
+  margin: 0 auto;
+}
+
+.employee-welcome h2 {
+  margin: 0 0 10px;
+  font-size: clamp(1.6rem, 2.5vw, 2.1rem);
+  color: var(--text, #0f172a);
+  letter-spacing: -0.03em;
+}
+
+.employee-welcome-sub {
+  margin: 0;
+  color: var(--text-soft, #475569);
+  font-size: 1.05rem;
+}
+
+.employee-dashboard {
+  padding: 8px 0 56px;
+  width: min(var(--container, 1180px), calc(100% - 56px));
+  margin: 0 auto;
+}
+
+.employee-dashboard .cards {
+  margin-top: 8px;
+}
+
+.employee-dashboard .card .btn {
+  margin-top: 8px;
+  width: auto;
+  display: inline-block;
+}
+
+@media (max-width: 760px) {
+  .employee-home .header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .employee-home .top-nav {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+}

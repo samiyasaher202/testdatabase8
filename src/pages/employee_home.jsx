@@ -1,56 +1,178 @@
-import { useNavigate } from 'react-router-dom'
-import Layout from '../layout'
-import '../components/button.css'
+import { useNavigate, Link } from 'react-router-dom'
+import './css/home.css'
+import './css/employee_home.css'
+import skyline from '../assets/houston-skyline.jpeg'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+/** Name from localStorage `user` (employee login API returns Employee row fields). */
+function getStoredEmployeeFullName() {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw) return null
+    const u = JSON.parse(raw)
+    const first = (u.First_Name ?? u.first_name ?? '').toString().trim()
+    const last = (u.Last_Name ?? u.last_name ?? '').toString().trim()
+    const full = [first, last].filter(Boolean).join(' ')
+    return full || null
+  } catch {
+    return null
+  }
+}
 
 export default function EmployeeHome() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+
+  function handleLogout(e) {
+    e.preventDefault()
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('userType')
+    navigate('/')
+  }
 
   return (
-    <Layout buttonLabel="Logout" buttonHref="/">
+    <div className="employee-home">
+      <header className="site-header">
+        <div className="header-inner">
+          <Link className="logo" to="/">
+            National Postal Service
+          </Link>
+          <nav className="top-nav">
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/')
+              }}
+            >
+              Home
+            </a>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/package_list')
+              }}
+            >
+              Packages
+            </a>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/inventory')
+              }}
+            >
+              Inventory
+            </a>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/employee_home')
+              }}
+            >
+              Dashboard
+            </a>
+            <a href="#" onClick={handleLogout}>
+              Logout
+            </a>
+          </nav>
+        </div>
+      </header>
 
-      {/* ── PAGE TITLE ── */}
-      <h2>Welcome to Post Office 8</h2>
-      <p>What would you like to do today?</p>
+      <main>
+        <div className="employee-hero">
+          <img src={skyline} alt="Post Office skyline" />
+        </div>
 
-      {/* ── NAVIGATION BUTTONS ── */}
-      <div className="button-group">
+        <section className="employee-welcome">
+          <h2>
+            Welcome, {getStoredEmployeeFullName() ?? 'Employee'}
+          </h2>
+          <p className="employee-welcome-sub">
+            Tools for post office staff — packages, inventory, and customer records.
+          </p>
+        </section>
 
-        <button className="btn" onClick={() => navigate('/profile')}>
-          Profile
-        </button>
+        <section className="employee-dashboard">
+          <div className="cards">
+            <div className="card">
+              <h3>Profile</h3>
+              <p>View and update your employee profile.</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/profile')}>
+                Open profile
+              </button>
+            </div>
 
-        <button className="btn" onClick={() => navigate('/inventory')}>
-          Stock
-        </button>
+            <div className="card">
+              <h3>Stock &amp; inventory</h3>
+              <p>Check product levels across locations.</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/inventory')}>
+                View inventory
+              </button>
+            </div>
 
-        <button className="btn" onClick={() => navigate('/support_tickets')}>
-          Support Tickets
-        </button>
+            <div className="card">
+              <h3>Support tickets</h3>
+              <p>Review and manage customer support requests.</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/support_tickets')}>
+                Open tickets
+              </button>
+            </div>
 
-        <button className="btn" onClick={() => navigate('/package_list')}>
-          Packages
-        </button>
+            <div className="card">
+              <h3>Packages</h3>
+              <p>Browse and manage package records.</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/package_list')}>
+                View packages
+              </button>
+            </div>
 
-        <button className="btn" onClick={() => navigate('/package_tracking')}>
-          Package Lookup
-        </button>
+            <div className="card">
+              <h3>Package lookup</h3>
+              <p>Track a package by tracking number.</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/package_tracking')}>
+                Track package
+              </button>
+            </div>
 
-        <button className="btn" onClick={() => navigate('/package_history')}>
-          Package History
-        </button>
+            <div className="card">
+              <h3>Package history</h3>
+              <p>Historical package activity (coming soon).</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/package_history')}>
+                View history
+              </button>
+            </div>
 
-        <button className="btn" onClick={() => navigate('/price_calculator')}>
-          Ship Package
-        </button>
+            <div className="card">
+              <h3>Shipping pricing</h3>
+              <p>Estimate shipping costs from weight, zone, and type.</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/price_calculator')}>
+                Price calculator
+              </button>
+            </div>
 
-        <button className="btn" onClick={() => navigate('/customers')}>
-          Customers
-        </button>
+            <div className="card">
+              <h3>Customers</h3>
+              <p>Search and manage customer accounts.</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/customers')}>
+                View customers
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
 
-      </div>
-
-    </Layout>
+      <footer className="site-footer">
+        <div className="footer-inner">
+          <div>© {new Date().getFullYear()} National Postal Service</div>
+          <div className="footer-links">
+            <a href="#">Privacy</a>
+            <a href="#">Contact</a>
+            <a href="#">Locations</a>
+          </div>
+        </div>
+      </footer>
+    </div>
   )
 }
