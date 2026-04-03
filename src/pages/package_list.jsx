@@ -28,6 +28,8 @@ export default function AllPackages() {
   const [filterValue, setFilterValue] = useState('')
   const [sortValue, setSortValue] = useState('')
   const [expanded, setExpanded] = useState(null)
+  const [statusCodes, setStatusCodes] = useState([])
+  const [statusUpdating, setStatusUpdating] = useState(null)
 
   useEffect(() => {
     fetch(`${API_BASE}/api/packages`)
@@ -44,6 +46,54 @@ export default function AllPackages() {
         setLoading(false)
       })
   }, [])
+
+  useEffect(() => {
+    if (userType !== 'employee') return
+    const token = localStorage.getItem('token')
+    fetch(`${API_BASE}/api/status-codes`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error('status codes')
+        return r.json()
+      })
+      .then(setStatusCodes)
+      .catch(() => setStatusCodes([]))
+  }, [userType])
+
+  async function handleStatusChange(trackingNumber, statusCodeStr) {
+    const token = localStorage.getItem('token')
+    setStatusUpdating(trackingNumber)
+    setError(null)
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/employee/packages/${encodeURIComponent(trackingNumber)}/status`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status_code: Number(statusCodeStr) }),
+        }
+      )
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.message || 'Could not update status')
+      const code = Number(statusCodeStr)
+      setPackages((prev) => {
+        const name = statusCodes.find((s) => s.Status_Code === code)?.Status_Name
+        return prev.map((row) =>
+          row.Tracking_Number === trackingNumber
+            ? { ...row, Delivery_Status_Code: code, Status_Name: name ?? row.Status_Name }
+            : row
+        )
+      })
+    } catch (err) {
+      setError(err.message || 'Status update failed')
+    } finally {
+      setStatusUpdating(null)
+    }
+  }
 
   let filtered = packages.filter((p) => {
     const q = search.toLowerCase()
@@ -219,9 +269,25 @@ export default function AllPackages() {
                         <td>{p.Requires_Signature ? 'Yes' : 'No'}</td>
                         <td>{p.Date_Created ? new Date(p.Date_Created).toLocaleDateString() : '—'}</td>
                         <td>
-                          <span className={`status-badge ${getStatusBadgeClass(p.Status_Name)}`}>
-                            {p.Status_Name || '—'}
-                          </span>
+                          {userType === 'employee' && statusCodes.length > 0 && p.Delivery_Status_Code != null ? (
+                            <select
+                              className="pkg-status-select"
+                              aria-label={`Status for ${p.Tracking_Number}`}
+                              value={String(p.Delivery_Status_Code)}
+                              onChange={(e) => handleStatusChange(p.Tracking_Number, e.target.value)}
+                              disabled={statusUpdating === p.Tracking_Number}
+                            >
+                              {statusCodes.map((s) => (
+                                <option key={s.Status_Code} value={String(s.Status_Code)}>
+                                  {s.Status_Name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className={`status-badge ${getStatusBadgeClass(p.Status_Name)}`}>
+                              {p.Status_Name || '—'}
+                            </span>
+                          )}
                         </td>
                         <td>
                           <button

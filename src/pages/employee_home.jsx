@@ -129,6 +129,14 @@ export default function EmployeeHome() {
             </div>
 
             <div className="card">
+              <h3>Add package</h3>
+              <p>Register a customer shipment, calculate price, and issue a tracking number.</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/employee/add-package')}>
+                Add package
+              </button>
+            </div>
+
+            <div className="card">
               <h3>Package lookup</h3>
               <p>Track a package by tracking number.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/package_tracking')}>
@@ -141,14 +149,6 @@ export default function EmployeeHome() {
               <p>Historical package activity (coming soon).</p>
               <button type="button" className="btn primary" onClick={() => navigate('/package_history')}>
                 View history
-              </button>
-            </div>
-
-            <div className="card">
-              <h3>Shipping pricing</h3>
-              <p>Estimate shipping costs from weight, zone, and type.</p>
-              <button type="button" className="btn primary" onClick={() => navigate('/price_calculator')}>
-                Price calculator
               </button>
             </div>
 

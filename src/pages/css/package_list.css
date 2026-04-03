@@ -1,5 +1,15 @@
 /* All packages — extends inventory.css / home.css */
 
+.package-list-page .pkg-status-select {
+  max-width: 200px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border, #cbd5e1);
+  background: #fff;
+  cursor: pointer;
+}
+
 .package-list-page .pkg-expand-btn {
   padding: 6px 12px;
   font-size: 0.8rem;

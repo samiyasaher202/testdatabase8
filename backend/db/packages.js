@@ -32,6 +32,7 @@ function getAllPackages(pool, callback) {
       CONCAT(cr.Zip_First3, cr.Zip_Last2)        AS Recipient_Zip,
 
       sc.Status_Name,
+      d.Delivery_Status_Code,
       sc.Is_Final_Status,
       d.Delivered_Date,
       d.Signature_Required,
@@ -70,6 +71,52 @@ function getPackageByTracking(pool, trackingNumber, callback) {
   .catch(err => callback(err, null))
 }
 
-Function 
+function getPackagesForCustomer(pool, customerID, callback) {
+  pool.query(`
+    SELECT
+      p.Tracking_Number,
+      p.Weight,
+      p.Dim_X, p.Dim_Y, p.Dim_Z,
+      p.Zone,
+      p.Price,
+      p.Oversize,
+      p.Requires_Signature,
+      p.Date_Created,
+      p.Date_Updated,
+      p.Package_Type_Code,
+      pt.Type_Name,
+      pt.Description  AS Type_Description,
 
-module.exports = { getAllPackages, getPackageByTracking }
+      p.Sender_ID,
+      CONCAT(cs.First_Name, ' ', cs.Last_Name)  AS Sender_Name,
+      p.Recipient_ID,
+      CONCAT(cr.First_Name, ' ', cr.Last_Name)  AS Recipient_Name,
+
+      sc.Status_Name,
+      sc.Is_Final_Status,
+      d.Delivered_Date,
+      d.Signature_Required,
+      d.Signature_Received,
+      CASE
+        WHEN p.Sender_ID = ? THEN 'Sending'
+        WHEN p.Recipient_ID = ? THEN 'Receiving'
+      END AS role
+
+    FROM package p
+    JOIN package_type pt  ON p.Package_Type_Code = pt.Package_Type_Code
+    JOIN customer cs      ON p.Sender_ID         = cs.Customer_ID
+    LEFT JOIN customer cr ON p.Recipient_ID       = cr.Customer_ID
+    LEFT JOIN delivery d  ON p.Tracking_Number    = d.Tracking_Number
+    LEFT JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
+    WHERE p.Sender_ID = ? OR p.Recipient_ID = ?
+    ORDER BY p.Date_Created DESC
+  `, [customerID, customerID, customerID, customerID])
+  .then(([results]) => callback(null, results))
+  .catch(err => callback(err, null))
+}
+
+module.exports = {
+  getAllPackages,
+  getPackageByTracking,
+  getPackagesForCustomer,
+}

@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './css/home.css'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
-
 export default function Home() {
   const navigate = useNavigate()
   const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('token'))
@@ -69,18 +67,19 @@ export default function Home() {
           </div>
           <div className="hero-right">
             <div className="track-card" id="track">
-              <h3>Track a Package</h3>
               <div className="track-form">
-                {/* <input 
-                  type="text" 
-                  placeholder="Enter tracking number"
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                />
-                <button className="btn primary" onClick = {handleSubmit}>Track</button> */}
-                <button className="btn primary" onClick={() => navigate('/package_tracking')}>
+                <button className="btn primary" type="button" onClick={() => navigate('/package_tracking')}>
                   Track a Package
+                </button>
+              </div>
+
+              <div id="shipping-calculator" className="track-card-price-box">
+                <button
+                  type="button"
+                  className="btn primary"
+                  onClick={() => navigate('/price_calculator')}
+                >
+                  Price calculator
                 </button>
               </div>
             </div>
@@ -103,9 +102,18 @@ export default function Home() {
               <a className="link" href="#">Find a PO Box</a>
             </div>
             <div className="card">
-              <h3>Rates & Fees</h3>
+              <h3>Rates &amp; fees</h3>
               <p>Check pricing for domestic and international shipping.</p>
-              <a className="link" href="#">View rates</a>
+              <a
+                className="link"
+                href="#shipping-calculator"
+                onClick={(e) => {
+                  e.preventDefault()
+                  document.getElementById('shipping-calculator')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+              >
+                Estimate shipping
+              </a>
             </div>
           </div>
         </section>
