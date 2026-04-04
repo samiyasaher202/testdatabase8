@@ -21,6 +21,11 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+app.post('/test', (req, res) => {
+  console.log('test route hit');
+  res.json({ ok: true });
+});
+
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
   host:               process.env.MYSQLHOST,
@@ -139,8 +144,7 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' })
 
     const token = jwt.sign(
-      //added post office to employee jwt sign for payment
-      { employee_id: emp.Employee_ID, email: emp.Email_Address, role_id: emp.Role_ID, type: 'employee', post_office_id: emp.Post_Office_ID },
+      { employee_id: emp.Employee_ID, email: emp.Email_Address, role_id: emp.Role_ID, type: 'employee' },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '24h' }
     )
@@ -555,6 +559,7 @@ app.get('/api/customer/my-packages', authenticate, async (req, res) => {
 
 // Employee: create paid package (Package, Shipment, Shipment_Package, Delivery, Payment)
 app.post('/api/employee/packages', authenticate, requireEmployee, async (req, res) => {
+  console.log('in api/employee/packages');
   const b = req.body || {}
   const {
     sender_email,
@@ -588,7 +593,7 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
     dim_x,
     dim_y,
     dim_z,
-    store_id,
+    //store_id = null
   } = b
 
 
@@ -625,15 +630,15 @@ const fields = {
   dim_x,
   dim_y,
   dim_z,
-  store_id
+ // store_id 
 };
 
-// NOW this works
+//console.log(store_id);
 Object.entries(fields).forEach(([key, value]) => {
   console.log(`${key}:`, value, value == null ? '❌ NULL/UNDEFINED' : '✅ OK');
 });
 
- 
+
 
   const pt = normalizePackageTypeName(package_type)
   const typeCode = TYPE_NAME_TO_CODE[pt]
@@ -736,15 +741,43 @@ Object.entries(fields).forEach(([key, value]) => {
 
     const tracking = await nextTrackingNumber(conn)
     const oversize = typeCode === 'OVR' ? 1 : 0
-    const sid = store_id != null ? Number(store_id) : 1
-    
+    //const sid = store_id != null ? Number(store_id) : 1
+    let sid
+    try{
+  const employee_id = req.user.employee_id;
+  const[empRows] = await conn.query(
+    `SELECT s.Store_ID 
+    FROM employee e
+    JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
+    JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
+    WHERE  Employee_ID = ?`,
+    [employee_id]
+  );
+  if (!empRows.length) {
+    await conn.rollback()
+   return res.status(404).json({ error: 'Employee or store not found' });
+  }
 
+   sid = empRows[0].Store_ID;
+  //const sid = 1;
+  console.log('Employee store_id:', sid);
+} 
+catch(err){
+  console.error(err);
+  res.status(500).json({ error: 'Server error' });
+}
+    const [payRes] = await conn.query(
+      `INSERT INTO payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status, Employee_ID)
+       VALUES (?,?,?,?,?, 'completed', ?)`,
+      [senderId, sid,1, 1, priceAmount, req.user.employee_id]
+    )
+    const payId = payRes.insertId
     await conn.query(
       `INSERT INTO package (
         Tracking_Number, Sender_ID, Recipient_ID,
         Dim_X, Dim_Y, Dim_Z,
-        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Price
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Price, Payment_ID
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         tracking,
         senderId,
@@ -758,6 +791,7 @@ Object.entries(fields).forEach(([key, value]) => {
         oversize,
         sigRequired ? 1 : 0,
         priceAmount,
+        payId,
       ]
     )
 
@@ -805,18 +839,14 @@ Object.entries(fields).forEach(([key, value]) => {
         (recipient_country || 'USA').toString().slice(0, 50),
       ]
     )
-
+    
     const shipmentId = shipRes.insertId
     await conn.query(
       `INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`,
       [shipmentId, tracking]
     )
 
-    await conn.query(
-      `INSERT INTO payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status)
-       VALUES (?,?,?,?,?, 'completed')`,
-      [senderId, sid, 1, 1, priceAmount]
-    )
+    
 
     await conn.commit()
     res.status(201).json({
@@ -831,7 +861,7 @@ Object.entries(fields).forEach(([key, value]) => {
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({ message: 'Duplicate email or tracking conflict; try again' })
     }
-    res.status(500).json({ message: err.message || 'Could not create package' })
+    res.status(500).json({ message: err.message || 'Could not createify package' })
   } finally {
     conn.release()
   }

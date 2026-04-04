@@ -35,6 +35,9 @@ function getPrice(pool, excess_fee, package_type, weight, zone, callback, dim_x,
   const w   = Number(weight)
   const z   = Number(zone)
   
+  let dx = Number(dim_x) || 0
+  let dy = Number(dim_y) || 0
+  let dz = Number(dim_z) || 0
 
   // Check box size surcharge first
   const surcharge = getBoxSurcharge(dim_x, dim_y, dim_z)
@@ -43,11 +46,10 @@ function getPrice(pool, excess_fee, package_type, weight, zone, callback, dim_x,
     err.status = 400
     return callback(err, null)
   }
-  if(dim_x > 12)dim_x = 12;
-  if(dim_y > 12)dim_y = 12;
-  if(dim_z > 12)dim_z = 12;
-
-  const cub_in = dim_x *dim_y *dim_z
+  const cx = Math.min(dx || 12, 12)
+  const cy = Math.min(dy || 12, 12)
+  const cz = Math.min(dz || 12, 12)
+  const cub_in = cx * cy * cz
 
 
   pool.query(`

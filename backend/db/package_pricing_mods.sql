@@ -287,3 +287,14 @@ INSERT INTO package_pricing (Package_Type_Code, Min_Weight, Max_Weight, Max_Cubi
 ('OVR', 0.00, 10.00, 1728.00, 9, 46.00),
 ('OVR', 10.00, 20.00, 1728.00, 9, 46.25),
 ('OVR', 20.00, 30.00, 1728.00, 9, 46.50);
+
+ALTER TABLE payment
+ADD COLUMN Employee_ID INT,
+ADD CONSTRAINT fk_Employee_ID
+FOREIGN KEY (Employee_ID) REFERENCES employee(Employee_ID);
+
+ALTER TABLE package
+ADD COLUMN Payment_ID INT NULL,
+ADD CONSTRAINT fk_package_payment 
+  FOREIGN KEY (Payment_ID) REFERENCES payment(Payment_ID);
+
