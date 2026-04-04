@@ -42,7 +42,11 @@ export default function EmployeeHome() {
         </button>
 
         <button className="btn" onClick={() => navigate('/price_calculator')}>
-          Ship Package
+          calculate package
+        </button>
+
+        <button className="btn" onClick={() => navigate('/new_package')}>
+          create package
         </button>
 
         <button className="btn" onClick={() => navigate('/customers')}>

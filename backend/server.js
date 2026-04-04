@@ -10,7 +10,9 @@ const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
 const packageTrackDB = require('./db/package_track') 
 
-const calcPrice = require('./db/package_type')
+const packageTypesDB = require('./db/package_type')
+
+
 
 const app = express()
 //server
@@ -584,8 +586,6 @@ app.get('/api/customers/:id/packages', (req, res) => {
 // ════════════════════════════════════════════════════════════════════════════
 //  PACKAGE TRACKING
 // ════════════════════════════════════════════════════════════════════════════
-
-
 app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
   const { tracking_number } = req.params
   packageTrackDB.getPackageTracking(pool, tracking_number, (err, results) => {
@@ -594,44 +594,9 @@ app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
   })
 })
 
-// ── Start ─────────────────────────────────────────────────────────────────
-// const PORT = process.env.PORT || 5000
-// app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
-// AUTO CALCULATE PRICES FOR PACKAGES
-
-// AUTO CALCULATE PRICES FOR PACKAGES
-
-// app.get('/api/package_types', (req, res) => {
-//   makePackage.getPackageTypes(pool, (err, results) => {
-//     if (err) return res.status(500).json({ error: err.message });
-//     res.json(results);
-//   });
-// });
-
-// app.get('/api/excess_fees', (req, res) => {
-//   makePackage.getExcessFees(pool, (err, results) => {
-//     if (err) return res.status(500).json({ error: err.message });
-//     res.json(results);
-//   });
-// });
-
-// app.get('/api/price', async (req, res) => {
-//   const { excess_fee, package_type, weight, zone } = req.query;
-
-//   if (!weight || !zone || !package_type) {
-//     return res.status(400).json({ error: "Missing query parameters" });
-//   }
-
-//   const numWeight = parseFloat(weight);
-//   const numZone = parseInt(zone);
-//   calcPrice.getPrice(pool, excess_fee || null, package_type, numWeight, numZone, (err, results) => {
-//     if (err) return res.status(500).json({error: 'Database error in packagePrice server', details: err.message})
-//       res.json(results[0] || {});
-//   })
-
-// });
-
-
+// ════════════════════════════════════════════════════════════════════════════
+//  Price Calculator
+// ════════════════════════════════════════════════════════════════════════════
 app.get('/api/price', async (req, res) => {
   const { excess_fee, package_type, weight, zone } = req.query;
   console.log('Price query params:', { excess_fee, package_type, weight, zone });
@@ -642,7 +607,7 @@ app.get('/api/price', async (req, res) => {
   const numWeight = parseFloat(weight);
   const numZone = parseInt(zone);
 
-  calcPrice.getPrice( pool, excess_fee || null, package_type, numWeight,numZone,
+  packageTypesDB.getPrice( pool, excess_fee || null, package_type, numWeight,numZone,
     (err, results) => {
       if (err) {
         return res.status(500).json({ error: "Database error", details: err.message });
@@ -654,28 +619,40 @@ app.get('/api/price', async (req, res) => {
     }
   );
 });
-//   try {
-//     const query = `
-//       SELECT Price
-//       FROM package_pricing
-//       WHERE Package_Type_Code = ?
-//         AND ? BETWEEN Min_Weight AND Max_Weight
-//         AND Zone = ?
-//       LIMIT 1
-//     `;
 
-//     const [rows] = await pool.execute(query, [packageType, weight, zone]);
+// ════════════════════════════════════════════════════════════════════════════
+//  Price Calculator
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/package/create', async(req,res)=>{
+  const{pool, Sender_Email, Recipient_Email, Dim_X, Dim_Y, Dim_Z, Package_Type, Weight, Zone, Oversize, Requires_Signiture, Price} = req.query;
+   console.log('New package params:',{pool, Sender_Email, Recipient_Email, Dim_X, Dim_Y, Dim_Z, Package_Type, Weight, Zone, Oversize, Requires_Signiture, Price});
+   
+   if (!Sender_Email || !Recipient_Email || !Dim_X || !Dim_Y || !Dim_Z ||!Package_Type || !Weight || !Zone || ! Oversize ||!Requires_Signiture || !Price) {
+    return res.status(400).json({ error: "Missing required parameters" });
+  }
 
-//     if (rows.length === 0) {
-//       return res.status(404).json({ error: "Price not found for given inputs" });
-//     }
-
-//     res.json({ price: rows[0].Price });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Database error" });
-//   }
-//});
+   const numDim_X = parseInt(Dim_X);
+   const numDim_Y = parseInt(Dim_Y);
+   const numDim_Z = parseInt(Dim_Z);
+   const numWeight = parseInt(Weight);
+   const numZone = parseInt(Zone);
+   const numOver = parseInt(Oversize);
+   const numRS = parseInt(Requires_Signiture);
+   const numPrice = parseInt(Price);
+  
+   packageTypesDB.NewPackage( pool, Sender_Email, Recipient_Email, Dim_X, Dim_Y, Dim_Z, Package_Type, Weight, Zone, Oversize, Requires_Signiture, Price,
+    (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: "Database error", details: err.message });
+      }
+      if (!results || results.length === 0) {
+        return res.status(404).json({ error: "package entering error: Did not find sender/recipient/zone/price" });
+      }
+      res.json(results[0] || {});
+    }
+  );
+   
+});
 
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
