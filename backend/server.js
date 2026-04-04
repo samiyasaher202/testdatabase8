@@ -20,8 +20,8 @@ const pool = mysql.createPool({
   host:               process.env.DB_HOST     || 'localhost',
   port:               process.env.DB_PORT     || 3306,
   user:               process.env.DB_USER     || 'root',
-  password:           process.env.DB_PASSWORD || 'MBobanza#2205',
-  database:           process.env.DB_NAME     || 'post_officedb',
+  password:           process.env.DB_PASSWORD || '1234',
+  database:           process.env.DB_NAME     || 'on it working',
   waitForConnections: true,
   connectionLimit:    10,
 })
@@ -482,28 +482,48 @@ app.get('/qry_track_package', async (req, res) => {
 })
 
 // Shipping price (package_pricing + optional excess_fee); matches price_calculator.jsx
+// Replace your existing GET /api/price route in server.js with this:
+
 app.get('/api/price', async (req, res) => {
-  const { package_type, weight, zone, excess_fee } = req.query
+  const { package_type, weight, zone, excess_fee, dim_x, dim_y, dim_z } = req.query
   const pt = normalizePackageTypeName(package_type)
-  if (
-    !pt ||
-    weight === undefined ||
-    weight === '' ||
-    zone === undefined ||
-    zone === ''
-  ) {
+
+  if (!pt || weight === undefined || weight === '' || zone === undefined || zone === '') {
     return res.status(400).json({ error: 'package_type, weight, and zone are required' })
   }
+
   const w = Number(weight)
   const z = Number(zone)
+
   if (!Number.isFinite(w) || w <= 0 || w > 70) {
     return res.status(400).json({ error: 'Weight must be greater than 0 and at most 70 lbs' })
   }
   if (!Number.isInteger(z) || z < 1 || z > 9) {
     return res.status(400).json({ error: 'Zone must be a whole number from 1 to 9' })
   }
+
   try {
-    const tot = await getPricePromise(pool, excess_fee || null, pt, weight, zone)
+    const tot = await new Promise((resolve, reject) => {
+      priceDB.getPrice(
+        pool,
+        excess_fee || null,
+        pt,
+        weight,
+        zone,
+        (err, results) => {
+          if (err) return reject(err)
+          if (!results?.length) {
+            const e = new Error('No matching price for this weight, zone, and package type combination')
+            e.status = 400
+            return reject(e)
+          }
+          resolve(Number(results[0].Tot_Price))
+        },
+        dim_x,   // ← new
+        dim_y,   // ← new
+        dim_z    // ← new
+      )
+    })
     res.json({ Tot_Price: tot })
   } catch (err) {
     if (err.status === 400) return res.status(400).json({ error: err.message })
@@ -709,7 +729,7 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
         From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
         To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_First3, To_Zip_Last2, To_Zip_Plus4, To_Country,
         Departure_Time_Stamp, Arrival_Time_Stamp
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
       [
         pendingCode,
         req.user.employee_id,
@@ -872,6 +892,26 @@ app.get('/api/customers/:id/packages', (req, res) => {
     res.json(results);
   });
 });
+
+app.get('/api/customer/lookup', authenticate, requireEmployee, async (req, res) => {
+  const email = (req.query.email || '').trim().toLowerCase()
+  if (!email) return res.status(400).json({ message: 'Email is required' })
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
+              Phone_Number, House_Number, Street, Apt_Number,
+              City, State, Zip_First3, Zip_Last2
+       FROM Customer WHERE Email_Address = ? LIMIT 1`,
+      [email]
+    )
+    if (!rows.length) return res.status(404).json({ message: 'Customer not found' })
+    res.json({ customer: rows[0] })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
 
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
