@@ -34,6 +34,7 @@ function getPrice(pool, excess_fee, package_type, weight, zone, callback, dim_x,
   const fee = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
   const w   = Number(weight)
   const z   = Number(zone)
+  const cub_in = dim_x *dim_y *dim_z
 
   // Check box size surcharge first
   const surcharge = getBoxSurcharge(dim_x, dim_y, dim_z)
@@ -51,8 +52,9 @@ function getPrice(pool, excess_fee, package_type, weight, zone, callback, dim_x,
     WHERE p.Type_Name = ?
       AND ? BETWEEN pc.Min_Weight AND pc.Max_Weight
       AND pc.Zone = ?
+      AND ? <= pc.Max_Cubic_Inches
     LIMIT 1
-  `, [fee, fee, package_type, w, z])
+  `, [fee, fee, package_type, w, z, cub_in])
   .then(([results]) => {
     if (!results?.length) return callback(null, [])
     // Add box surcharge to base price

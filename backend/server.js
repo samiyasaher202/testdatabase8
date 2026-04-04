@@ -23,11 +23,11 @@ app.use(express.json())
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
-  host:               process.env.DB_HOST     || 'localhost',
-  port:               process.env.DB_PORT     || 3306,
-  user:               process.env.DB_USER     || 'root',
-  password:           process.env.DB_PASSWORD || '1234',
-  database:           process.env.DB_NAME     || 'on it working',
+  host:               process.env.MYSQLHOST,
+  port:               process.env.MYSQLPORT,
+  user:               process.env.MYSQLUSER,
+  password:           process.env.MYSQLPASSWORD,
+  database:           process.env.MYSQL_DATABASE,
   waitForConnections: true,
   connectionLimit:    10,
 })
@@ -899,46 +899,46 @@ app.get('/api/customers/:id/packages', (req, res) => {
   });
 });
 
-// // ════════════════════════════════════════════════════════════════════════════
-// //  PACKAGE TRACKING
-// // ════════════════════════════════════════════════════════════════════════════
-// app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
-//   const { tracking_number } = req.params
-//   packageTrackDB.getPackageTracking(pool, tracking_number, (err, results) => {
-//     if (err) return res.status(500).json({ error: 'Database error', details: err.message })
-//     res.json(results)
-//   })
-// })
+// ════════════════════════════════════════════════════════════════════════════
+//  PACKAGE TRACKING
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
+  const { tracking_number } = req.params
+  packageTrackDB.getPackageTracking(pool, tracking_number, (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error', details: err.message })
+    res.json(results)
+  })
+})
 
-// // ════════════════════════════════════════════════════════════════════════════
-// //  Price Calculator
-// // ════════════════════════════════════════════════════════════════════════════
-// app.get('/api/price', async (req, res) => {
-//   const { excess_fee, package_type, weight, zone } = req.query;
-//   console.log('Price query params:', { excess_fee, package_type, weight, zone });
-//   if (!weight || !zone || !package_type) {
-//     return res.status(400).json({ error: "Missing required parameters" });
-//   }
+// ════════════════════════════════════════════════════════════════════════════
+//  Price Calculator
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/price', async (req, res) => {
+  const { excess_fee, package_type, weight, zone } = req.query;
+  console.log('Price query params:', { excess_fee, package_type, weight, zone });
+  if (!weight || !zone || !package_type) {
+    return res.status(400).json({ error: "Missing required parameters" });
+  }
 
-//   const numWeight = parseFloat(weight);
-//   const numZone = parseInt(zone);
+  const numWeight = parseFloat(weight);
+  const numZone = parseInt(zone);
 
-//   packageTypesDB.getPrice( pool, excess_fee || null, package_type, numWeight,numZone,
-//     (err, results) => {
-//       if (err) {
-//         return res.status(500).json({ error: "Database error", details: err.message });
-//       }
-//       if (!results || results.length === 0) {
-//         return res.status(404).json({ error: "No pricing found for given parameters" });
-//       }
-//       res.json(results[0] || {});
-//     }
-//   );
-// });
+  packageTypesDB.getPrice( pool, excess_fee || null, package_type, numWeight,numZone,
+    (err, results) => {
+      if (err) {
+        return res.status(500).json({ error: "Database error", details: err.message });
+      }
+      if (!results || results.length === 0) {
+        return res.status(404).json({ error: "No pricing found for given parameters" });
+      }
+      res.json(results[0] || {});
+    }
+  );
+});
 
-// // ════════════════════════════════════════════════════════════════════════════
-// //  Price Calculator
-// // ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+//  Package creations
+// ════════════════════════════════════════════════════════════════════════════
 // app.get('/api/package/create', async(req,res)=>{
 //   const{pool, Sender_Email, Recipient_Email, Dim_X, Dim_Y, Dim_Z, Package_Type, Weight, Zone, Oversize, Requires_Signiture, Price} = req.query;
 //    console.log('New package params:',{pool, Sender_Email, Recipient_Email, Dim_X, Dim_Y, Dim_Z, Package_Type, Weight, Zone, Oversize, Requires_Signiture, Price});
@@ -993,3 +993,4 @@ app.get('/api/customer/lookup', authenticate, requireEmployee, async (req, res) 
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
+console.log("Connecting to Database:", process.env.MYSQL_DATABASE);

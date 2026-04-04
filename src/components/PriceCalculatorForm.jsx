@@ -21,7 +21,7 @@ const BOX_TIERS = [
   { maxL: 30, maxW: 30, maxH: 30, surcharge: 20, label: 'Extra Large (up to 30×30×30 in)' },
 ]
 
-const MAX_WEIGHT    = 70
+const MAX_WEIGHT    = 30
 const OVR_THRESHOLD = 15
 
 function getBoxTier(dx, dy, dz) {

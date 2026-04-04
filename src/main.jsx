@@ -73,7 +73,7 @@ function App() {
         
         <Route path="/support_tickets" element={<p>Support Tickets — coming soon</p>} />
         <Route path="/price_calculator" element={<PriceCalculator/>} />
-        <Route path="/new_package" element={<NewPackage/>}/>
+        {/* <Route path="/new_package" element={<NewPackage/>}/> */}
 
         {/* 404 */}
         <Route path="*" element={<p>Page not found</p>} />
