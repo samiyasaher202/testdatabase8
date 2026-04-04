@@ -21,11 +21,6 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
-app.post('/test', (req, res) => {
-  console.log('test route hit');
-  res.json({ ok: true });
-});
-
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
   host:               process.env.MYSQLHOST,
@@ -597,49 +592,6 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
   } = b
 
 
-
-const fields = {
-  sender_email,
-  sender_first_name,
-  sender_last_name,
-  sender_house_number,
-  sender_street,
-  sender_city,
-  sender_state,
-  sender_zip_first3,
-  sender_zip_last2,
-  sender_apt_number,
-  sender_country,
-  sender_phone,
-  recipient_email,
-  recipient_first_name,
-  recipient_last_name,
-  recipient_house_number,
-  recipient_street,
-  recipient_city,
-  recipient_state,
-  recipient_zip_first3,
-  recipient_zip_last2,
-  recipient_apt_number,
-  recipient_country,
-  recipient_phone,
-  package_type,
-  weight,
-  zone,
-  excess_fee,
-  dim_x,
-  dim_y,
-  dim_z,
- // store_id 
-};
-
-//console.log(store_id);
-Object.entries(fields).forEach(([key, value]) => {
-  console.log(`${key}:`, value, value == null ? '❌ NULL/UNDEFINED' : '✅ OK');
-});
-
-
-
   const pt = normalizePackageTypeName(package_type)
   const typeCode = TYPE_NAME_TO_CODE[pt]
   if (!typeCode) {
@@ -759,8 +711,6 @@ Object.entries(fields).forEach(([key, value]) => {
   }
 
    sid = empRows[0].Store_ID;
-  //const sid = 1;
-  console.log('Employee store_id:', sid);
 } 
 catch(err){
   console.error(err);
