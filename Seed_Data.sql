@@ -41,18 +41,18 @@ INSERT INTO Product (Universal_Product_Code, Store_ID, Product_name, Price, Quan
 ('UPC-014', 5, 'Rubber Bands (Pack)',       1.10,   95);
 
 -- ── 4. CUSTOMERS ─────────────────────────────────────────────────────────
--- Password hash = bcrypt of 'password123'
+-- Password hash = bcrypt (cost 10) of 'password123'
 INSERT INTO Customer (First_Name, Middle_Name, Last_Name, House_Number, Street, City, State, Zip_First3, Zip_Last2, Password_Hash, Email_Address, Phone_Number) VALUES
-('James',   'A',   'Wilson',    '112', 'Oak St',       'Houston',     'TX', '770', '02', '$2b$10$eImiTXuWVxfM37uY4JANjQ==', 'james.wilson@email.com',    '713-555-1001'),
-('Maria',   NULL,  'Garcia',    '234', 'Elm Ave',       'Houston',     'TX', '770', '03', '$2b$10$eImiTXuWVxfM37uY4JANjQ==', 'maria.garcia@email.com',    '713-555-1002'),
-('Robert',  'J',   'Smith',     '567', 'Pine Rd',       'Dallas',      'TX', '752', '04', '$2b$10$eImiTXuWVxfM37uY4JANjQ==', 'robert.smith@email.com',    '214-555-1003'),
-('Linda',   NULL,  'Johnson',   '890', 'Maple Dr',      'Dallas',      'TX', '752', '05', '$2b$10$eImiTXuWVxfM37uY4JANjQ==', 'linda.johnson@email.com',   '214-555-1004'),
-('Carlos',  'M',   'Martinez',  '321', 'Cedar Blvd',    'Austin',      'TX', '733', '06', '$2b$10$eImiTXuWVxfM37uY4JANjQ==', 'carlos.martinez@email.com', '512-555-1005'),
-('Susan',   'L',   'Brown',     '654', 'Birch Ln',      'Austin',      'TX', '733', '07', '$2b$10$eImiTXuWVxfM37uY4JANjQ==', 'susan.brown@email.com',     '512-555-1006'),
-('David',   NULL,  'Lee',       '777', 'Walnut St',     'San Antonio', 'TX', '782', '08', '$2b$10$eImiTXuWVxfM37uY4JANjQ==', 'david.lee@email.com',       '210-555-1007'),
-('Patricia','R',   'Taylor',    '888', 'Spruce Ave',    'San Antonio', 'TX', '782', '09', '$2b$10$eImiTXuWVxfM37uY4JANjQ==', 'patricia.taylor@email.com', '210-555-1008'),
-('Michael', NULL,  'Anderson',  '999', 'Willow Way',    'Lubbock',     'TX', '794', '10', '$2b$10$eImiTXuWVxfM37uY4JANjQ==', 'michael.anderson@email.com','806-555-1009'),
-('Barbara', 'E',   'Thomas',    '101', 'Aspen Ct',      'Lubbock',     'TX', '794', '11', '$2b$10$eImiTXuWVxfM37uY4JANjQ==', 'barbara.thomas@email.com',  '806-555-1010');
+('James',   'A',   'Wilson',    '112', 'Oak St',       'Houston',     'TX', '770', '02', '$2a$10$YMEEetp9.9d4dZcqfaTzeuhVO.v/KeHPKhBtswEYLI2F8dsd2EoTy', 'james.wilson@email.com',    '713-555-1001'),
+('Maria',   NULL,  'Garcia',    '234', 'Elm Ave',       'Houston',     'TX', '770', '03', '$2a$10$YMEEetp9.9d4dZcqfaTzeuhVO.v/KeHPKhBtswEYLI2F8dsd2EoTy', 'maria.garcia@email.com',    '713-555-1002'),
+('Robert',  'J',   'Smith',     '567', 'Pine Rd',       'Dallas',      'TX', '752', '04', '$2a$10$YMEEetp9.9d4dZcqfaTzeuhVO.v/KeHPKhBtswEYLI2F8dsd2EoTy', 'robert.smith@email.com',    '214-555-1003'),
+('Linda',   NULL,  'Johnson',   '890', 'Maple Dr',      'Dallas',      'TX', '752', '05', '$2a$10$YMEEetp9.9d4dZcqfaTzeuhVO.v/KeHPKhBtswEYLI2F8dsd2EoTy', 'linda.johnson@email.com',   '214-555-1004'),
+('Carlos',  'M',   'Martinez',  '321', 'Cedar Blvd',    'Austin',      'TX', '733', '06', '$2a$10$YMEEetp9.9d4dZcqfaTzeuhVO.v/KeHPKhBtswEYLI2F8dsd2EoTy', 'carlos.martinez@email.com', '512-555-1005'),
+('Susan',   'L',   'Brown',     '654', 'Birch Ln',      'Austin',      'TX', '733', '07', '$2a$10$YMEEetp9.9d4dZcqfaTzeuhVO.v/KeHPKhBtswEYLI2F8dsd2EoTy', 'susan.brown@email.com',     '512-555-1006'),
+('David',   NULL,  'Lee',       '777', 'Walnut St',     'San Antonio', 'TX', '782', '08', '$2a$10$YMEEetp9.9d4dZcqfaTzeuhVO.v/KeHPKhBtswEYLI2F8dsd2EoTy', 'david.lee@email.com',       '210-555-1007'),
+('Patricia','R',   'Taylor',    '888', 'Spruce Ave',    'San Antonio', 'TX', '782', '09', '$2a$10$YMEEetp9.9d4dZcqfaTzeuhVO.v/KeHPKhBtswEYLI2F8dsd2EoTy', 'patricia.taylor@email.com', '210-555-1008'),
+('Michael', NULL,  'Anderson',  '999', 'Willow Way',    'Lubbock',     'TX', '794', '10', '$2a$10$YMEEetp9.9d4dZcqfaTzeuhVO.v/KeHPKhBtswEYLI2F8dsd2EoTy', 'michael.anderson@email.com','806-555-1009'),
+('Barbara', 'E',   'Thomas',    '101', 'Aspen Ct',      'Lubbock',     'TX', '794', '11', '$2a$10$YMEEetp9.9d4dZcqfaTzeuhVO.v/KeHPKhBtswEYLI2F8dsd2EoTy', 'barbara.thomas@email.com',  '806-555-1010');
 
 -- ── 5. ROLES ─────────────────────────────────────────────────────────────
 INSERT INTO Role (Role_Name, Role_Description, Access_Level) VALUES
@@ -72,25 +72,25 @@ INSERT INTO Department (Department_Name) VALUES
 
 -- ── 7. EMPLOYEES ─────────────────────────────────────────────────────────
 -- Supervisors inserted first (no supervisor themselves), then regular employees
--- Password hash = bcrypt of 'employee123'
+-- Password hash = bcrypt (cost 10) of 'employee123' — must be a full 60-char bcrypt string (bcryptjs $2a$)
 INSERT INTO Employee (Post_Office_ID, Supervisor_ID, Role_ID, Department_ID, First_Name, Middle_Name, Last_Name, Birth_Day, Birth_Month, Birth_Year, Password_Hash, Email_Address, Phone_Number, Sex, Salary) VALUES
 -- Managers (no supervisor)
-(1, NULL, 4, 4, 'Richard', 'A', 'Moore',   15, 3, 1975, '$2b$10$abc123hashed', 'richard.moore@postoffice8.com',   '713-500-2001', 'M', 72000.00),
-(2, NULL, 4, 4, 'Nancy',   'B', 'White',    8, 7, 1980, '$2b$10$abc123hashed', 'nancy.white@postoffice8.com',     '214-500-2002', 'F', 70000.00),
-(3, NULL, 4, 4, 'Thomas',  'C', 'Harris',  22, 11,1978, '$2b$10$abc123hashed', 'thomas.harris@postoffice8.com',   '512-500-2003', 'M', 71000.00),
+(1, NULL, 4, 4, 'Richard', 'A', 'Moore',   15, 3, 1975, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'richard.moore@postoffice8.com',   '713-500-2001', 'M', 72000.00),
+(2, NULL, 4, 4, 'Nancy',   'B', 'White',    8, 7, 1980, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'nancy.white@postoffice8.com',     '214-500-2002', 'F', 70000.00),
+(3, NULL, 4, 4, 'Thomas',  'C', 'Harris',  22, 11,1978, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'thomas.harris@postoffice8.com',   '512-500-2003', 'M', 71000.00),
 -- Supervisors (report to managers)
-(1, 1,    3, 1, 'Jessica', 'D', 'Clark',   30, 5, 1988, '$2b$10$abc123hashed', 'jessica.clark@postoffice8.com',   '713-500-2004', 'F', 52000.00),
-(1, 1,    3, 2, 'Kevin',   'E', 'Lewis',   12, 9, 1985, '$2b$10$abc123hashed', 'kevin.lewis@postoffice8.com',     '713-500-2005', 'M', 51000.00),
-(2, 2,    3, 1, 'Amanda',  'F', 'Robinson', 4, 2, 1990, '$2b$10$abc123hashed', 'amanda.robinson@postoffice8.com', '214-500-2006', 'F', 50000.00),
-(3, 3,    3, 2, 'Brian',   'G', 'Walker',  19, 8, 1983, '$2b$10$abc123hashed', 'brian.walker@postoffice8.com',    '512-500-2007', 'M', 51500.00),
+(1, 1,    3, 1, 'Jessica', 'D', 'Clark',   30, 5, 1988, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'jessica.clark@postoffice8.com',   '713-500-2004', 'F', 52000.00),
+(1, 1,    3, 2, 'Kevin',   'E', 'Lewis',   12, 9, 1985, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'kevin.lewis@postoffice8.com',     '713-500-2005', 'M', 51000.00),
+(2, 2,    3, 1, 'Amanda',  'F', 'Robinson', 4, 2, 1990, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'amanda.robinson@postoffice8.com', '214-500-2006', 'F', 50000.00),
+(3, 3,    3, 2, 'Brian',   'G', 'Walker',  19, 8, 1983, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'brian.walker@postoffice8.com',    '512-500-2007', 'M', 51500.00),
 -- Clerks & Drivers
-(1, 4,    1, 1, 'Ashley',  'H', 'Hall',     7, 1, 1995, '$2b$10$abc123hashed', 'ashley.hall@postoffice8.com',     '713-500-2008', 'F', 38000.00),
-(1, 5,    2, 2, 'Joshua',  'I', 'Young',   25, 6, 1993, '$2b$10$abc123hashed', 'joshua.young@postoffice8.com',    '713-500-2009', 'M', 40000.00),
-(2, 6,    1, 1, 'Megan',   'J', 'Allen',   14, 4, 1997, '$2b$10$abc123hashed', 'megan.allen@postoffice8.com',     '214-500-2010', 'F', 37500.00),
-(2, 6,    2, 2, 'Tyler',   'K', 'Scott',    3, 10,1991, '$2b$10$abc123hashed', 'tyler.scott@postoffice8.com',     '214-500-2011', 'M', 41000.00),
-(3, 7,    1, 1, 'Lauren',  'L', 'Adams',   28, 12,1996, '$2b$10$abc123hashed', 'lauren.adams@postoffice8.com',    '512-500-2012', 'F', 38500.00),
-(4, NULL, 4, 4, 'Steven',  'M', 'Baker',   11, 3, 1977, '$2b$10$abc123hashed', 'steven.baker@postoffice8.com',    '210-500-2013', 'M', 70500.00),
-(5, NULL, 4, 4, 'Rachel',  'N', 'Gonzalez', 6, 8, 1982, '$2b$10$abc123hashed', 'rachel.gonzalez@postoffice8.com', '806-500-2014', 'F', 69000.00);
+(1, 4,    1, 1, 'Ashley',  'H', 'Hall',     7, 1, 1995, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'ashley.hall@postoffice8.com',     '713-500-2008', 'F', 38000.00),
+(1, 5,    2, 2, 'Joshua',  'I', 'Young',   25, 6, 1993, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'joshua.young@postoffice8.com',    '713-500-2009', 'M', 40000.00),
+(2, 6,    1, 1, 'Megan',   'J', 'Allen',   14, 4, 1997, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'megan.allen@postoffice8.com',     '214-500-2010', 'F', 37500.00),
+(2, 6,    2, 2, 'Tyler',   'K', 'Scott',    3, 10,1991, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'tyler.scott@postoffice8.com',     '214-500-2011', 'M', 41000.00),
+(3, 7,    1, 1, 'Lauren',  'L', 'Adams',   28, 12,1996, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'lauren.adams@postoffice8.com',    '512-500-2012', 'F', 38500.00),
+(4, NULL, 4, 4, 'Steven',  'M', 'Baker',   11, 3, 1977, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'steven.baker@postoffice8.com',    '210-500-2013', 'M', 70500.00),
+(5, NULL, 4, 4, 'Rachel',  'N', 'Gonzalez', 6, 8, 1982, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'rachel.gonzalez@postoffice8.com', '806-500-2014', 'F', 69000.00);
 
 -- ── 8. PACKAGE TYPES ─────────────────────────────────────────────────────
 INSERT INTO Package_Type (Package_Type_Code, Description, Type_Name) VALUES
@@ -225,4 +225,21 @@ INSERT INTO package_pricing (Package_Type_Code, Min_Weight, Max_Weight, Zone, Pr
 ('OVR', 15.01, 35.00, 5, 52.00),
 ('OVR', 35.01, 70.00, 5, 65.00),
 ('OVR', 35.01, 70.00, 7, 75.00),
-('OVR', 35.01, 70.00, 9, 90.00);
+('OVR', 35.01, 70.00, 9, 90.00),
+-- Extra tiers so every zone 1–9 has a row for common weight bands (calculator / add-package)
+('GEN',  0.00,  1.00, 4,  6.75), ('GEN',  0.00,  1.00, 5,  7.50), ('GEN',  0.00,  1.00, 6,  8.25),
+('GEN',  0.00,  1.00, 7,  9.00), ('GEN',  0.00,  1.00, 8,  9.75), ('GEN',  0.00,  1.00, 9, 10.50),
+('GEN',  1.01,  5.00, 5, 12.75), ('GEN',  1.01,  5.00, 6, 14.00), ('GEN',  1.01,  5.00, 7, 15.25),
+('GEN',  1.01,  5.00, 8, 16.50), ('GEN',  1.01,  5.00, 9, 17.75),
+('GEN',  5.01, 15.00, 1, 12.00), ('GEN',  5.01, 15.00, 2, 13.00), ('GEN',  5.01, 15.00, 3, 14.00),
+('GEN',  5.01, 15.00, 8, 28.00), ('GEN',  5.01, 15.00, 9, 31.00),
+('EXP',  0.00,  1.00, 4, 15.00), ('EXP',  0.00,  1.00, 5, 16.50), ('EXP',  0.00,  1.00, 6, 18.00),
+('EXP',  0.00,  1.00, 7, 19.50), ('EXP',  0.00,  1.00, 8, 21.00), ('EXP',  0.00,  1.00, 9, 22.50),
+('EXP',  1.01,  5.00, 5, 24.00), ('EXP',  1.01,  5.00, 6, 26.00), ('EXP',  1.01,  5.00, 7, 28.00),
+('EXP',  1.01,  5.00, 8, 30.00), ('EXP',  1.01,  5.00, 9, 32.00),
+('EXP',  5.01, 15.00, 1, 24.00), ('EXP',  5.01, 15.00, 2, 26.00), ('EXP',  5.01, 15.00, 3, 28.00),
+('EXP',  5.01, 15.00, 6, 36.00), ('EXP',  5.01, 15.00, 7, 38.00), ('EXP',  5.01, 15.00, 8, 40.00), ('EXP',  5.01, 15.00, 9, 42.00),
+('OVR', 15.01, 35.00, 2, 38.00), ('OVR', 15.01, 35.00, 4, 45.00), ('OVR', 15.01, 35.00, 6, 55.00),
+('OVR', 15.01, 35.00, 7, 60.00), ('OVR', 15.01, 35.00, 8, 68.00), ('OVR', 15.01, 35.00, 9, 72.00),
+('OVR', 35.01, 70.00, 1, 58.00), ('OVR', 35.01, 70.00, 2, 60.00), ('OVR', 35.01, 70.00, 3, 62.00),
+('OVR', 35.01, 70.00, 4, 68.00), ('OVR', 35.01, 70.00, 6, 78.00), ('OVR', 35.01, 70.00, 8, 85.00);

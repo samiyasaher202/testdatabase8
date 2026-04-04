@@ -25,3 +25,5 @@ dist-ssr
 .env
 /backend/.env
 #backend/.env
+Seed_Data.sql
+node_modules

@@ -92,7 +92,7 @@ Employee_ID int auto_increment primary key,
 
 Post_Office_ID int not null,
 Supervisor_ID int null,
-role_ID int not null,
+Role_ID int not null,
 Department_ID int not null,
 
 First_Name varchar(30) not null,

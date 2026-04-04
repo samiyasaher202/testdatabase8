@@ -261,9 +261,85 @@ async function registerCustomer(pool, rawBody) {
   return { customer_id: customerId, user }
 }
 
+/**
+ * Lookup by email (case-insensitive). Returns Customer_ID or null.
+ */
+async function getCustomerByEmail(pool, email) {
+  if (!email?.trim()) return null
+  const [rows] = await pool.query(
+    'SELECT Customer_ID FROM customer WHERE LOWER(Email_Address) = ?',
+    [email.trim().toLowerCase()]
+  )
+  return rows[0] || null
+}
+
+/**
+ * Minimal customer row for employee-created shipments (placeholder password; customer can reset later).
+ */
+async function createCustomerMinimal(pool, body) {
+  const {
+    first_name,
+    last_name,
+    email,
+    house_number,
+    street,
+    city,
+    state,
+    zip_first3,
+    zip_last2,
+    apt_number,
+    zip_plus4,
+    country,
+    phone_number,
+  } = body
+
+  const hash = await bcrypt.hash(`emp_pkg_${Date.now()}_${Math.random().toString(36)}`, 10)
+  const zip3 = String(zip_first3).replace(/\D/g, '').slice(0, 3)
+  const zip2 = String(zip_last2).replace(/\D/g, '').slice(0, 2)
+  const z4digits = zip_plus4 != null && zip_plus4 !== ''
+    ? String(zip_plus4).replace(/\D/g, '')
+    : ''
+  const zipPlusVal = z4digits.length === 4 ? z4digits : null
+
+  const [result] = await pool.query(
+    `INSERT INTO customer (
+      First_Name, Middle_Name, Last_Name,
+      Apt_Number, House_Number, Street, City, State,
+      Zip_First3, Zip_Last2, Zip_Plus4,
+      Country,
+      Password_Hash, Email_Address, Phone_Number,
+      Birth_Day, Birth_Month, Birth_Year, Sex
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    [
+      String(first_name).trim().slice(0, 30),
+      null,
+      String(last_name).trim().slice(0, 30),
+      apt_number ? String(apt_number).trim().slice(0, 10) : null,
+      String(house_number).trim().slice(0, 10),
+      String(street).trim().slice(0, 100),
+      String(city).trim().slice(0, 100),
+      String(state).trim().slice(0, 50),
+      zip3,
+      zip2,
+      zipPlusVal,
+      (country?.toString().trim() || 'USA').slice(0, 50),
+      hash,
+      String(email).trim().toLowerCase().slice(0, 255),
+      phone_number ? String(phone_number).trim().slice(0, 20) : null,
+      1,
+      1,
+      1990,
+      'U',
+    ]
+  )
+  return result.insertId
+}
+
 module.exports = {
   getAllCustomers,
   getCustomerByID,
   getCustomerPackages,
   registerCustomer,
+  getCustomerByEmail,
+  createCustomerMinimal,
 }

@@ -6,7 +6,6 @@ import './css/package_tracking.css'
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export default function PackageTracking() {
-  
   const navigate = useNavigate()
   const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('token'))
   const [trackingNumber, setTrackingNumber] = useState('')
@@ -39,31 +38,37 @@ export default function PackageTracking() {
     setError(null)
     setPackageData(null)
 
+    const id = encodeURIComponent(trackingNumber.trim())
     try {
-      const id = encodeURIComponent(trackingNumber.trim())
-      const response = await fetch(`${API_BASE}/api/packages/track/${id}`)
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}))
-        throw new Error(errData.error || `Failed to fetch tracking information (${response.status})`)
+      const res = await fetch(`${API_BASE}/api/packages/track/${id}`)
+      const raw = await res.text()
+      const contentType = res.headers.get('content-type') || ''
+      let data = {}
+      if (raw && contentType.includes('application/json')) {
+        try {
+          data = JSON.parse(raw)
+        } catch {
+          data = {}
+        }
       }
-
-      const data = await response.json()
+      if (!res.ok) {
+        throw new Error(data.error || data.message || raw || 'Failed to fetch tracking info')
+      }
       setPackageData(data)
     } catch (err) {
-      setError(err.message || 'Failed to load tracking information')
+      setError(err.message || 'Could not load tracking information')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleSearch()
   }
 
-  const getStatusBadgeClass = (status) => {
+  function getStatusBadgeClass(status) {
     const s = (status || '').toLowerCase()
-    if (s.includes('delivered')) return 'status-delivered'
+    if (s.includes('deliver')) return 'status-delivered'
     if (s.includes('transit') || s.includes('shipping')) return 'status-transit'
     if (s.includes('pending') || s.includes('processing')) return 'status-pending'
     if (s.includes('delay') || s.includes('exception')) return 'status-delayed'
@@ -78,40 +83,20 @@ export default function PackageTracking() {
             National Postal Service
           </Link>
           <nav className="top-nav">
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/')
-              }}
-            >
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/') }}>
               Home
             </a>
             {loggedIn ? (
               <>
                 {localStorage.getItem('userType') === 'customer' && (
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      navigate('/customer_home')
-                    }}
-                  >
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>
                     Customer Portal
                   </a>
                 )}
-                <a href="#" onClick={handleLogout}>
-                  Logout
-                </a>
+                <a href="#" onClick={handleLogout}>Logout</a>
               </>
             ) : (
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  navigate('/login')
-                }}
-              >
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login') }}>
                 Login
               </a>
             )}
@@ -130,7 +115,7 @@ export default function PackageTracking() {
         <div className="tracking-content">
           <h2>Package tracking</h2>
           <p className="tracking-subtitle">
-            Enter your tracking number to see status, route details, and delivery information.
+            Enter your tracking number to see status and delivery information.
           </p>
 
           <div className="tracking-search-card">
@@ -141,7 +126,7 @@ export default function PackageTracking() {
                 placeholder="Enter tracking number"
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
               />
               <button
                 type="button"
@@ -178,7 +163,7 @@ export default function PackageTracking() {
                       <th>Status</th>
                       <th>Type</th>
                       <th>Weight</th>
-                      <th>Dimensions (L × W × H)</th>
+                      <th>Dimensions</th>
                       <th>Price</th>
                     </tr>
                   </thead>
@@ -193,7 +178,11 @@ export default function PackageTracking() {
                         </span>
                       </td>
                       <td>{packageData.Type_Name || '—'}</td>
-                      <td>{packageData.Weight != null ? `${packageData.Weight} lbs` : '—'}</td>
+                      <td>
+                        {packageData.Weight != null
+                          ? `${packageData.Weight} lbs`
+                          : '—'}
+                      </td>
                       <td>
                         {packageData.Dim_X != null &&
                         packageData.Dim_Y != null &&
@@ -202,7 +191,9 @@ export default function PackageTracking() {
                           : '—'}
                       </td>
                       <td>
-                        {packageData.Price != null ? `$${Number(packageData.Price).toFixed(2)}` : '—'}
+                        {packageData.Price != null
+                          ? `$${Number(packageData.Price).toFixed(2)}`
+                          : '—'}
                       </td>
                     </tr>
                   </tbody>
@@ -229,7 +220,9 @@ export default function PackageTracking() {
           )}
 
           {!loading && !packageData && !error && trackingNumber === '' && (
-            <div className="tracking-state-msg">Enter a tracking number above to get started.</div>
+            <div className="tracking-state-msg">
+              Enter a tracking number above to get started.
+            </div>
           )}
         </div>
       </main>

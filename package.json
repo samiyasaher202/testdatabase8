@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
+    "start:backend": "npm --prefix backend start",
+    "dev:backend": "npm --prefix backend run dev",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

@@ -27,7 +27,8 @@ import SubmitTicket from './pages/SubmitTicket'
 //import SupportTicket from './pages/SupportTicket'
 //import EmployeeSupport from './pages/EmployeeSupport'
 import PriceCalculator from './pages/price_calculator'
-import NewPackage from './pages/new_package'
+import AddPackage from './pages/add_package'
+import CustomerPackages from './pages/customer_packages'
 
 
 // global styles
@@ -46,10 +47,12 @@ function App() {
         {/* Customer Routes */}
         <Route path="/customer_home" element={<RequireCustomer><CustomerHome /></RequireCustomer>} />
         <Route path="/customer_profile" element={<RequireCustomer><CustomerProfile /></RequireCustomer>} />
+        <Route path="/customer_packages" element={<RequireCustomer><CustomerPackages /></RequireCustomer>} />
         <Route path="/submit_ticket" element={<SubmitTicket/>} />
 
         {/* Employee Routes */}
         <Route path="/employee_home" element={<RequireEmployee><EmployeeHome /></RequireEmployee>} />
+        <Route path="/employee/add-package" element={<RequireEmployee><AddPackage /></RequireEmployee>} />
         {/* <Route path="/employee/support" element={<RequireEmployee><EmployeeSupport /></RequireEmployee>} /> */}
         <Route path="/customers" element={<RequireEmployee><AllCustomers /></RequireEmployee>} />
         <Route path="/admin-register" element={<RequireEmployee><AdminRegister /></RequireEmployee>} />
