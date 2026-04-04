@@ -1,36 +1,6 @@
 const { default: NewPackage } = require("../../src/pages/new_package")
 
-
-function NewPackage(pool, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z, Package_Type_Code, Weight, Zone, Oversize, Requires_Signiture, Price){
-     const missing = []
-  if (!Sender_ID) missing.push('Sender_ID')
-  if (!Recipient_ID) missing.push('Recipient_ID')
-  if (!Dim_X) missing.push('Dim_X')
-  if (!Dim_Y) missing.push('Dim_Y')
-  if (!Dim_Z) missing.push('Dim_Z')
-  if (!Package_Type_Code) missing.push('Package_Type_Code')
-  if (!Weight) missing.push('Weight')
-  if (!Zone) missing.push('Zone')
-  if (!Oversize) missing.push('Oversize')
-  if (!Requires_Signiture) missing.push('Requires_Signiture')
-  if (!Price) missing.push('Price')
-  
-  if (missing.length) {
-    const err = new Error(`Missing required fields: ${missing.join(', ')}`)
-    err.status = 400
-    err.code = 'VALIDATION'
-    throw err
-  }
-    pool.query(`
-        INSERT INTO Package(
-        Sender_ID, Recipient_ID,
-        Dim_x, Dim_Y, Dim_z, Package_Type_Code, Weight, Zone, 
-        Oversize, Requires_Signiture, Price
-        )
-        VALUES(?,?,?,?,?,?,?,?,?,?,?)
-    `)
-}
-
+function getPrice(pool, excess_fee, package_type, weight, zone, callback) {
   const fee =
     excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
   const w = Number(weight)
@@ -53,4 +23,4 @@ function NewPackage(pool, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z, Package_
     .then(([results]) => callback(null, results))
     .catch((err) => callback(err, null))
 }
-module.exports = { getPrice, NewPackage }
+module.exports = { getPrice }
