@@ -5,7 +5,7 @@ import './css/customer_home.css'
 import './css/customer_profile.css'
 import skyline from '../assets/houston-skyline.jpeg'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export default function CustomerProfile() {
   const [user, setUser] = useState(null)
