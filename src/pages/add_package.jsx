@@ -25,7 +25,7 @@ const BOX_TIERS = [
   { maxL: 30, maxW: 30, maxH: 30, surcharge: 20, label: 'Extra Large (up to 30×30×30 in)' },
 ]
 
-const MAX_WEIGHT    = 70
+const MAX_WEIGHT    = 30
 const OVR_THRESHOLD = 15
 
 function getBoxTier(dx, dy, dz) {
@@ -88,6 +88,7 @@ export default function AddPackage() {
   const boxTier        = getBoxTier(dx, dy, dz)
   const boxRejected    = boxTier === 'rejected'
   const effectiveType  = isOverweight ? 'oversize' : shipmentType
+  //const storeID =  req.user.store_id 
 
   // ── Customer lookup ───────────────────────────────────────────────────
   async function lookupSender() {
@@ -192,6 +193,7 @@ export default function AddPackage() {
         weight: Number(weight), zone: Number(zone),
         excess_fee: excessFee || null,
         dim_x: dx || undefined, dim_y: dy || undefined, dim_z: dz || undefined,
+        //store_id: storeID
       }
       const res  = await fetch(`${API_BASE}/api/employee/packages`, {
         method: 'POST',
@@ -444,6 +446,7 @@ export default function AddPackage() {
               {effectiveType && weight && zone && !boxRejected && (
                 <div className="calc-summary">
                   <span>Type: <strong>{effectiveType.charAt(0).toUpperCase() + effectiveType.slice(1)}</strong></span>
+                  <span>Cubic inches: {dimX*dimY*dimZ} in³ </span>
                   <span>{weight} lbs</span>
                   <span>{ZONES.find(z => z.value === zone)?.label}</span>
                   {boxTier && boxTier !== 'rejected' && boxTier.surcharge > 0 && (

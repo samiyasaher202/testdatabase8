@@ -34,7 +34,7 @@ function getPrice(pool, excess_fee, package_type, weight, zone, callback, dim_x,
   const fee = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
   const w   = Number(weight)
   const z   = Number(zone)
-  const cub_in = dim_x *dim_y *dim_z
+  
 
   // Check box size surcharge first
   const surcharge = getBoxSurcharge(dim_x, dim_y, dim_z)
@@ -43,6 +43,12 @@ function getPrice(pool, excess_fee, package_type, weight, zone, callback, dim_x,
     err.status = 400
     return callback(err, null)
   }
+  if(dim_x > 12)dim_x = 12;
+  if(dim_y > 12)dim_y = 12;
+  if(dim_z > 12)dim_z = 12;
+
+  const cub_in = dim_x *dim_y *dim_z
+
 
   pool.query(`
     SELECT pc.Price + IFNULL(e.Additional_Price, 0) AS Base_Price

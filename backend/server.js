@@ -139,7 +139,8 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' })
 
     const token = jwt.sign(
-      { employee_id: emp.Employee_ID, email: emp.Email_Address, role_id: emp.Role_ID, type: 'employee' },
+      //added post office to employee jwt sign for payment
+      { employee_id: emp.Employee_ID, email: emp.Email_Address, role_id: emp.Role_ID, type: 'employee', post_office_id: emp.Post_Office_ID },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '24h' }
     )
@@ -590,6 +591,50 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
     store_id,
   } = b
 
+
+
+const fields = {
+  sender_email,
+  sender_first_name,
+  sender_last_name,
+  sender_house_number,
+  sender_street,
+  sender_city,
+  sender_state,
+  sender_zip_first3,
+  sender_zip_last2,
+  sender_apt_number,
+  sender_country,
+  sender_phone,
+  recipient_email,
+  recipient_first_name,
+  recipient_last_name,
+  recipient_house_number,
+  recipient_street,
+  recipient_city,
+  recipient_state,
+  recipient_zip_first3,
+  recipient_zip_last2,
+  recipient_apt_number,
+  recipient_country,
+  recipient_phone,
+  package_type,
+  weight,
+  zone,
+  excess_fee,
+  dim_x,
+  dim_y,
+  dim_z,
+  store_id
+};
+
+// NOW this works
+Object.entries(fields).forEach(([key, value]) => {
+  console.log(`${key}:`, value, value == null ? '❌ NULL/UNDEFINED' : '✅ OK');
+});
+
+ 
+
   const pt = normalizePackageTypeName(package_type)
   const typeCode = TYPE_NAME_TO_CODE[pt]
   if (!typeCode) {
@@ -692,6 +737,7 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
     const tracking = await nextTrackingNumber(conn)
     const oversize = typeCode === 'OVR' ? 1 : 0
     const sid = store_id != null ? Number(store_id) : 1
+    
 
     await conn.query(
       `INSERT INTO package (

@@ -204,6 +204,7 @@ export default function PriceCalculatorForm({
         {effectiveType && weight && zone && !boxRejected && (
           <div className="calc-summary">
             <span>Type: {effectiveType.charAt(0).toUpperCase() + effectiveType.slice(1)}</span>
+            <span>Cubic inches: {dimX*dimY*dimZ} cubic inches </span>
             <span>Weight: {weight} lbs </span>
             <span>{ZONES.find(z => z.value === zone)?.label} </span>
             {boxTier && boxTier !== 'rejected' && boxTier.surcharge > 0 && (
