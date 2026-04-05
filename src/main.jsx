@@ -30,6 +30,7 @@ import PriceCalculator from './pages/price_calculator'
 import AddPackage from './pages/add_package'
 import CustomerPackages from './pages/customer_packages'
 
+import EmployeeSupport from './pages/Employeesupport.jsx'
 
 // global styles
 import './pages/css/index.css'
@@ -42,6 +43,11 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
+        
+        {/* Testing Employee Support page */}
+        <Route path="/employee-support" element={<EmployeeSupport />} />
+
         {/* <Route path="/new-package" element={<NewPackage />} /> */}
 
         {/* Customer Routes */}
