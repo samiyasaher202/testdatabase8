@@ -486,6 +486,9 @@ app.get('/qry_track_package', async (req, res) => {
     res.json(result)
   })
 })
+// ════════════════════════════════════════════════════════════════════════════
+//  Price Calculator
+// ════════════════════════════════════════════════════════════════════════════
 
 // Shipping price (package_pricing + optional excess_fee); matches price_calculator.jsx
 // Replace your existing GET /api/price route in server.js with this:
@@ -525,9 +528,9 @@ app.get('/api/price', async (req, res) => {
           }
           resolve(Number(results[0].Tot_Price))
         },
-        dim_x,   // ← new
-        dim_y,   // ← new
-        dim_z    // ← new
+        dim_x,   
+        dim_y,  
+        dim_z    
       )
     })
     res.json({ Tot_Price: tot })
@@ -936,65 +939,6 @@ app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
   })
 })
 
-// ════════════════════════════════════════════════════════════════════════════
-//  Price Calculator
-// ════════════════════════════════════════════════════════════════════════════
-app.get('/api/price', async (req, res) => {
-  const { excess_fee, package_type, weight, zone } = req.query;
-  console.log('Price query params:', { excess_fee, package_type, weight, zone });
-  if (!weight || !zone || !package_type) {
-    return res.status(400).json({ error: "Missing required parameters" });
-  }
-
-  const numWeight = parseFloat(weight);
-  const numZone = parseInt(zone);
-
-  packageTypesDB.getPrice( pool, excess_fee || null, package_type, numWeight,numZone,
-    (err, results) => {
-      if (err) {
-        return res.status(500).json({ error: "Database error", details: err.message });
-      }
-      if (!results || results.length === 0) {
-        return res.status(404).json({ error: "No pricing found for given parameters" });
-      }
-      res.json(results[0] || {});
-    }
-  );
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-//  Package creations
-// ════════════════════════════════════════════════════════════════════════════
-// app.get('/api/package/create', async(req,res)=>{
-//   const{pool, Sender_Email, Recipient_Email, Dim_X, Dim_Y, Dim_Z, Package_Type, Weight, Zone, Oversize, Requires_Signiture, Price} = req.query;
-//    console.log('New package params:',{pool, Sender_Email, Recipient_Email, Dim_X, Dim_Y, Dim_Z, Package_Type, Weight, Zone, Oversize, Requires_Signiture, Price});
-   
-//    if (!Sender_Email || !Recipient_Email || !Dim_X || !Dim_Y || !Dim_Z ||!Package_Type || !Weight || !Zone || ! Oversize ||!Requires_Signiture || !Price) {
-//     return res.status(400).json({ error: "Missing required parameters" });
-//   }
-
-//    const numDim_X = parseInt(Dim_X);
-//    const numDim_Y = parseInt(Dim_Y);
-//    const numDim_Z = parseInt(Dim_Z);
-//    const numWeight = parseInt(Weight);
-//    const numZone = parseInt(Zone);
-//    const numOver = parseInt(Oversize);
-//    const numRS = parseInt(Requires_Signiture);
-//    const numPrice = parseInt(Price);
-  
-//    packageTypesDB.NewPackage( pool, Sender_Email, Recipient_Email, Dim_X, Dim_Y, Dim_Z, Package_Type, Weight, Zone, Oversize, Requires_Signiture, Price,
-//     (err, results) => {
-//       if (err) {
-//         return res.status(500).json({ error: "Database error", details: err.message });
-//       }
-//       if (!results || results.length === 0) {
-//         return res.status(404).json({ error: "package entering error: Did not find sender/recipient/zone/price" });
-//       }
-//       res.json(results[0] || {});
-//     }
-//   );
-   
-// });
 
 app.get('/api/customer/lookup', authenticate, requireEmployee, async (req, res) => {
   const email = (req.query.email || '').trim().toLowerCase()

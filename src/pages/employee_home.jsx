@@ -144,21 +144,6 @@ export default function EmployeeHome() {
               </button>
             </div>
 
-        <button className="btn" onClick={() => navigate('/price_calculator')}>
-          calculate package
-        </button>
-
-        <button className="btn" onClick={() => navigate('/new_package')}>
-          create package
-        </button>
-            <div className="card">
-              <h3>Package history</h3>
-              <p>Historical package activity (coming soon).</p>
-              <button type="button" className="btn primary" onClick={() => navigate('/package_history')}>
-                View history
-              </button>
-            </div>
-
             <div className="card">
               <h3>Customers</h3>
               <p>Search and manage customer accounts.</p>
