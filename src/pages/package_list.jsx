@@ -6,7 +6,7 @@ import './css/inventory.css'
 import './css/package_list.css'
 import skyline from '../assets/houston-skyline.jpeg'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 function getStatusBadgeClass(status) {
   const s = (status || '').toLowerCase()

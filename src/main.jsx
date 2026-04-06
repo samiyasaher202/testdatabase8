@@ -74,11 +74,12 @@ function App() {
 
         {/* Placeholders */}
         <Route path="/package_tracking" element={<PackageTracking/>} />
+        
         <Route path="/package_history" element={<p>Package History — coming soon</p>} />
         
         <Route path="/support_tickets" element={<p>Support Tickets — coming soon</p>} />
         <Route path="/price_calculator" element={<PriceCalculator/>} />
-
+        
         {/* 404 */}
         <Route path="*" element={<p>Page not found</p>} />
       </Routes>

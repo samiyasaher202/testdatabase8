@@ -9,6 +9,12 @@ require('dotenv').config({ path: path.join(__dirname, '.env') })
 const packagesDB  = require('./db/packages')
 const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
+
+const packageTrackDB = require('./db/package_track') 
+
+//const packageTypesDB = require('./db/package_type')
+
+
 const priceDB = require('./db/package_type')
 
 const app = express()
@@ -17,11 +23,11 @@ app.use(express.json())
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
-  host:               process.env.DB_HOST     || 'localhost',
-  port:               process.env.DB_PORT     || 3306,
-  user:               process.env.DB_USER     || 'root',
-  password:           process.env.DB_PASSWORD || 'MBobanza#2205',
-  database:           process.env.DB_NAME     || 'post_officedb',
+  host:               process.env.MYSQLHOST,
+  port:               process.env.MYSQLPORT,
+  user:               process.env.MYSQLUSER,
+  password:           process.env.MYSQLPASSWORD,
+  database:           process.env.MYSQL_DATABASE,
   waitForConnections: true,
   connectionLimit:    10,
 })
@@ -480,30 +486,53 @@ app.get('/qry_track_package', async (req, res) => {
     res.json(result)
   })
 })
+// ════════════════════════════════════════════════════════════════════════════
+//  Price Calculator
+// ════════════════════════════════════════════════════════════════════════════
 
 // Shipping price (package_pricing + optional excess_fee); matches price_calculator.jsx
+// Replace your existing GET /api/price route in server.js with this:
+
 app.get('/api/price', async (req, res) => {
-  const { package_type, weight, zone, excess_fee } = req.query
+  const { package_type, weight, zone, excess_fee, dim_x, dim_y, dim_z } = req.query
   const pt = normalizePackageTypeName(package_type)
-  if (
-    !pt ||
-    weight === undefined ||
-    weight === '' ||
-    zone === undefined ||
-    zone === ''
-  ) {
+
+  if (!pt || weight === undefined || weight === '' || zone === undefined || zone === '') {
     return res.status(400).json({ error: 'package_type, weight, and zone are required' })
   }
+
   const w = Number(weight)
   const z = Number(zone)
+
   if (!Number.isFinite(w) || w <= 0 || w > 70) {
     return res.status(400).json({ error: 'Weight must be greater than 0 and at most 70 lbs' })
   }
   if (!Number.isInteger(z) || z < 1 || z > 9) {
     return res.status(400).json({ error: 'Zone must be a whole number from 1 to 9' })
   }
+
   try {
-    const tot = await getPricePromise(pool, excess_fee || null, pt, weight, zone)
+    const tot = await new Promise((resolve, reject) => {
+      priceDB.getPrice(
+        pool,
+        excess_fee || null,
+        pt,
+        weight,
+        zone,
+        (err, results) => {
+          if (err) return reject(err)
+          if (!results?.length) {
+            const e = new Error('No matching price for this weight, zone, and package type combination')
+            e.status = 400
+            return reject(e)
+          }
+          resolve(Number(results[0].Tot_Price))
+        },
+        dim_x,   
+        dim_y,  
+        dim_z    
+      )
+    })
     res.json({ Tot_Price: tot })
   } catch (err) {
     if (err.status === 400) return res.status(400).json({ error: err.message })
@@ -528,6 +557,7 @@ app.get('/api/customer/my-packages', authenticate, async (req, res) => {
 
 // Employee: create paid package (Package, Shipment, Shipment_Package, Delivery, Payment)
 app.post('/api/employee/packages', authenticate, requireEmployee, async (req, res) => {
+  console.log('in api/employee/packages');
   const b = req.body || {}
   const {
     sender_email,
@@ -561,8 +591,9 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
     dim_x,
     dim_y,
     dim_z,
-    store_id,
+    //store_id = null
   } = b
+
 
   const pt = normalizePackageTypeName(package_type)
   const typeCode = TYPE_NAME_TO_CODE[pt]
@@ -665,14 +696,41 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
 
     const tracking = await nextTrackingNumber(conn)
     const oversize = typeCode === 'OVR' ? 1 : 0
-    const sid = store_id != null ? Number(store_id) : 1
+    //const sid = store_id != null ? Number(store_id) : 1
+    let sid
+    try{
+  const employee_id = req.user.employee_id;
+  const[empRows] = await conn.query(
+    `SELECT s.Store_ID 
+    FROM employee e
+    JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
+    JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
+    WHERE  Employee_ID = ?`,
+    [employee_id]
+  );
+  if (!empRows.length) {
+    await conn.rollback()
+   return res.status(404).json({ error: 'Employee or store not found' });
+  }
 
+   sid = empRows[0].Store_ID;
+} 
+catch(err){
+  console.error(err);
+  res.status(500).json({ error: 'Server error' });
+}
+    const [payRes] = await conn.query(
+      `INSERT INTO payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status, Employee_ID)
+       VALUES (?,?,?,?,?, 'completed', ?)`,
+      [senderId, sid,1, 1, priceAmount, req.user.employee_id]
+    )
+    const payId = payRes.insertId
     await conn.query(
       `INSERT INTO package (
         Tracking_Number, Sender_ID, Recipient_ID,
         Dim_X, Dim_Y, Dim_Z,
-        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Price
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Price, Payment_ID
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         tracking,
         senderId,
@@ -686,6 +744,7 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
         oversize,
         sigRequired ? 1 : 0,
         priceAmount,
+        payId,
       ]
     )
 
@@ -709,7 +768,7 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
         From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
         To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_First3, To_Zip_Last2, To_Zip_Plus4, To_Country,
         Departure_Time_Stamp, Arrival_Time_Stamp
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
       [
         pendingCode,
         req.user.employee_id,
@@ -733,18 +792,14 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
         (recipient_country || 'USA').toString().slice(0, 50),
       ]
     )
-
+    
     const shipmentId = shipRes.insertId
     await conn.query(
       `INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`,
       [shipmentId, tracking]
     )
 
-    await conn.query(
-      `INSERT INTO payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status)
-       VALUES (?,?,?,?,?, 'completed')`,
-      [senderId, sid, 1, 1, priceAmount]
-    )
+    
 
     await conn.commit()
     res.status(201).json({
@@ -759,7 +814,7 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({ message: 'Duplicate email or tracking conflict; try again' })
     }
-    res.status(500).json({ message: err.message || 'Could not create package' })
+    res.status(500).json({ message: err.message || 'Could not createify package' })
   } finally {
     conn.release()
   }
@@ -873,6 +928,39 @@ app.get('/api/customers/:id/packages', (req, res) => {
   });
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+//  PACKAGE TRACKING
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
+  const { tracking_number } = req.params
+  packageTrackDB.getPackageTracking(pool, tracking_number, (err, results) => {
+    if (err) return res.status(500).json({ error: 'Database error', details: err.message })
+    res.json(results)
+  })
+})
+
+
+app.get('/api/customer/lookup', authenticate, requireEmployee, async (req, res) => {
+  const email = (req.query.email || '').trim().toLowerCase()
+  if (!email) return res.status(400).json({ message: 'Email is required' })
+
+  try {
+    const [rows] = await pool.query(
+      `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
+              Phone_Number, House_Number, Street, Apt_Number,
+              City, State, Zip_First3, Zip_Last2
+       FROM Customer WHERE Email_Address = ? LIMIT 1`,
+      [email]
+    )
+    if (!rows.length) return res.status(404).json({ message: 'Customer not found' })
+    res.json({ customer: rows[0] })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
+console.log("Connecting to Database:", process.env.MYSQL_DATABASE);

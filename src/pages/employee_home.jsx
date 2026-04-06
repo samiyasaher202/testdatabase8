@@ -145,14 +145,6 @@ export default function EmployeeHome() {
             </div>
 
             <div className="card">
-              <h3>Package history</h3>
-              <p>Historical package activity (coming soon).</p>
-              <button type="button" className="btn primary" onClick={() => navigate('/package_history')}>
-                View history
-              </button>
-            </div>
-
-            <div className="card">
               <h3>Customers</h3>
               <p>Search and manage customer accounts.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/customers')}>

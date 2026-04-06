@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import './css/home.css'
 import './css/package_tracking.css'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export default function PackageTracking() {
   const navigate = useNavigate()

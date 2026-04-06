@@ -1,173 +1,207 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './css/home.css'
-import './css/employee_home.css'
 import './css/add_package.css'
 import skyline from '../assets/houston-skyline.jpeg'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+const ZONES = [
+  { value: '1', label: 'Zone 1 — 1 to 50 miles' },
+  { value: '2', label: 'Zone 2 — 51 to 150 miles' },
+  { value: '3', label: 'Zone 3 — 151 to 300 miles' },
+  { value: '4', label: 'Zone 4 — 301 to 600 miles' },
+  { value: '5', label: 'Zone 5 — 601 to 1,000 miles' },
+  { value: '6', label: 'Zone 6 — 1,001 to 1,400 miles' },
+  { value: '7', label: 'Zone 7 — 1,401 to 1,800 miles' },
+  { value: '8', label: 'Zone 8 — 1,801 miles or greater' },
+  { value: '9', label: 'Zone 9 — Territories & military addresses' },
+]
+
+const BOX_TIERS = [
+  { maxL: 12, maxW: 12, maxH: 12, surcharge: 0,  label: 'Small (up to 12×12×12 in)' },
+  { maxL: 18, maxW: 18, maxH: 18, surcharge: 5,  label: 'Medium (up to 18×18×18 in)' },
+  { maxL: 24, maxW: 24, maxH: 24, surcharge: 10, label: 'Large (up to 24×24×24 in)' },
+  { maxL: 30, maxW: 30, maxH: 30, surcharge: 20, label: 'Extra Large (up to 30×30×30 in)' },
+]
+
+const MAX_WEIGHT    = 30
+const OVR_THRESHOLD = 15
+
+function getBoxTier(dx, dy, dz) {
+  if (!dx && !dy && !dz) return null
+  for (const tier of BOX_TIERS) {
+    if (dx <= tier.maxL && dy <= tier.maxW && dz <= tier.maxH) return tier
+  }
+  return 'rejected'
+}
 
 const emptyAddr = () => ({
-  house_number: '',
-  street: '',
-  city: '',
-  state: '',
-  zip_first3: '',
-  zip_last2: '',
-  apt_number: '',
+  house_number: '', street: '', city: '',
+  state: '', zip_first3: '', zip_last2: '', apt_number: '',
 })
 
 export default function AddPackage() {
   const navigate = useNavigate()
-  const token = localStorage.getItem('token')
+  const token    = localStorage.getItem('token')
 
-  const [senderEmail, setSenderEmail] = useState('')
-  const [senderFirst, setSenderFirst] = useState('')
-  const [senderLast, setSenderLast] = useState('')
-  const [senderPhone, setSenderPhone] = useState('')
-  const [senderAddr, setSenderAddr] = useState(emptyAddr)
+  // ── Sender ────────────────────────────────────────────────────────────
+  const [senderEmail, setSenderEmail]     = useState('')
+  const [senderFirst, setSenderFirst]     = useState('')
+  const [senderLast, setSenderLast]       = useState('')
+  const [senderPhone, setSenderPhone]     = useState('')
+  const [senderAddr, setSenderAddr]       = useState(emptyAddr)
+  const [lookingUp, setLookingUp]         = useState(false)
+  const [lookupMsg, setLookupMsg]         = useState(null)
+  const [senderFound, setSenderFound]     = useState(false)
 
-  const [recipientEmail, setRecipientEmail] = useState('')
-  const [recipientFirst, setRecipientFirst] = useState('')
-  const [recipientLast, setRecipientLast] = useState('')
-  const [recipientPhone, setRecipientPhone] = useState('')
-  const [recipientAddr, setRecipientAddr] = useState(emptyAddr)
+  // ── Recipient ─────────────────────────────────────────────────────────
+  const [recipientEmail, setRecipientEmail]   = useState('')
+  const [recipientFirst, setRecipientFirst]   = useState('')
+  const [recipientLast, setRecipientLast]     = useState('')
+  const [recipientPhone, setRecipientPhone]   = useState('')
+  const [recipientAddr, setRecipientAddr]     = useState(emptyAddr)
 
-  const [packageType, setPackageType] = useState('')
-  const [excessFee, setExcessFee] = useState('')
-  const [weight, setWeight] = useState('')
-  const [zone, setZone] = useState('')
-  const [dimX, setDimX] = useState('12')
-  const [dimY, setDimY] = useState('10')
-  const [dimZ, setDimZ] = useState('8')
+  // ── Package ───────────────────────────────────────────────────────────
+  const [shipmentType, setShipmentType]   = useState('')
+  const [excessFee, setExcessFee]         = useState('')
+  const [weight, setWeight]               = useState('')
+  const [zone, setZone]                   = useState('')
+  const [dimX, setDimX]                   = useState('')
+  const [dimY, setDimY]                   = useState('')
+  const [dimZ, setDimZ]                   = useState('')
 
-  const [quotedPrice, setQuotedPrice] = useState(null)
-  const [submitResult, setSubmitResult] = useState(null)
-  const [error, setError] = useState(null)
-  const [loadingQuote, setLoadingQuote] = useState(false)
-  const [loadingPay, setLoadingPay] = useState(false)
+  // ── State ─────────────────────────────────────────────────────────────
+  const [quotedPrice, setQuotedPrice]     = useState(null)
+  const [submitResult, setSubmitResult]   = useState(null)
+  const [error, setError]                 = useState(null)
+  const [loadingQuote, setLoadingQuote]   = useState(false)
+  const [loadingPay, setLoadingPay]       = useState(false)
 
-  function handleLogout(e) {
-    e.preventDefault()
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    localStorage.removeItem('userType')
-    navigate('/')
+  // ── Derived ───────────────────────────────────────────────────────────
+  const w              = parseFloat(weight) || 0
+  const dx             = parseFloat(dimX) || 0
+  const dy             = parseFloat(dimY) || 0
+  const dz             = parseFloat(dimZ) || 0
+  const weightTooHeavy = w > MAX_WEIGHT
+  const isOverweight   = w > OVR_THRESHOLD
+  const boxTier        = getBoxTier(dx, dy, dz)
+  const boxRejected    = boxTier === 'rejected'
+  const effectiveType  = isOverweight ? 'oversize' : shipmentType
+  //const storeID =  req.user.store_id 
+
+  // ── Customer lookup ───────────────────────────────────────────────────
+  async function lookupSender() {
+    if (!senderEmail.trim()) { setLookupMsg({ type: 'error', text: 'Enter an email to look up.' }); return }
+    setLookingUp(true)
+    setLookupMsg(null)
+    setSenderFound(false)
+    try {
+      const res  = await fetch(`${API_BASE}/api/customer/lookup?email=${encodeURIComponent(senderEmail.trim())}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.status === 404) {
+        setLookupMsg({ type: 'info', text: 'No existing customer found — fill in details manually.' })
+        setSenderFirst(''); setSenderLast(''); setSenderPhone(''); setSenderAddr(emptyAddr())
+        return
+      }
+      if (!res.ok) throw new Error('Lookup failed')
+      const data = await res.json()
+      const c    = data.customer
+      setSenderFirst(c.First_Name || '')
+      setSenderLast(c.Last_Name   || '')
+      setSenderPhone(c.Phone_Number || '')
+      setSenderAddr({
+        house_number: c.House_Number || '',
+        street:       c.Street       || '',
+        city:         c.City         || '',
+        state:        c.State        || '',
+        zip_first3:   c.Zip_First3   || '',
+        zip_last2:    c.Zip_Last2    || '',
+        apt_number:   c.Apt_Number   || '',
+      })
+      setSenderFound(true)
+      setLookupMsg({ type: 'success', text: `Found: ${c.First_Name} ${c.Last_Name}` })
+    } catch (err) {
+      setLookupMsg({ type: 'error', text: err.message || 'Lookup failed' })
+    } finally {
+      setLookingUp(false)
+    }
   }
 
+  // ── Calculate price ───────────────────────────────────────────────────
   async function calculatePrice() {
-    if (!packageType || !weight || !zone) {
-      setError('Select package type, weight, and zone.')
-      return
-    }
-    setError(null)
-    setLoadingQuote(true)
+    if (!effectiveType)    { setError('Select a shipment type.'); return }
+    if (!weight || w <= 0) { setError('Enter a valid weight.'); return }
+    if (weightTooHeavy)    { setError(`Max weight is ${MAX_WEIGHT} lbs.`); return }
+    if (!zone)             { setError('Select a zone.'); return }
+    if (boxRejected)       { setError('Dimensions exceed 30×30×30 inches.'); return }
+    setError(null); setLoadingQuote(true)
     try {
-      const q = new URLSearchParams({
-        package_type: packageType,
-        weight: String(weight),
-        zone: String(zone),
-      })
+      const q = new URLSearchParams({ package_type: effectiveType, weight: String(weight), zone: String(zone) })
       if (excessFee) q.append('excess_fee', excessFee)
-      const res = await fetch(`${API_BASE}/api/price?${q}`)
-      const raw = await res.text()
-      let data = {}
-      try {
-        data = raw ? JSON.parse(raw) : {}
-      } catch {
-        data = { error: raw ? raw.slice(0, 240) : `HTTP ${res.status}` }
-      }
-      if (!res.ok) {
-        throw new Error(
-          data.error ||
-            data.message ||
-            (res.status === 502 ? 'Backend server is not running (start the API on port 5000).' : '') ||
-            `Could not calculate price (${res.status})`
-        )
-      }
+      if (dx > 0)    q.append('dim_x', dx)
+      if (dy > 0)    q.append('dim_y', dy)
+      if (dz > 0)    q.append('dim_z', dz)
+      const res  = await fetch(`${API_BASE}/api/price?${q}`)
+      const raw  = await res.text()
+      let data   = {}
+      try { data = raw ? JSON.parse(raw) : {} } catch { data = { error: raw?.slice(0, 240) } }
+      if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`)
       setQuotedPrice(data.Tot_Price)
     } catch (err) {
-      setError(err.message || 'Quote failed')
-      setQuotedPrice(null)
+      setError(err.message || 'Quote failed'); setQuotedPrice(null)
     } finally {
       setLoadingQuote(false)
     }
   }
 
+  // ── Pay & create ──────────────────────────────────────────────────────
   async function payAndCreate() {
-    setError(null)
-    setSubmitResult(null)
-
-    if (!senderEmail.trim() || !senderFirst.trim() || !senderLast.trim()) {
-      setError('Sender email and name are required.')
-      return
-    }
-    if (!recipientFirst.trim() || !recipientLast.trim()) {
-      setError('Recipient name is required.')
-      return
-    }
-    const sa = senderAddr
-    const ra = recipientAddr
-    if (!sa.house_number || !sa.street || !sa.city || !sa.state || !sa.zip_first3 || !sa.zip_last2) {
-      setError('Complete the sender address (including ZIP).')
-      return
-    }
-    if (!ra.house_number || !ra.street || !ra.city || !ra.state || !ra.zip_first3 || !ra.zip_last2) {
-      setError('Complete the recipient address (including ZIP).')
-      return
-    }
-    if (!packageType || !weight || !zone) {
-      setError('Package type, weight, and zone are required.')
-      return
-    }
+    setError(null); setSubmitResult(null)
+    if (!senderEmail.trim() || !senderFirst.trim() || !senderLast.trim())
+      { setError('Sender email and name are required.'); return }
+    if (!recipientFirst.trim() || !recipientLast.trim())
+      { setError('Recipient name is required.'); return }
+    const sa = senderAddr; const ra = recipientAddr
+    if (!sa.house_number || !sa.street || !sa.city || !sa.state || !sa.zip_first3 || !sa.zip_last2)
+      { setError('Complete the sender address.'); return }
+    if (!ra.house_number || !ra.street || !ra.city || !ra.state || !ra.zip_first3 || !ra.zip_last2)
+      { setError('Complete the recipient address.'); return }
+    if (!effectiveType || !weight || !zone)
+      { setError('Package type, weight, and zone are required.'); return }
+    if (boxRejected) { setError('Dimensions exceed 30×30×30 inches.'); return }
 
     setLoadingPay(true)
     try {
       const body = {
         sender_email: senderEmail.trim(),
-        sender_first_name: senderFirst.trim(),
-        sender_last_name: senderLast.trim(),
+        sender_first_name: senderFirst.trim(), sender_last_name: senderLast.trim(),
         sender_phone: senderPhone || null,
-        sender_house_number: sa.house_number,
-        sender_street: sa.street,
-        sender_city: sa.city,
-        sender_state: sa.state,
-        sender_zip_first3: sa.zip_first3,
-        sender_zip_last2: sa.zip_last2,
-        sender_apt_number: sa.apt_number || null,
-        sender_country: 'USA',
+        sender_house_number: sa.house_number, sender_street: sa.street,
+        sender_city: sa.city, sender_state: sa.state,
+        sender_zip_first3: sa.zip_first3, sender_zip_last2: sa.zip_last2,
+        sender_apt_number: sa.apt_number || null, sender_country: 'USA',
         recipient_email: recipientEmail.trim() || null,
-        recipient_first_name: recipientFirst.trim(),
-        recipient_last_name: recipientLast.trim(),
+        recipient_first_name: recipientFirst.trim(), recipient_last_name: recipientLast.trim(),
         recipient_phone: recipientPhone || null,
-        recipient_house_number: ra.house_number,
-        recipient_street: ra.street,
-        recipient_city: ra.city,
-        recipient_state: ra.state,
-        recipient_zip_first3: ra.zip_first3,
-        recipient_zip_last2: ra.zip_last2,
-        recipient_apt_number: ra.apt_number || null,
-        recipient_country: 'USA',
-        package_type: packageType,
-        weight: Number(weight),
-        zone: Number(zone),
+        recipient_house_number: ra.house_number, recipient_street: ra.street,
+        recipient_city: ra.city, recipient_state: ra.state,
+        recipient_zip_first3: ra.zip_first3, recipient_zip_last2: ra.zip_last2,
+        recipient_apt_number: ra.apt_number || null, recipient_country: 'USA',
+        package_type: effectiveType,
+        weight: Number(weight), zone: Number(zone),
         excess_fee: excessFee || null,
-        dim_x: dimX ? Number(dimX) : undefined,
-        dim_y: dimY ? Number(dimY) : undefined,
-        dim_z: dimZ ? Number(dimZ) : undefined,
+        dim_x: dx || undefined, dim_y: dy || undefined, dim_z: dz || undefined,
+        //store_id: storeID
       }
-
-      const res = await fetch(`${API_BASE}/api/employee/packages`, {
+      const res  = await fetch(`${API_BASE}/api/employee/packages`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.message || 'Could not create package')
-
       setSubmitResult(data)
       setQuotedPrice(data.price)
     } catch (err) {
@@ -177,13 +211,17 @@ export default function AddPackage() {
     }
   }
 
+  function handleLogout(e) {
+    e.preventDefault()
+    localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('userType')
+    navigate('/')
+  }
+
   return (
-    <div className="employee-home add-package-page">
+    <div className="add-package-page">
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/">
-            National Postal Service
-          </Link>
+          <Link className="logo" to="/">National Postal Service</Link>
           <nav className="top-nav">
             <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
             <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_list') }}>Packages</a>
@@ -193,222 +231,209 @@ export default function AddPackage() {
       </header>
 
       <main>
-        <div className="employee-hero">
+        <div className="price-calculator-hero">
           <img src={skyline} alt="" />
         </div>
 
         <div className="add-package-inner">
           <h2>Add package</h2>
-         
+          <p className="add-package-subtitle">Fill in sender, recipient, and package details to create a shipment.</p>
+
+          {/* ── SENDER ── */}
           <div className="add-package-section">
-            <h3>Sender (customer)</h3>
-            <div className="add-package-grid">
-              <div className="form-field">
-                <label htmlFor="ap-s-email">Email</label>
+            <h3>Sender</h3>
+
+            {/* Email lookup */}
+            <div className="ap-lookup-row">
+              <div className="form-field" style={{ flex: 1 }}>
+                <label htmlFor="ap-s-email">Customer email</label>
                 <input
-                  id="ap-s-email"
-                  type="email"
-                  value={senderEmail}
-                  onChange={(e) => setSenderEmail(e.target.value)}
+                  id="ap-s-email" type="email"
+                  value={senderEmail} onChange={(e) => { setSenderEmail(e.target.value); setSenderFound(false); setLookupMsg(null) }}
                   placeholder="customer@example.com"
                   autoComplete="off"
                 />
               </div>
+              <button type="button" className="btn-calc ap-lookup-btn" onClick={lookupSender} disabled={lookingUp}>
+                {lookingUp ? 'Looking up…' : 'Look up'}
+              </button>
+            </div>
+
+            {lookupMsg && (
+              <div className={`ap-lookup-msg ap-lookup-msg--${lookupMsg.type}`}>
+                {lookupMsg.text}
+              </div>
+            )}
+
+            <div className="add-package-grid" style={{ marginTop: 16 }}>
               <div className="form-field">
-                <label htmlFor="ap-s-fn">First name</label>
-                <input id="ap-s-fn" value={senderFirst} onChange={(e) => setSenderFirst(e.target.value)} />
+                <label>First name</label>
+                <input value={senderFirst} onChange={(e) => setSenderFirst(e.target.value)} disabled={senderFound} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-s-ln">Last name</label>
-                <input id="ap-s-ln" value={senderLast} onChange={(e) => setSenderLast(e.target.value)} />
+                <label>Last name</label>
+                <input value={senderLast} onChange={(e) => setSenderLast(e.target.value)} disabled={senderFound} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-s-ph">Phone (optional)</label>
-                <input id="ap-s-ph" value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />
+                <label>Phone (optional)</label>
+                <input value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-s-hn">House #</label>
-                <input
-                  id="ap-s-hn"
-                  value={senderAddr.house_number}
-                  onChange={(e) => setSenderAddr({ ...senderAddr, house_number: e.target.value })}
-                />
+                <label>House #</label>
+                <input value={senderAddr.house_number} onChange={(e) => setSenderAddr({ ...senderAddr, house_number: e.target.value })} disabled={senderFound} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-s-st">Street</label>
-                <input
-                  id="ap-s-st"
-                  value={senderAddr.street}
-                  onChange={(e) => setSenderAddr({ ...senderAddr, street: e.target.value })}
-                />
+                <label>Street</label>
+                <input value={senderAddr.street} onChange={(e) => setSenderAddr({ ...senderAddr, street: e.target.value })} disabled={senderFound} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-s-city">City</label>
-                <input
-                  id="ap-s-city"
-                  value={senderAddr.city}
-                  onChange={(e) => setSenderAddr({ ...senderAddr, city: e.target.value })}
-                />
+                <label>City</label>
+                <input value={senderAddr.city} onChange={(e) => setSenderAddr({ ...senderAddr, city: e.target.value })} disabled={senderFound} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-s-state">State</label>
-                <input
-                  id="ap-s-state"
-                  value={senderAddr.state}
-                  onChange={(e) => setSenderAddr({ ...senderAddr, state: e.target.value })}
-                />
+                <label>State</label>
+                <input value={senderAddr.state} onChange={(e) => setSenderAddr({ ...senderAddr, state: e.target.value })} disabled={senderFound} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-s-z3">ZIP first 3</label>
-                <input
-                  id="ap-s-z3"
-                  maxLength={3}
-                  value={senderAddr.zip_first3}
-                  onChange={(e) => setSenderAddr({ ...senderAddr, zip_first3: e.target.value })}
-                />
+                <label>ZIP first 3</label>
+                <input maxLength={3} value={senderAddr.zip_first3} onChange={(e) => setSenderAddr({ ...senderAddr, zip_first3: e.target.value })} disabled={senderFound} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-s-z2">ZIP last 2</label>
-                <input
-                  id="ap-s-z2"
-                  maxLength={2}
-                  value={senderAddr.zip_last2}
-                  onChange={(e) => setSenderAddr({ ...senderAddr, zip_last2: e.target.value })}
-                />
+                <label>ZIP last 2</label>
+                <input maxLength={2} value={senderAddr.zip_last2} onChange={(e) => setSenderAddr({ ...senderAddr, zip_last2: e.target.value })} disabled={senderFound} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-s-apt">Apt (optional)</label>
-                <input
-                  id="ap-s-apt"
-                  value={senderAddr.apt_number}
-                  onChange={(e) => setSenderAddr({ ...senderAddr, apt_number: e.target.value })}
-                />
+                <label>Apt (optional)</label>
+                <input value={senderAddr.apt_number} onChange={(e) => setSenderAddr({ ...senderAddr, apt_number: e.target.value })} />
               </div>
             </div>
+            {senderFound && (
+              <button type="button" className="ap-clear-btn" onClick={() => { setSenderFound(false); setSenderFirst(''); setSenderLast(''); setSenderPhone(''); setSenderAddr(emptyAddr()); setLookupMsg(null) }}>
+                ✕ Clear and enter manually
+              </button>
+            )}
           </div>
 
+          {/* ── RECIPIENT ── */}
           <div className="add-package-section">
             <h3>Recipient</h3>
-            <p className="add-package-hint">Leave email blank only if the recipient does not have one; a placeholder account is created for routing.</p>
+            <p className="add-package-hint">Leave email blank if the recipient does not have one.</p>
             <div className="add-package-grid">
               <div className="form-field">
-                <label htmlFor="ap-r-email">Email</label>
-                <input
-                  id="ap-r-email"
-                  type="email"
-                  value={recipientEmail}
-                  onChange={(e) => setRecipientEmail(e.target.value)}
-                  placeholder="Optional"
-                />
+                <label>Email (optional)</label>
+                <input type="email" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} placeholder="Optional" />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-r-fn">First name</label>
-                <input id="ap-r-fn" value={recipientFirst} onChange={(e) => setRecipientFirst(e.target.value)} />
+                <label>First name</label>
+                <input value={recipientFirst} onChange={(e) => setRecipientFirst(e.target.value)} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-r-ln">Last name</label>
-                <input id="ap-r-ln" value={recipientLast} onChange={(e) => setRecipientLast(e.target.value)} />
+                <label>Last name</label>
+                <input value={recipientLast} onChange={(e) => setRecipientLast(e.target.value)} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-r-ph">Phone (optional)</label>
-                <input id="ap-r-ph" value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} />
+                <label>Phone (optional)</label>
+                <input value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-r-hn">House #</label>
-                <input
-                  id="ap-r-hn"
-                  value={recipientAddr.house_number}
-                  onChange={(e) => setRecipientAddr({ ...recipientAddr, house_number: e.target.value })}
-                />
+                <label>House #</label>
+                <input value={recipientAddr.house_number} onChange={(e) => setRecipientAddr({ ...recipientAddr, house_number: e.target.value })} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-r-st">Street</label>
-                <input
-                  id="ap-r-st"
-                  value={recipientAddr.street}
-                  onChange={(e) => setRecipientAddr({ ...recipientAddr, street: e.target.value })}
-                />
+                <label>Street</label>
+                <input value={recipientAddr.street} onChange={(e) => setRecipientAddr({ ...recipientAddr, street: e.target.value })} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-r-city">City</label>
-                <input
-                  id="ap-r-city"
-                  value={recipientAddr.city}
-                  onChange={(e) => setRecipientAddr({ ...recipientAddr, city: e.target.value })}
-                />
+                <label>City</label>
+                <input value={recipientAddr.city} onChange={(e) => setRecipientAddr({ ...recipientAddr, city: e.target.value })} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-r-state">State</label>
-                <input
-                  id="ap-r-state"
-                  value={recipientAddr.state}
-                  onChange={(e) => setRecipientAddr({ ...recipientAddr, state: e.target.value })}
-                />
+                <label>State</label>
+                <input value={recipientAddr.state} onChange={(e) => setRecipientAddr({ ...recipientAddr, state: e.target.value })} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-r-z3">ZIP first 3</label>
-                <input
-                  id="ap-r-z3"
-                  maxLength={3}
-                  value={recipientAddr.zip_first3}
-                  onChange={(e) => setRecipientAddr({ ...recipientAddr, zip_first3: e.target.value })}
-                />
+                <label>ZIP first 3</label>
+                <input maxLength={3} value={recipientAddr.zip_first3} onChange={(e) => setRecipientAddr({ ...recipientAddr, zip_first3: e.target.value })} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-r-z2">ZIP last 2</label>
-                <input
-                  id="ap-r-z2"
-                  maxLength={2}
-                  value={recipientAddr.zip_last2}
-                  onChange={(e) => setRecipientAddr({ ...recipientAddr, zip_last2: e.target.value })}
-                />
+                <label>ZIP last 2</label>
+                <input maxLength={2} value={recipientAddr.zip_last2} onChange={(e) => setRecipientAddr({ ...recipientAddr, zip_last2: e.target.value })} />
               </div>
               <div className="form-field">
-                <label htmlFor="ap-r-apt">Apt (optional)</label>
-                <input
-                  id="ap-r-apt"
-                  value={recipientAddr.apt_number}
-                  onChange={(e) => setRecipientAddr({ ...recipientAddr, apt_number: e.target.value })}
-                />
+                <label>Apt (optional)</label>
+                <input value={recipientAddr.apt_number} onChange={(e) => setRecipientAddr({ ...recipientAddr, apt_number: e.target.value })} />
               </div>
             </div>
           </div>
 
+          {/* ── PACKAGE & PRICING ── */}
           <div className="add-package-section">
-            <h3>Pricing (same as calculator)</h3>
-            <div className="add-package-grid">
-              <div className="form-field">
-                <label htmlFor="ap-w">Weight (lbs)</label>
-                <input
-                  id="ap-w"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                />
-              </div>
-              <div className="form-field">
-                <label htmlFor="ap-z">Zone</label>
-                <select id="ap-z" value={zone} onChange={(e) => setZone(e.target.value)}>
-                  <option value="">Select zone</option>
-                  {[...Array(9)].map((_, i) => (
-                    <option key={i + 1} value={String(i + 1)}>{`Zone ${i + 1}`}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-field">
-                <label htmlFor="ap-pt">Package type</label>
-                <select id="ap-pt" value={packageType} onChange={(e) => setPackageType(e.target.value)}>
+            <h3>Package details &amp; pricing</h3>
+            <div className="price-calculator-card" style={{ maxWidth: '100%', boxShadow: 'none', border: 'none', padding: 0 }}>
+
+              {/* Shipment type */}
+              <div className="form-field" style={{ marginBottom: 20 }}>
+                <label>Shipment type</label>
+                <select value={shipmentType} onChange={(e) => setShipmentType(e.target.value)} disabled={isOverweight}
+                  style={{ width: '100%', padding: '12px 14px', border: '1px solid var(--border, #dbe4ef)', borderRadius: 10, fontSize: '1rem', fontFamily: 'inherit' }}>
                   <option value="">Select type</option>
-                  <option value="express">Express</option>
                   <option value="general shipping">General shipping</option>
-                  <option value="oversize">Oversize</option>
+                  <option value="express">Express</option>
+                </select>
+                {isOverweight && (
+                  <span className="calc-notice calc-notice--warn">
+                    Weight over {OVR_THRESHOLD} lbs — automatically classified as oversize
+                  </span>
+                )}
+              </div>
+
+              {/* Weight */}
+              <div className="form-field" style={{ marginBottom: 20 }}>
+                <label>Weight (lbs)</label>
+                <input type="number" min="0" max={MAX_WEIGHT} step="0.01"
+                  value={weight} onChange={(e) => { setWeight(e.target.value); setQuotedPrice(null) }}
+                  placeholder="0.00"
+                  style={{ width: '100%', padding: '12px 14px', border: '1px solid var(--border, #dbe4ef)', borderRadius: 10, fontSize: '1rem', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                />
+                {weightTooHeavy && <span className="calc-notice calc-notice--error">Exceeds maximum of {MAX_WEIGHT} lbs</span>}
+              </div>
+
+              {/* Dimensions */}
+              <div className="form-field" style={{ marginBottom: 20 }}>
+                <label>Dimensions (inches) — Length × Width × Height</label>
+                <div className="dim-row">
+                  <input type="number" min="0" step="0.1" value={dimX} onChange={(e) => { setDimX(e.target.value); setQuotedPrice(null) }} placeholder="L"
+                    style={{ width: 80, padding: '12px 8px', border: '1px solid var(--border, #dbe4ef)', borderRadius: 10, fontSize: '1rem', textAlign: 'center' }} />
+                  <span className="dim-sep">×</span>
+                  <input type="number" min="0" step="0.1" value={dimY} onChange={(e) => { setDimY(e.target.value); setQuotedPrice(null) }} placeholder="W"
+                    style={{ width: 80, padding: '12px 8px', border: '1px solid var(--border, #dbe4ef)', borderRadius: 10, fontSize: '1rem', textAlign: 'center' }} />
+                  <span className="dim-sep">×</span>
+                  <input type="number" min="0" step="0.1" value={dimZ} onChange={(e) => { setDimZ(e.target.value); setQuotedPrice(null) }} placeholder="H"
+                    style={{ width: 80, padding: '12px 8px', border: '1px solid var(--border, #dbe4ef)', borderRadius: 10, fontSize: '1rem', textAlign: 'center' }} />
+                </div>
+                {boxRejected && <span className="calc-notice calc-notice--error">Exceeds maximum size of 30×30×30 inches</span>}
+                {boxTier && boxTier !== 'rejected' && (
+                  <span className="calc-notice calc-notice--info">
+                    {boxTier.label}{boxTier.surcharge > 0 ? ` — +$${boxTier.surcharge.toFixed(2)} surcharge` : ' — no surcharge'}
+                  </span>
+                )}
+              </div>
+
+              {/* Zone */}
+              <div className="form-field" style={{ marginBottom: 20 }}>
+                <label>Destination zone</label>
+                <select value={zone} onChange={(e) => { setZone(e.target.value); setQuotedPrice(null) }}
+                  style={{ width: '100%', padding: '12px 14px', border: '1px solid var(--border, #dbe4ef)', borderRadius: 10, fontSize: '1rem', fontFamily: 'inherit' }}>
+                  <option value="">Select zone</option>
+                  {ZONES.map(z => <option key={z.value} value={z.value}>{z.label}</option>)}
                 </select>
               </div>
-              <div className="form-field">
-                <label htmlFor="ap-ex">Excess fee (optional)</label>
-                <select id="ap-ex" value={excessFee} onChange={(e) => setExcessFee(e.target.value)}>
+
+              {/* Excess fee */}
+              <div className="form-field" style={{ marginBottom: 20 }}>
+                <label>Add-on fee (optional)</label>
+                <select value={excessFee} onChange={(e) => { setExcessFee(e.target.value); setQuotedPrice(null) }}
+                  style={{ width: '100%', padding: '12px 14px', border: '1px solid var(--border, #dbe4ef)', borderRadius: 10, fontSize: '1rem', fontFamily: 'inherit' }}>
                   <option value="">None</option>
                   <option value="Fragile Handling">Fragile handling</option>
                   <option value="Fuel Surcharge">Fuel surcharge</option>
@@ -416,48 +441,53 @@ export default function AddPackage() {
                   <option value="Signature Required">Signature required</option>
                 </select>
               </div>
-              <div className="form-field">
-                <label htmlFor="ap-dx">Dim X (in)</label>
-                <input id="ap-dx" type="number" min="0.01" step="0.01" value={dimX} onChange={(e) => setDimX(e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label htmlFor="ap-dy">Dim Y (in)</label>
-                <input id="ap-dy" type="number" min="0.01" step="0.01" value={dimY} onChange={(e) => setDimY(e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label htmlFor="ap-dz">Dim Z (in)</label>
-                <input id="ap-dz" type="number" min="0.01" step="0.01" value={dimZ} onChange={(e) => setDimZ(e.target.value)} />
-              </div>
-            </div>
-            <div className="add-package-actions">
-              <button type="button" className="btn primary" disabled={loadingQuote} onClick={calculatePrice}>
+
+              {/* Summary */}
+              {effectiveType && weight && zone && !boxRejected && (
+                <div className="calc-summary">
+                  <span>Type: <strong>{effectiveType.charAt(0).toUpperCase() + effectiveType.slice(1)}</strong></span>
+                  <span>Cubic inches: {dimX*dimY*dimZ} in³ </span>
+                  <span>{weight} lbs</span>
+                  <span>{ZONES.find(z => z.value === zone)?.label}</span>
+                  {boxTier && boxTier !== 'rejected' && boxTier.surcharge > 0 && (
+                    <span>Box surcharge: +${boxTier.surcharge.toFixed(2)}</span>
+                  )}
+                  {excessFee && <span>Add-on: {excessFee}</span>}
+                </div>
+              )}
+
+              <button type="button" className="btn-calc" onClick={calculatePrice}
+                disabled={loadingQuote || weightTooHeavy || boxRejected}>
                 {loadingQuote ? 'Calculating…' : 'Calculate price'}
               </button>
+
               {quotedPrice != null && !Number.isNaN(Number(quotedPrice)) && (
-                <span>
-                  Quote: <strong>${parseFloat(quotedPrice).toFixed(2)}</strong>
-                </span>
+                <div className="price-calculator-result">
+                  Estimated total: <strong>${parseFloat(quotedPrice).toFixed(2)}</strong>
+                </div>
               )}
             </div>
           </div>
 
           {error && <div className="add-package-error">{error}</div>}
 
+          {/* ── CREATE ── */}
           <div className="add-package-section">
             <h3>Record payment &amp; create shipment</h3>
+            <p className="add-package-hint">Calculate a price first, then click below to create the package and record payment.</p>
             <div className="add-package-actions">
-              <button type="button" className="btn primary" disabled={loadingPay} onClick={payAndCreate}>
+              <button type="button" className="btn-calc" disabled={loadingPay || !quotedPrice} onClick={payAndCreate}
+                style={{ opacity: !quotedPrice ? 0.5 : 1 }}>
                 {loadingPay ? 'Processing…' : 'Pay & create package'}
               </button>
             </div>
             {submitResult && (
               <div className="add-package-result">
-                Created <code>{submitResult.tracking_number}</code>
-                {' — '}
-                charged ${parseFloat(submitResult.price).toFixed(2)} to sender account.
+                ✅ Created <code>{submitResult.tracking_number}</code> — charged ${parseFloat(submitResult.price).toFixed(2)} to sender account.
               </div>
             )}
           </div>
+
         </div>
       </main>
 

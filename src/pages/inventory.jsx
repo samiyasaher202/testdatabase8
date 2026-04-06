@@ -5,7 +5,7 @@ import './css/customer_home.css'
 import './css/inventory.css'
 import skyline from '../assets/houston-skyline.jpeg'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const LOW_STOCK = 15
 
