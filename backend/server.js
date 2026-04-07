@@ -198,9 +198,9 @@ app.post('/api/customer/register', async (req, res) => {
     state: req.body?.state,
     zip_first3: req.body?.zip_first3,
     zip_last2: req.body?.zip_last2,
-    birth_day: req.body?.birth_day,
-    birth_month: req.body?.birth_month,
-    birth_year: req.body?.birth_year,
+    // birth_day: req.body?.birth_day,
+    // birth_month: req.body?.birth_month,
+    // birth_year: req.body?.birth_year,
     sex: req.body?.sex,
   })
 
@@ -225,13 +225,13 @@ app.post('/api/customer/register', async (req, res) => {
     if (err.code === 'ER_DUP_ENTRY') {
       return res.status(400).json({ message: 'Email already registered' })
     }
-    if (err.code === 'ER_BAD_FIELD_ERROR' || /Unknown column/i.test(String(err.message))) {
-      console.error(err)
-      return res.status(500).json({
-        message:
-          'Database schema is missing Customer columns (Birth_Day, Birth_Month, Birth_Year, Sex). Run backend/db/migrations/001_add_customer_demographics.sql',
-      })
-    }
+    // if (err.code === 'ER_BAD_FIELD_ERROR' || /Unknown column/i.test(String(err.message))) {
+    //   console.error(err)
+    //   return res.status(500).json({
+    //     message:
+    //       'Database schema is missing Customer columns (Birth_Day, Birth_Month, Birth_Year, Sex). Run backend/db/migrations/001_add_customer_demographics.sql',
+    //   })
+    // }
     console.error(err)
     res.status(500).json({ message: err.message || 'Server error' })
   }
@@ -289,9 +289,10 @@ app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res
     const [result] = await pool.query(
       `INSERT INTO Employee
          (Post_Office_ID, Role_ID, Department_ID, First_Name, Last_Name,
-          Birth_Day, Birth_Month, Birth_Year, Password_Hash, Email_Address,
+          // Birth_Day, Birth_Month, Birth_Year, 
+          Password_Hash, Email_Address,
           Phone_Number, Sex, Salary, Hours_Worked)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0)`,
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [1, role_id, department_id, firstName, lastName, 1, 1, 2000, hash, email, phoneNumber, 'M', 0]
     )
 

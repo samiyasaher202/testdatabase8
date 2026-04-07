@@ -320,3 +320,12 @@ ALTER TABLE support_ticket
 ADD CONSTRAINT fk_issue_type 
 FOREIGN KEY (Issue_Type) 
 REFERENCES ticket_issue_type(Type_ID);
+
+Alter table customer drop birth_day;
+Alter table customer drop birth_month;
+Alter table customer drop birth_year;
+
+alter table employee drop Birth_Day;
+alter table employee drop Birth_Month;
+alter table employee drop Birth_Year;
+alter table employee add Birthday Date null constraint ch_date_after check(Birthday >= '1900-01-01');
