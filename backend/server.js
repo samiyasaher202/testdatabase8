@@ -12,6 +12,8 @@ const customerDB = require('./db/customers')
 
 const packageTrackDB = require('./db/package_track') 
 
+const employeeDB = require('./db/employees')
+
 //const packageTypesDB = require('./db/package_type')
 
 
@@ -960,6 +962,26 @@ app.get('/api/customer/lookup', authenticate, requireEmployee, async (req, res) 
   }
 })
 
+// ════════════════════════════════════════════════════════════════════════════
+//  employee Review
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/employee/tickets_comp', async (req, res) => {
+  try {
+    const results = await employeeDB.getEmployeesRatios(pool);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+app.get('/api/employee/:employee_id/tickets', async (req, res) => {
+  const { employee_id } = req.params;
+  try {
+    const results = await employeeDB.getTicketsByEmployee(pool, employee_id);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
