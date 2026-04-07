@@ -27,6 +27,7 @@ export default function EmployeeSupport() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [searchCustomerId, setSearchCustomerId] = useState("");
 
   const [editTicket, setEditTicket] = useState(null);
   const [editStatus, setEditStatus] = useState(0);
@@ -100,10 +101,15 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
     }
   };
 
-  const filtered =
-    filterStatus === "all"
-      ? tickets
-      : tickets.filter((t) => t.Ticket_Status_Code === Number(filterStatus));
+  const filtered = tickets
+  .filter((t) =>
+    filterStatus === "all" ? true : t.Ticket_Status_Code === Number(filterStatus)
+  )
+  .filter((t) =>
+    searchCustomerId.trim() === ""
+      ? true
+      : String(t.User_ID).includes(searchCustomerId.trim())
+  );
 
   return (
     <>
@@ -150,6 +156,14 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
               ))}
             </div>
           </div>
+
+          <input
+            type="text"
+            className="es-search"
+            placeholder="Search by Customer ID..."
+            value={searchCustomerId}
+            onChange={(e) => setSearchCustomerId(e.target.value)}
+          />
 
           {/* Table */}
           {loading ? (
