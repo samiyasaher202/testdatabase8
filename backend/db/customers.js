@@ -185,7 +185,7 @@ async function registerCustomer(pool, rawBody) {
       Zip_First3, Zip_Last2, Zip_Plus4,
       Country,
       Password_Hash, Email_Address, Phone_Number
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?)`,
     [
       first_name.trim().slice(0, 30),
       middleVal,
@@ -209,7 +209,7 @@ async function registerCustomer(pool, rawBody) {
   const [rows] = await pool.query(
     `SELECT Customer_ID, First_Name, Middle_Name, Last_Name, Email_Address, Phone_Number,
             Apt_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2, Zip_Plus4,
-            Country,
+            Country
      FROM customer WHERE Customer_ID = ?`,
     [customerId]
   )
