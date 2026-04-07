@@ -25,12 +25,14 @@ import PackageTracking from './pages/package_tracking'
 import SubmitTicket from './pages/SubmitTicket'
 
 //import SupportTicket from './pages/SupportTicket'
-//import EmployeeSupport from './pages/EmployeeSupport'
+
 import PriceCalculator from './pages/price_calculator'
 import AddPackage from './pages/add_package'
 import CustomerPackages from './pages/customer_packages'
 
 import EmployeeSupport from './pages/Employeesupport.jsx'
+
+import TicketsEmployees from './pages/tickets_employees.jsx'
 
 // global styles
 import './pages/css/index.css'
@@ -48,7 +50,7 @@ function App() {
         {/* Testing Employee Support page */}
         <Route path="/employee-support" element={<EmployeeSupport />} />
 
-        {/* <Route path="/new-package" element={<NewPackage />} /> */}
+        <Route path="/tickets_employees" element={<TicketsEmployees />} />
 
         {/* Customer Routes */}
         <Route path="/customer_home" element={<RequireCustomer><CustomerHome /></RequireCustomer>} />
@@ -77,7 +79,7 @@ function App() {
         
         <Route path="/package_history" element={<p>Package History — coming soon</p>} />
         
-        <Route path="/support_tickets" element={<p>Support Tickets — coming soon</p>} />
+        {/* <Route path="/support_tickets" element={<p>Support Tickets — coming soon</p>} /> */}
         <Route path="/price_calculator" element={<PriceCalculator/>} />
         
         {/* 404 */}
