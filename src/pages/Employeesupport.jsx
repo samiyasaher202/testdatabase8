@@ -27,6 +27,7 @@ export default function EmployeeSupport() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [searchCustomerId, setSearchCustomerId] = useState("");
 
   const [editTicket, setEditTicket] = useState(null);
   const [editStatus, setEditStatus] = useState(0);
@@ -100,10 +101,15 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
     }
   };
 
-  const filtered =
-    filterStatus === "all"
-      ? tickets
-      : tickets.filter((t) => t.Ticket_Status_Code === Number(filterStatus));
+  const filtered = tickets
+  .filter((t) =>
+    filterStatus === "all" ? true : t.Ticket_Status_Code === Number(filterStatus)
+  )
+  .filter((t) =>
+    searchCustomerId.trim() === ""
+      ? true
+      : String(t.User_ID).includes(searchCustomerId.trim())
+  );
 
   return (
     <>
@@ -131,11 +137,12 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
               {filterStatus !== "all" ? ` · ${STATUS_MAP[Number(filterStatus)]?.label}` : ""}
             </span>
             <div className="es-filters">
-              <a href="/new-ticket" className="es-add-btn">
+              <a href="/submit_ticket"className="es-add-btn">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
                 Add Ticket
+                
               </a>
               <button
                 className={`es-filter-btn ${filterStatus === "all" ? "active" : ""}`}
@@ -150,6 +157,14 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
               ))}
             </div>
           </div>
+
+          <input
+            type="text"
+            className="es-search"
+            placeholder="Search by Customer ID..."
+            value={searchCustomerId}
+            onChange={(e) => setSearchCustomerId(e.target.value)}
+          />
 
           {/* Table */}
           {loading ? (
