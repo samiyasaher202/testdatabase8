@@ -20,7 +20,7 @@ const pool = mysql.createPool({
   host:               process.env.DB_HOST     || 'localhost',
   port:               process.env.DB_PORT     || 3306,
   user:               process.env.DB_USER     || 'root',
-  password:           process.env.DB_PASSWORD || 'MBobanza#2205',
+  password:           process.env.DB_PASSWORD || 'YourNewPassword',
   database:           process.env.DB_NAME     || 'post_officedb',
   waitForConnections: true,
   connectionLimit:    10,
@@ -876,3 +876,48 @@ app.get('/api/customers/:id/packages', (req, res) => {
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
+
+
+// ════════════════════════════════════════════════════════════════════════════
+//  SUPPORT TICKETS ROUTES
+// ════════════════════════════════════════════════════════════════════════════
+
+app.get('/api/support-tickets', async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+         Ticket_ID,
+         User_ID,
+         Package_ID,
+         Assigned_Employee_ID,
+         Issue_Type,
+         Description,
+         Resolution_Note,
+         Ticket_Status_Code
+       FROM Support_Ticket
+       ORDER BY Ticket_ID DESC`
+    )
+    res.json(rows)
+  } catch (err) {
+    console.error('GET /api/support-tickets error:', err)
+    res.status(500).json({ error: 'Failed to fetch tickets' })
+  }
+})
+
+app.put('/api/support-tickets/:id', async (req, res) => {
+  const { id } = req.params
+  const { Ticket_Status_Code, Resolution_Note } = req.body
+  try {
+    await pool.query(
+      `UPDATE Support_Ticket
+       SET Ticket_Status_Code = ?,
+           Resolution_Note    = ?
+       WHERE Ticket_ID = ?`,
+      [Ticket_Status_Code, Resolution_Note ?? null, id]
+    )
+    res.json({ success: true })
+  } catch (err) {
+    console.error('PUT /api/support-tickets/:id error:', err)
+    res.status(500).json({ error: 'Failed to update ticket' })
+  }
+})
