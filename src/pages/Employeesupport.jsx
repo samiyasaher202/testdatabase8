@@ -34,6 +34,8 @@ export default function EmployeeSupport() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
   useEffect(() => {
     fetchTickets();
   }, []);
@@ -42,7 +44,7 @@ export default function EmployeeSupport() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:5000/api/support-tickets");
+      const res = await fetch(`${API_BASE}/api/support-tickets`);
       if (!res.ok) throw new Error("Failed to fetch tickets");
       const data = await res.json();
       setTickets(data);
@@ -71,7 +73,7 @@ export default function EmployeeSupport() {
     setSaving(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/support-tickets/${editTicket.Ticket_ID}`,
+        `${API_BASE}/api/support-tickets/${editTicket.Ticket_ID}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

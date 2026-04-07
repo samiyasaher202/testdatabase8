@@ -298,3 +298,25 @@ ADD COLUMN Payment_ID INT NULL,
 ADD CONSTRAINT fk_package_payment 
   FOREIGN KEY (Payment_ID) REFERENCES payment(Payment_ID);
 
+-- other alterations that I have made to clean up the database
+ALTER TABLE support_ticket
+ADD CONSTRAINT chk_ticket_status
+CHECK (Ticket_Status_Code IN (0, 1, 2));
+
+CREATE TABLE ticket_issue_type (
+    Type_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100) NOT NULL
+);
+INSERT INTO ticket_issue_type (Name) VALUES
+('failed transaction'),
+('payment issue'),
+('delivery issue'),
+('other');
+
+ALTER TABLE support_ticket 
+MODIFY COLUMN Issue_Type INT NOT NULL;
+
+ALTER TABLE support_ticket 
+ADD CONSTRAINT fk_issue_type 
+FOREIGN KEY (Issue_Type) 
+REFERENCES ticket_issue_type(Type_ID);
