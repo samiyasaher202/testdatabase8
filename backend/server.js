@@ -127,8 +127,8 @@ app.post('/api/auth/login', async (req, res) => {
     const [rows] = await pool.query(
       `SELECT e.*, r.Role_Name, d.Department_Name
        FROM employee e
-       JOIN Role r       ON e.Role_ID       = r.Role_ID
-       JOIN Department d ON e.Department_ID = d.Department_ID
+       JOIN role r       ON e.Role_ID       = r.Role_ID
+       JOIN department d ON e.Department_ID = d.Department_ID
        WHERE e.Email_Address = ?`,
       [email]
     )
@@ -330,10 +330,10 @@ app.get('/api/auth/profile', authenticate, async (req, res) => {
               r.Role_Name, d.Department_Name,
               po.City AS Office_City, po.State AS Office_State
        FROM employee e
-       JOIN Role r         ON e.Role_ID        = r.Role_ID
-       JOIN Department d   ON e.Department_ID  = d.Department_ID
-       JOIN Post_Office po ON e.Post_Office_ID = po.Post_Office_ID
-       LEFT JOIN Employee s ON e.Supervisor_ID = s.Employee_ID
+       JOIN role r         ON e.Role_ID        = r.Role_ID
+       JOIN department d   ON e.Department_ID  = d.Department_ID
+       JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+       LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
        WHERE e.Employee_ID = ?`,
       [req.user.employee_id]
     )
@@ -362,10 +362,10 @@ app.put('/api/auth/profile', authenticate, async (req, res) => {
               r.Role_Name, d.Department_Name,
               po.City AS Office_City, po.State AS Office_State
        FROM employee e
-       JOIN Role r         ON e.Role_ID        = r.Role_ID
-       JOIN Department d   ON e.Department_ID  = d.Department_ID
-       JOIN Post_Office po ON e.Post_Office_ID = po.Post_Office_ID
-       LEFT JOIN Employee s ON e.Supervisor_ID = s.Employee_ID
+       JOIN role r         ON e.Role_ID        = r.Role_ID
+       JOIN department d   ON e.Department_ID  = d.Department_ID
+       JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+       LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
        WHERE e.Employee_ID = ?`,
       [req.user.employee_id]
     )
@@ -385,7 +385,7 @@ app.post('/api/auth/change-password', authenticate, async (req, res) => {
     return res.status(400).json({ message: 'New password must be at least 6 characters' })
   try {
     const [rows] = await pool.query(
-      'SELECT Password_Hash FROM Employee WHERE Employee_ID = ?',
+      'SELECT Password_Hash FROM employee WHERE Employee_ID = ?',
       [req.user.employee_id]
     )
     if (!rows.length) return res.status(404).json({ message: 'Employee not found' })
@@ -410,7 +410,7 @@ app.get('/api/customer/profile', authenticate, async (req, res) => {
       `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
               Phone_Number, House_Number, Street, City, State,
               Zip_First3, Zip_Last2
-       FROM customer WHERE customer_ID = ?`,
+       FROM customer WHERE Customer_ID = ?`,
       [req.user.customer_id]
     )
     if (!rows.length)
@@ -953,7 +953,7 @@ app.get('/api/customer/lookup', authenticate, requireEmployee, async (req, res) 
       `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
               Phone_Number, House_Number, Street, Apt_Number,
               City, State, Zip_First3, Zip_Last2
-       FROM Customer WHERE Email_Address = ? LIMIT 1`,
+       FROM customer WHERE Email_Address = ? LIMIT 1`,
       [email]
     )
     if (!rows.length) return res.status(404).json({ message: 'Customer not found' })
@@ -1001,7 +1001,7 @@ app.get('/api/support-tickets', async (req, res) => {
          Description,
          Resolution_Note,
          Ticket_Status_Code
-       FROM Support_Ticket
+       FROM support_ticket
        ORDER BY Ticket_ID DESC`
     )
     res.json(rows)
