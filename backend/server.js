@@ -250,7 +250,7 @@ app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res
   try {
     // Check if email already exists
     const [exists] = await pool.query(
-      'SELECT Employee_ID FROM Employee WHERE Email_Address = ?',
+      'SELECT Employee_ID FROM employee WHERE Email_Address = ?',
       [email]
     )
     if (exists.length) {
@@ -288,7 +288,7 @@ app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res
 
     // Insert new employee
     const [result] = await pool.query(
-      `INSERT INTO Employee
+      `INSERT INTO employee
          (Post_Office_ID, Role_ID, Department_ID, First_Name, Last_Name,
           // Birth_Day, Birth_Month, Birth_Year, 
           Password_Hash, Email_Address,
@@ -329,7 +329,7 @@ app.get('/api/auth/profile', authenticate, async (req, res) => {
               CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
               r.Role_Name, d.Department_Name,
               po.City AS Office_City, po.State AS Office_State
-       FROM Employee e
+       FROM employee e
        JOIN Role r         ON e.Role_ID        = r.Role_ID
        JOIN Department d   ON e.Department_ID  = d.Department_ID
        JOIN Post_Office po ON e.Post_Office_ID = po.Post_Office_ID
@@ -351,7 +351,7 @@ app.put('/api/auth/profile', authenticate, async (req, res) => {
   const { Email_Address, Phone_Number } = req.body
   try {
     await pool.query(
-      'UPDATE Employee SET Phone_Number = ?, Email_Address = ? WHERE Employee_ID = ?',
+      'UPDATE employee SET Phone_Number = ?, Email_Address = ? WHERE Employee_ID = ?',
       [Phone_Number, Email_Address, req.user.employee_id]
     )
     const [rows] = await pool.query(
@@ -361,7 +361,7 @@ app.put('/api/auth/profile', authenticate, async (req, res) => {
               CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
               r.Role_Name, d.Department_Name,
               po.City AS Office_City, po.State AS Office_State
-       FROM Employee e
+       FROM employee e
        JOIN Role r         ON e.Role_ID        = r.Role_ID
        JOIN Department d   ON e.Department_ID  = d.Department_ID
        JOIN Post_Office po ON e.Post_Office_ID = po.Post_Office_ID
@@ -393,7 +393,7 @@ app.post('/api/auth/change-password', authenticate, async (req, res) => {
     if (!valid) return res.status(401).json({ message: 'Current password is incorrect' })
     const newHash = await bcrypt.hash(newPassword, 10)
     await pool.query(
-      'UPDATE Employee SET Password_Hash = ? WHERE Employee_ID = ?',
+      'UPDATE employee SET Password_Hash = ? WHERE Employee_ID = ?',
       [newHash, req.user.employee_id]
     )
     res.json({ message: 'Password changed successfully' })
@@ -410,7 +410,7 @@ app.get('/api/customer/profile', authenticate, async (req, res) => {
       `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
               Phone_Number, House_Number, Street, City, State,
               Zip_First3, Zip_Last2
-       FROM Customer WHERE Customer_ID = ?`,
+       FROM customer WHERE customer_ID = ?`,
       [req.user.customer_id]
     )
     if (!rows.length)
@@ -427,7 +427,7 @@ app.put('/api/customer/profile', authenticate, async (req, res) => {
   const { Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2 } = req.body
   try {
     await pool.query(
-      `UPDATE Customer 
+      `UPDATE customer 
        SET Email_Address = ?, Phone_Number = ?,
            House_Number = ?, Street = ?, City = ?, State = ?,
            Zip_First3 = ?, Zip_Last2 = ?
@@ -438,7 +438,7 @@ app.put('/api/customer/profile', authenticate, async (req, res) => {
       `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
               Phone_Number, House_Number, Street, City, State,
               Zip_First3, Zip_Last2
-       FROM Customer WHERE Customer_ID = ?`,
+       FROM customer WHERE Customer_ID = ?`,
       [req.user.customer_id]
     )
     res.json({ message: 'Profile updated successfully', user: rows[0] })
