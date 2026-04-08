@@ -126,7 +126,7 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const [rows] = await pool.query(
       `SELECT e.*, r.Role_Name, d.Department_Name
-       FROM Employee e
+       FROM employee e
        JOIN Role r       ON e.Role_ID       = r.Role_ID
        JOIN Department d ON e.Department_ID = d.Department_ID
        WHERE e.Email_Address = ?`,
@@ -156,13 +156,14 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Customer Login
 app.post('/api/auth/customer-login', async (req, res) => {
+  console.log('got to api/auth/customer-login')
   const { email, password } = req.body
   if (!email || !password)
     return res.status(400).json({ message: 'Email and password required' })
 
   try {
     const [rows] = await pool.query(
-      'SELECT * FROM Customer WHERE Email_Address = ?',
+      'SELECT * FROM customer WHERE Email_Address = ?',
       [email]
     )
     if (!rows.length)
