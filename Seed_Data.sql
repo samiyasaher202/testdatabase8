@@ -186,17 +186,17 @@ INSERT INTO Support_Ticket (User_ID, Package_ID, Assigned_Employee_ID, Issue_Typ
 (7, 'TRK0000009', 7, 2, 'Tracking not updating',                             'Carrier delay confirmed, resolved',1);
 
 -- ── 16. PAYMENTS ─────────────────────────────────────────────────────────
-INSERT INTO Payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status) VALUES
-(1,  1, 2, 1, 12.50,  'completed'),
-(2,  1, 1, 2,  8.25,  'completed'),
-(3,  2, 3, 1, 22.75,  'completed'),
-(4,  2, 1, 1,  5.50,  'completed'),
-(5,  3, 4, 2, 31.00,  'completed'),
-(6,  3, 2, 1, 14.50,  'completed'),
-(7,  4, 1, 2,  6.99,  'completed'),
-(8,  4, 3, 1, 18.00,  'completed'),
-(9,  5, 2, 1, 15.25,  'completed'),
-(10, 5, 1, 2,  7.25,  'completed');
+INSERT INTO Payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status, Employee_ID) VALUES
+(1,  1, 2, 1, 12.50,  'completed', 1),
+(2,  1, 1, 2,  8.25,  'completed', 1),
+(3,  2, 3, 1, 22.75,  'completed', 2),
+(4,  2, 1, 1,  5.50,  'completed', 2),
+(5,  3, 4, 2, 31.00,  'completed', 3),
+(6,  3, 2, 1, 14.50,  'completed', 3),
+(7,  4, 1, 2,  6.99,  'completed', 4),
+(8,  4, 3, 1, 18.00,  'completed', 4),
+(9,  5, 2, 1, 15.25,  'completed', 5),
+(10, 5, 1, 2,  7.25,  'completed', 5);
 
 -- ── 17. PACKAGE PRICING ──────────────────────────────────────────────────
 INSERT INTO package_pricing (Package_Type_Code, Min_Weight, Max_Weight, Zone, Price) VALUES

@@ -224,8 +224,10 @@ CREATE TABLE Payment (
   Payment_Amount DECIMAL(10,2),
   Payment_Status VARCHAR(20),
   Payment_Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  Employee_ID INT NOT NULL,
   FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID),
-  FOREIGN KEY (Store_ID) REFERENCES Store(Store_ID)
+  FOREIGN KEY (Store_ID) REFERENCES Store(Store_ID),
+  FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID)
 );
 
 -- ── 17. PACKAGE PRICING ──────────────────────────────────────────────────

@@ -25,7 +25,7 @@ app.use(express.json())
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
-  host:               process.env.MYSQLHOST ,
+  host:               process.env.MYSQLHOST,
   port:               process.env.MYSQLPORT ,
   user:               process.env.MYSQLUSER,
   password:           process.env.MYSQLPASSWORD,
@@ -773,33 +773,30 @@ app.post('/api/employee/packages', authenticate, requireEmployee, async (req, re
 
     const tracking = await nextTrackingNumber(conn)
     const oversize = typeCode === 'OVR' ? 1 : 0
-    //const sid = store_id != null ? Number(store_id) : 1
-    let sid
-    try{
-  const employee_id = req.user.employee_id;
-  const[empRows] = await conn.query(
-    `SELECT s.Store_ID 
-    FROM employee e
-    JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
-    JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
-    WHERE  Employee_ID = ?`,
-    [employee_id]
-  );
-  if (!empRows.length) {
-    await conn.rollback()
-   return res.status(404).json({ error: 'Employee or store not found' });
-  }
+    const actingEmployeeId = Number(req.user.employee_id)
+    if (!Number.isFinite(actingEmployeeId)) {
+      await conn.rollback()
+      return res.status(401).json({ message: 'Invalid employee session' })
+    }
 
-   sid = empRows[0].Store_ID;
-} 
-catch(err){
-  console.error(err);
-  res.status(500).json({ error: 'Server error' });
-}
+    const [empRows] = await conn.query(
+      `SELECT s.Store_ID
+       FROM employee e
+       JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
+       JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
+       WHERE e.Employee_ID = ?`,
+      [actingEmployeeId]
+    )
+    if (!empRows.length) {
+      await conn.rollback()
+      return res.status(404).json({ error: 'Employee or store not found' })
+    }
+    const sid = empRows[0].Store_ID
+
     const [payRes] = await conn.query(
       `INSERT INTO payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status, Employee_ID)
        VALUES (?,?,?,?,?, 'completed', ?)`,
-      [senderId, sid,1, 1, priceAmount, req.user.employee_id]
+      [senderId, sid, 1, 1, priceAmount, actingEmployeeId]
     )
     const payId = payRes.insertId
     await conn.query(
@@ -848,7 +845,7 @@ catch(err){
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
       [
         pendingCode,
-        req.user.employee_id,
+        actingEmployeeId,
         sender_apt_number || null,
         String(sender_house_number).slice(0, 10),
         String(sender_street).slice(0, 100),

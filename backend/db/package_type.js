@@ -34,10 +34,6 @@ function getPrice(pool, excess_fee, package_type, weight, zone, callback, dim_x,
   const fee = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
   const w   = Number(weight)
   const z   = Number(zone)
-  
-  let dx = Number(dim_x) || 0
-  let dy = Number(dim_y) || 0
-  let dz = Number(dim_z) || 0
 
   // Check box size surcharge first
   const surcharge = getBoxSurcharge(dim_x, dim_y, dim_z)
@@ -46,12 +42,9 @@ function getPrice(pool, excess_fee, package_type, weight, zone, callback, dim_x,
     err.status = 400
     return callback(err, null)
   }
-  const cx = Math.min(dx || 12, 12)
-  const cy = Math.min(dy || 12, 12)
-  const cz = Math.min(dz || 12, 12)
-  const cub_in = cx * cy * cz
 
-
+  // Base price rows are keyed by package type + weight band + zone only.
+  // Box size is handled above via getBoxSurcharge (not package_pricing.Max_Cubic_Inches — many DBs omit that column).
   pool.query(`
     SELECT pc.Price + IFNULL(e.Additional_Price, 0) AS Base_Price
     FROM package_type p
@@ -60,9 +53,8 @@ function getPrice(pool, excess_fee, package_type, weight, zone, callback, dim_x,
     WHERE p.Type_Name = ?
       AND ? BETWEEN pc.Min_Weight AND pc.Max_Weight
       AND pc.Zone = ?
-      AND ? <= pc.Max_Cubic_Inches
     LIMIT 1
-  `, [fee, fee, package_type, w, z, cub_in])
+  `, [fee, fee, package_type, w, z])
   .then(([results]) => {
     if (!results?.length) return callback(null, [])
     // Add box surcharge to base price

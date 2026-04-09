@@ -230,8 +230,10 @@ CREATE TABLE Payment (
     Payment_Amount DECIMAL(10, 2) NOT NULL,
     Payment_Date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Payment_Status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    Employee_ID INT NOT NULL,
     FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID),
-    FOREIGN KEY(Store_ID) REFERENCES Store(Store_ID)
+    FOREIGN KEY(Store_ID) REFERENCES Store(Store_ID),
+    FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID)
 );
 
 
