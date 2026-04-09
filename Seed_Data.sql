@@ -74,8 +74,9 @@ INSERT INTO Department (Department_Name) VALUES
 -- Supervisors inserted first (no supervisor themselves), then regular employees
 -- Password hash = bcrypt (cost 10) of 'employee123' — must be a full 60-char bcrypt string (bcryptjs $2a$)
 INSERT INTO Employee (Post_Office_ID, Supervisor_ID, Role_ID, Department_ID, First_Name, Middle_Name, Last_Name, Birth_Day, Birth_Month, Birth_Year, Password_Hash, Email_Address, Phone_Number, Sex, Salary) VALUES
+-- Admin (Full system access)
+(1, NULL, 5, 4, 'Richard', 'A', 'Moore',   15, 3, 1975, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'richard.moore@postoffice8.com',   '713-500-2001', 'M', 72000.00),
 -- Managers (no supervisor)
-(1, NULL, 4, 4, 'Richard', 'A', 'Moore',   15, 3, 1975, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'richard.moore@postoffice8.com',   '713-500-2001', 'M', 72000.00),
 (2, NULL, 4, 4, 'Nancy',   'B', 'White',    8, 7, 1980, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'nancy.white@postoffice8.com',     '214-500-2002', 'F', 70000.00),
 (3, NULL, 4, 4, 'Thomas',  'C', 'Harris',  22, 11,1978, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'thomas.harris@postoffice8.com',   '512-500-2003', 'M', 71000.00),
 -- Supervisors (report to managers)
@@ -186,17 +187,17 @@ INSERT INTO Support_Ticket (User_ID, Package_ID, Assigned_Employee_ID, Issue_Typ
 (7, 'TRK0000009', 7, 2, 'Tracking not updating',                             'Carrier delay confirmed, resolved',1);
 
 -- ── 16. PAYMENTS ─────────────────────────────────────────────────────────
-INSERT INTO Payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status) VALUES
-(1,  1, 2, 1, 12.50,  'completed'),
-(2,  1, 1, 2,  8.25,  'completed'),
-(3,  2, 3, 1, 22.75,  'completed'),
-(4,  2, 1, 1,  5.50,  'completed'),
-(5,  3, 4, 2, 31.00,  'completed'),
-(6,  3, 2, 1, 14.50,  'completed'),
-(7,  4, 1, 2,  6.99,  'completed'),
-(8,  4, 3, 1, 18.00,  'completed'),
-(9,  5, 2, 1, 15.25,  'completed'),
-(10, 5, 1, 2,  7.25,  'completed');
+INSERT INTO Payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status, Employee_ID) VALUES
+(1,  1, 2, 1, 12.50,  'completed', 1),
+(2,  1, 1, 2,  8.25,  'completed', 1),
+(3,  2, 3, 1, 22.75,  'completed', 2),
+(4,  2, 1, 1,  5.50,  'completed', 2),
+(5,  3, 4, 2, 31.00,  'completed', 3),
+(6,  3, 2, 1, 14.50,  'completed', 3),
+(7,  4, 1, 2,  6.99,  'completed', 4),
+(8,  4, 3, 1, 18.00,  'completed', 4),
+(9,  5, 2, 1, 15.25,  'completed', 5),
+(10, 5, 1, 2,  7.25,  'completed', 5);
 
 -- ── 17. PACKAGE PRICING ──────────────────────────────────────────────────
 INSERT INTO package_pricing (Package_Type_Code, Min_Weight, Max_Weight, Zone, Price) VALUES
