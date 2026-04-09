@@ -31,6 +31,7 @@ import AddPackage from './pages/add_package'
 import CustomerPackages from './pages/customer_packages'
 
 import EmployeeSupport from './pages/Employeesupport.jsx'
+import Employee_SubmitTicket from './pages/Employee_SubmitTicket.jsx'
 
 import TicketsEmployees from './pages/tickets_employees.jsx'
 
@@ -49,6 +50,7 @@ function App() {
         
         {/* Testing Employee Support page */}
         <Route path="/employee-support" element={<EmployeeSupport />} />
+        <Route path="/employee/submit-ticket" element={<Employee_SubmitTicket/>} />
 
         <Route path="/tickets_employees" element={<TicketsEmployees />} />
 
