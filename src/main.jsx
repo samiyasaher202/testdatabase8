@@ -34,7 +34,6 @@ import EmployeeSupport from './pages/Employeesupport.jsx'
 import Employee_SubmitTicket from './pages/Employee_SubmitTicket.jsx'
 
 import TicketsReport from './pages/tickets_report.jsx'
-import TicketsEmployees from './pages/tickets_employees.jsx'
 import EmployeesPage from './pages/employees.jsx'
 
 // global styles
