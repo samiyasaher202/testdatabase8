@@ -1,11 +1,36 @@
 .page-content {
     padding: 30px;
 }
+.packages-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at top left, #eaf3ff 0%, transparent 40%), var(--bg, #f3f7fc);
+}
+
 
 .page-content h2 {
     font-family: "Lucida Console";
     color: #3333cc;
     margin-bottom: 20px;
+}
+.page-hero{
+    width: 100%;
+    max-width: 100%;
+    height: min(320px, 36vh);
+    object-fit: cover;
+    display: block;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.page-hero img {
+    width: 100%;
+    max-width: 100%;
+    height: min(320px, 36vh);
+    object-fit: cover;
+    display: block;
+    height: min(320px, 36vh);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
 }
 
 .error-banner {
@@ -249,4 +274,21 @@
     padding: 40px;
     color: #888;
     font-size: 1rem;
+}
+
+/* Nav link hover line — red accent on this page */
+.packages-page .site-header .top-nav a::after {
+  background: #c22727;
+}
+
+.packages-page .site-header .top-nav a:visited {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.packages-page .site-header .top-nav a:hover {
+  text-decoration: none;
+}
+
+.packages-page .site-header .top-nav .customer-nav-logout::after {
+  background: #c22727;
 }

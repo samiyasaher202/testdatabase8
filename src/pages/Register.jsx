@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import '../components/Auth.css'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -22,9 +22,9 @@ const Register = () => {
     zip_last2: '',
     zip_plus4: '',
     country: 'USA',
-    birth_day: '',
-    birth_month: '',
-    birth_year: '',
+    // birth_day: '',
+    // birth_month: '',
+    // birth_year: '',
     sex: 'U',
   })
 
@@ -69,9 +69,9 @@ const Register = () => {
           zip_last2: formData.zip_last2,
           zip_plus4: formData.zip_plus4 || null,
           country: formData.country || 'USA',
-          birth_day: formData.birth_day,
-          birth_month: formData.birth_month,
-          birth_year: formData.birth_year,
+          // birth_day: formData.birth_day,
+          // birth_month: formData.birth_month,
+          // birth_year: formData.birth_year,
           sex: formData.sex,
         }),
       })
@@ -294,8 +294,8 @@ const Register = () => {
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
+          {/* <div className="form-row"> */}
+            {/* <div className="form-group">
               <label>Birth day *</label>
               <input
                 type="number"
@@ -334,7 +334,7 @@ const Register = () => {
                 placeholder="1995"
               />
             </div>
-          </div>
+          </div> */}
 
           <div className="form-row">
             <div className="form-group">

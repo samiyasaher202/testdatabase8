@@ -36,6 +36,8 @@ export default function EmployeeSupport() {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
   useEffect(() => {
     fetchTickets();
   }, []);
@@ -44,7 +46,7 @@ export default function EmployeeSupport() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:5000/api/support-tickets");
+      const res = await fetch(`${API_BASE}/api/support-tickets`);
       if (!res.ok) throw new Error("Failed to fetch tickets");
       const data = await res.json();
       setTickets(data);
@@ -73,7 +75,7 @@ export default function EmployeeSupport() {
     setSaving(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/support-tickets/${editTicket.Ticket_ID}`,
+        `${API_BASE}/api/support-tickets/${editTicket.Ticket_ID}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -136,12 +138,13 @@ export default function EmployeeSupport() {
               {filterStatus !== "all" ? ` · ${STATUS_MAP[Number(filterStatus)]?.label}` : ""}
             </span>
             <div className="es-filters">
-              <Link to="/employee/submit-ticket" className="es-add-btn">
+              <a href="/submit_ticket"className="es-add-btn">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
                 Add Ticket
-              </Link>
+                
+              </a>
               <button
                 className={`es-filter-btn ${filterStatus === "all" ? "active" : ""}`}
                 onClick={() => setFilterStatus("all")}

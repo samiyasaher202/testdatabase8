@@ -115,7 +115,7 @@ export default function EmployeeHome() {
             <div className="card">
               <h3>Support tickets</h3>
               <p>Review and manage customer support requests.</p>
-              <button type="button" className="btn primary" onClick={() => navigate('/support_tickets')}>
+              <button type="button" className="btn primary" onClick={() => navigate('/employee-support')}>
                 Open tickets
               </button>
             </div>
@@ -136,19 +136,19 @@ export default function EmployeeHome() {
               </button>
             </div>
 
+             <div className="card">
+              <h3>Employee Review</h3>
+              <p>Tempory relocation for testing untill admin is set up.</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/tickets_employees')}>
+                review
+              </button>
+            </div>
+
             <div className="card">
               <h3>Package lookup</h3>
               <p>Track a package by tracking number.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/package_tracking')}>
                 Track package
-              </button>
-            </div>
-
-            <div className="card">
-              <h3>Package history</h3>
-              <p>Historical package activity (coming soon).</p>
-              <button type="button" className="btn primary" onClick={() => navigate('/package_history')}>
-                View history
               </button>
             </div>
 

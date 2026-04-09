@@ -3,7 +3,7 @@ import './css/home.css'
 import './css/customer_home.css'
 import skyline from '../assets/houston-skyline.jpeg'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 /** Name from localStorage `user` (customer login / register API shape). */
 function getStoredCustomerFullName() {

@@ -91,10 +91,6 @@ async function registerCustomer(pool, rawBody) {
     zip_last2,
     zip_plus4,
     country,
-    birth_day,
-    birth_month,
-    birth_year,
-    sex,
   } = body
 
   const missing = []
@@ -108,43 +104,9 @@ async function registerCustomer(pool, rawBody) {
   if (!state?.toString().trim()) missing.push('state')
   if (!zip_first3?.toString().trim()) missing.push('zip_first3')
   if (!zip_last2?.toString().trim()) missing.push('zip_last2')
-  if (birth_day === undefined || birth_day === '') missing.push('birth_day')
-  if (birth_month === undefined || birth_month === '') missing.push('birth_month')
-  if (birth_year === undefined || birth_year === '') missing.push('birth_year')
-  if (!sex?.toString().trim()) missing.push('sex')
 
   if (missing.length) {
     const err = new Error(`Missing required fields: ${missing.join(', ')}`)
-    err.status = 400
-    err.code = 'VALIDATION'
-    throw err
-  }
-
-  const bd = parseInt(String(birth_day).trim(), 10)
-  const bm = parseInt(String(birth_month).trim(), 10)
-  const by = parseInt(String(birth_year).trim(), 10)
-  const sexNorm = String(sex).trim().toUpperCase().charAt(0)
-
-  if (Number.isNaN(bd) || bd < 1 || bd > 31) {
-    const err = new Error('birth_day must be between 1 and 31')
-    err.status = 400
-    err.code = 'VALIDATION'
-    throw err
-  }
-  if (Number.isNaN(bm) || bm < 1 || bm > 12) {
-    const err = new Error('birth_month must be between 1 and 12')
-    err.status = 400
-    err.code = 'VALIDATION'
-    throw err
-  }
-  if (Number.isNaN(by) || by < 1900 || by > new Date().getFullYear()) {
-    const err = new Error('birth_year is invalid')
-    err.status = 400
-    err.code = 'VALIDATION'
-    throw err
-  }
-  if (!['M', 'F', 'O', 'U'].includes(sexNorm)) {
-    const err = new Error('sex must be M, F, O, or U')
     err.status = 400
     err.code = 'VALIDATION'
     throw err
@@ -222,9 +184,8 @@ async function registerCustomer(pool, rawBody) {
       Apt_Number, House_Number, Street, City, State,
       Zip_First3, Zip_Last2, Zip_Plus4,
       Country,
-      Password_Hash, Email_Address, Phone_Number,
-      Birth_Day, Birth_Month, Birth_Year, Sex
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      Password_Hash, Email_Address, Phone_Number
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?)`,
     [
       first_name.trim().slice(0, 30),
       middleVal,
@@ -241,10 +202,6 @@ async function registerCustomer(pool, rawBody) {
       hash,
       email.trim().toLowerCase().slice(0, 255),
       phone_number ? String(phone_number).trim().slice(0, 20) : null,
-      bd,
-      bm,
-      by,
-      sexNorm,
     ]
   )
 
@@ -252,8 +209,7 @@ async function registerCustomer(pool, rawBody) {
   const [rows] = await pool.query(
     `SELECT Customer_ID, First_Name, Middle_Name, Last_Name, Email_Address, Phone_Number,
             Apt_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2, Zip_Plus4,
-            Country,
-            Birth_Day, Birth_Month, Birth_Year, Sex
+            Country
      FROM customer WHERE Customer_ID = ?`,
     [customerId]
   )
@@ -307,9 +263,8 @@ async function createCustomerMinimal(pool, body) {
       Apt_Number, House_Number, Street, City, State,
       Zip_First3, Zip_Last2, Zip_Plus4,
       Country,
-      Password_Hash, Email_Address, Phone_Number,
-      Birth_Day, Birth_Month, Birth_Year, Sex
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      Password_Hash, Email_Address, Phone_Number
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       String(first_name).trim().slice(0, 30),
       null,
@@ -326,10 +281,6 @@ async function createCustomerMinimal(pool, body) {
       hash,
       String(email).trim().toLowerCase().slice(0, 255),
       phone_number ? String(phone_number).trim().slice(0, 20) : null,
-      1,
-      1,
-      1990,
-      'U',
     ]
   )
   return result.insertId

@@ -1,18 +1,27 @@
 import { useState, useEffect } from "react";
+import './css/home.css'
+import './css/employee_home.css'
 import "./css/packages.css";
 import skyline from "../assets/houston-skyline.jpeg";
 import React from 'react'
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+import { Link, useNavigate } from 'react-router-dom';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export default function AllCustomers() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const userType = localStorage.getItem('userType');
+  const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('token'))
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [sortValue, setSortValue] = useState("");
   const [expanded, setExpanded] = useState(null);
   const [customerPackages, setCustomerPackages] = useState({});
+
+  
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch(`${API_BASE}/api/customers`)
@@ -56,22 +65,45 @@ function toggleExpand(id) {
     .then(data => setCustomerPackages(prev => ({ ...prev, [id]: data })))
     .catch(() => setCustomerPackages(prev => ({ ...prev, [id]: [] })));
 }
+function handleLogout(e) {
+    e.preventDefault()
+    localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('userType')
+    navigate('/')
+  }
+
 
   return (
-    <>
-      <header className="navbar">
-        <h1>Post Office 8</h1>
-        <nav>
-          <a href="/employee_home">Home</a>
-          <a href="/package_list">Packages</a>
-          <a href="/inventory">Inventory</a>
-          <a href="/">Logout</a>
-        </nav>
-      </header>
+    <div className={`packages-page ${userType === 'employee' ? 'employee-home' : ''}`}>
+      <header className="site-header">
+              <div className="header-inner">
+                <Link className="logo" to="/">
+                  National Postal Service
+                </Link>
+                <nav className="top-nav">
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/') }}>
+                    Home
+                  </a>
+                  {loggedIn ? (
+                    <>
+                      {localStorage.getItem('userType') === 'employee' && (
+                        <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>
+                          Employee Portal
+                        </a>
+                      )}
+                      <a href="#" onClick={handleLogout}>Logout</a>
+                    </>
+                  ) : (
+                    <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login') }}>
+                      Login
+                    </a>
+                  )}
+                </nav>
+              </div>
+            </header>
 
       <main>
-        <div className="hero">
-          <img src={skyline} alt="Post Office" />
+        <div className="inventory-hero">
+          <img src={skyline} alt="" />
         </div>
 
         <div className="page-content">
@@ -191,9 +223,13 @@ function toggleExpand(id) {
         </div>
       </main>
 
-      <footer>
-        <p>Database Team 8</p>
+      <footer className="site-footer">
+        <div className="footer-inner">
+          <span>© {new Date().getFullYear()} National Postal Service</span>
+          <span className="footer-links">
+          </span>
+        </div>
       </footer>
-    </>
+    </div>
   );
 }
