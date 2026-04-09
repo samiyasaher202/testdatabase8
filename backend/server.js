@@ -965,7 +965,7 @@ app.get('/api/customer/lookup', authenticate, requireEmployee, async (req, res) 
 })
 
 // ════════════════════════════════════════════════════════════════════════════
-//  employee Review
+// Ticket Report
 // ════════════════════════════════════════════════════════════════════════════
 app.get('/api/employee/tickets_comp', async (req, res) => {
   try {
@@ -979,6 +979,43 @@ app.get('/api/employee/:employee_id/tickets', async (req, res) => {
   const { employee_id } = req.params;
   try {
     const results = await employeeDB.getTicketsByEmployee(pool, employee_id);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+app.get('/api/employee/weeklyTickets', async (req, res) => {
+  try {
+    const results = await employeeDB.getWeeklyStatus(pool);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/employee/net-tickets', async (req, res) => {
+  try {
+    const results = await employeeDB.getNetAverage(pool);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/employee/week-net-tickets', async (req, res) => {
+  try {
+    const results = await employeeDB.netTicketsWeek(pool);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/employee/tickets-by-issue', async (req, res) => {
+  try {
+    const results = await employeeDB.ticketByIssue(pool);
     res.json(results);
   } catch (err) {
     res.status(500).json({ error: err.message });

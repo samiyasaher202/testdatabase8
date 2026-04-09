@@ -32,7 +32,7 @@ import CustomerPackages from './pages/customer_packages'
 
 import EmployeeSupport from './pages/Employeesupport.jsx'
 
-import TicketsEmployees from './pages/tickets_employees.jsx'
+import TicketsReport from './pages/tickets_report.jsx'
 
 // global styles
 import './pages/css/index.css'
@@ -50,7 +50,7 @@ function App() {
         {/* Testing Employee Support page */}
         <Route path="/employee-support" element={<EmployeeSupport />} />
 
-        <Route path="/tickets_employees" element={<TicketsEmployees />} />
+        <Route path="/tickets_employees" element={<TicketsReport />} />
 
         {/* Customer Routes */}
         <Route path="/customer_home" element={<RequireCustomer><CustomerHome /></RequireCustomer>} />

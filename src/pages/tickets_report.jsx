@@ -1,15 +1,40 @@
 import { useState, useEffect } from "react";
-import './css/home.css'
-import './css/employee_home.css'
+//import './css/home.css'
+//import './css/employee_home.css'
 import "./css/packages.css";
 import skyline from "../assets/houston-skyline.jpeg";
+import ColumnChart from "../components/column_chart";
+import PieChart from "../components/pie_chart";
 import React from 'react'
 
 import { Link, useNavigate } from 'react-router-dom';
+//import { netTicketsWeek } from "../../backend/db/employees";
+const STATUS_MAP = {
+  0: { label: "Open", color: "#dc2626", bg: "#fef2f2" },
+  1: { label: "Pending", color: "#d97706", bg: "#fffbeb" },
+  2: { label: "Closed", color: "#16a34a", bg: "#f0fdf4" },
+};
+
+const statusOptions = [
+  { value: 0, label: "Open" },
+  { value: 1, label: "Pending" },
+  { value: 2, label: "Closed" },
+];
+
+function getStatusBadgeClass(status) {
+  // const s = (status || '').toLowerCase()
+  if (status === 0) return 'open'
+  if (status === 1) return 'pending'
+  if (status === 2) return 'closed'
+  
+  return 'status-default'
+ }
+
+
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
-export default function () {
+export default function TicketsReport() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const userType = localStorage.getItem('userType');
@@ -17,16 +42,103 @@ export default function () {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [sortValue, setSortValue] = useState("");
-  const [expanded, setExpanded] = useState(null);
-  const [employeeTickets, setEmployeeTickets] = useState({});
+  // const [expanded, setExpanded] = useState(null);
+  
   const [openDropdowns, setOpenDropdowns] = useState({});
+
+  const [employeeTickets, setEmployeeTickets] = useState({});
+  const [weeklyData, setWeeklyData] = useState([]);
+  const[netTickets, setNetTickets] = useState([]);
+  const[weekNetTickets, setWeekNetTickets] = useState([]);
+  const[byIssue, setByIssue] = useState([]);
 
   const navigate = useNavigate();
 
 
+
+
+useEffect(() => {
+  console.log("Fetching from:", `${API_BASE}/api/employee/weeklyTickets`)
+  fetch(`${API_BASE}/api/employee/weeklyTickets`)
+    .then((res) => {
+      if (!res.ok) throw new Error("Failed to load weekly status");
+      return res.json();
+    })
+    .then((data) => {
+      console.log("Data received:", data);
+      setWeeklyData(data);
+      setLoading(false);
+    })
+    .catch((err) => {
+      setError(err.message);
+      setLoading(false);
+    });
+}, []);
+
+useEffect(() => {
+    console.log("Fetching from:", `${API_BASE}/api/employee/net-tickets`);
+    fetch(`${API_BASE}/api/employee/net-tickets`)
+      .then((res) => {
+         console.log("Response status:", res.status, res.ok);
+        if (!res.ok) throw new Error("Failed to load employees");
+        return res.json();
+      })
+      .then((data) => {
+        console.log("Data received:", data);
+        setNetTickets(data[0]?.net_avg_week ?? 'N/A');
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+useEffect(() => {
+    console.log("Fetching from:", `${API_BASE}/api/employee/week-net-tickets`);
+    fetch(`${API_BASE}/api/employee/week-net-tickets`)
+      .then((res) => {
+         console.log("Response status:", res.status, res.ok);
+        if (!res.ok) throw new Error("Failed to load employees");
+        return res.json();
+      })
+      .then((data) => {
+        console.log("Data received:", data);
+        setWeekNetTickets(data[0]?.total ?? 'N/A');
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    console.log("Fetching from:", `${API_BASE}/api/employee/tickets-by-issue`);
+    fetch(`${API_BASE}/api/employee/tickets-by-issue`)
+      .then((res) => {
+         console.log("Response status:", res.status, res.ok);
+        if (!res.ok) throw new Error("Failed to load employees");
+        return res.json();
+      })
+      .then((data) => {
+        console.log("Data received:", data);
+        setByIssue(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Fetch error:", err);
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+
   useEffect(() => {
     console.log("Fetching from:", `${API_BASE}/api/employee/tickets_comp`);
-    fetch(`${API_BASE}/api/employee/review`)
+    fetch(`${API_BASE}/api/employee/tickets_comp`)
       .then((res) => {
          console.log("Response status:", res.status, res.ok);
         if (!res.ok) throw new Error("Failed to load employees");
@@ -43,6 +155,12 @@ export default function () {
         setLoading(false);
       });
   }, []);
+
+  
+
+  
+
+  const netTicketsRounded = Math.round(netTickets * 10) / 10; // -0.5 → -1 if you want integer
 
   let filtered = employees.filter((e) => {
     const q = search.toLowerCase();
@@ -105,7 +223,7 @@ function handleLogout(e) {
     localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('userType')
     navigate('/')
   }
- 
+  console.log("NetTickets" ,netTicketsRounded);
 
   return (
     <div className={`packages-page ${userType === 'employee' ? 'employee-home' : ''}`}>
@@ -137,9 +255,10 @@ function handleLogout(e) {
             </header>
 
       <main>
-        <div className="inventory-hero">
+        {/* <div className="inventory-hero">
           <img src={skyline} alt="" />
-        </div>
+        </div> */}
+
 
         <div className="page-content">
           <h2>Employee Support Tickets</h2>
@@ -150,6 +269,48 @@ function handleLogout(e) {
               <button onClick={() => setError(null)}>✕</button>
             </div>
           )}
+
+          <div>
+            <ColumnChart
+            title="Weekly Ticket Status"
+            subtitle="Grouped by resolution type"
+            xKey="week"
+            columns={[
+              { key: "Resolved_Sum",   label: "Resolved" },
+              { key: "Pending_Sum",    label: "Pending" },
+              { key: "Unresolved_Sum", label: "Unresolved" },
+            ]}
+            data={weeklyData}
+          />
+          </div>
+          <div className="pie-chart-container">
+            <div className="pie-chart-box">
+              <PieChart
+                title="Monthly Tickets By Issue"
+                slices={[
+                  { key: "failed transaction",   label: "Failed Transaction" },
+                  { key: "payment issue",    label: "Payment Issue" },
+                  { key: "delivery issue", label: "Delivery Issue" },
+                  {key: "other", label: "Other"}
+                ]}
+                data={byIssue}
+              />
+            </div>
+
+            {/* Stats box on the right */}
+            <div className="pie-chart-stats-box">
+              <div className="pie-chart__stat-large">
+                <div className="pie-chart__stat-label">Net Average Tickets Resolved per Week</div>
+                <div className="pie-chart__stat-num">{netTickets}</div>
+              </div>
+              <div className="pie-chart__stat-large">
+                <div className="pie-chart__stat-label">Net This Week</div>
+                <div className="pie-chart__stat-num">{weekNetTickets}</div>
+              </div>
+            </div>
+          </div>
+
+          
 
           {!loading && (
             <div className="stats-row">
@@ -257,23 +418,36 @@ function handleLogout(e) {
                                     <th>User ID</th>
                                     <th>Package ID</th>
                                     <th>Issue Type</th>
+                                    <th>Date Issued</th>
+                                    <th>Date Resolved</th>
+                                    <th>Status</th>
                                     <th>Resolution Note</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {(employeeTickets[c.Employee_ID] || [])
                                     .filter(t => t.Ticket_Status_Code == 1)
-                                    .map(t => (
+                                    .map(t => {
+                                     const ticketStatus = STATUS_MAP[t.Ticket_Status_Code] || STATUS_MAP[0];
+                                    return(
                                     <tr key={t.Ticket_ID}>
                                         <td><code>{t.Ticket_ID}</code></td>
                                         <td>{t.User_ID || "—"}</td>
                                         <td>{t.Package_ID || "—"}</td>
-                                        <td>{t.Issue_Type || "—"}</td>
+                                        <td>{t.Name || "—"}</td>
+                                        <td>{t.Date_Created ? new Date(t.Date_Created).toLocaleDateString() : "—"}</td>
+                                        <td>{t.Date_Updated ? new Date(t.Date_Updated).toLocaleDateString() : "—"}</td>
+                                        
+                                        <td>
+                                          <span className={`status-badge ${getStatusBadgeClass(t.Ticket_Status_Code)}`}>
+                                            {ticketStatus.label}
+                                          </span>
+                                        </td>
                                         <td>{t.Resolution_Note || "—"}</td>
-                                        {/* <td>{t.Ticket_Status_Code}</td> */}
                                         
                                     </tr>
-                                    ))
+                                    );
+                                  })
                                 }
                                 {!(employeeTickets[c.Employee_ID] || []).some(t => t.Ticket_Status_Code == 1) && (
                                     <tr><td colSpan={7} style={{ textAlign: "center" }}>—</td></tr>
@@ -294,29 +468,38 @@ function handleLogout(e) {
                                     <th>User ID</th>
                                     <th>Package ID</th>
                                     <th>Issue Type</th>
-                                    
+                                    <th>Date Issued</th>
+                                    <th>Date Updated</th>
+                                    <th>Status</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {(employeeTickets[c.Employee_ID] || [])
                                     .filter(t => t.Ticket_Status_Code == 0)
                                     .map(t => {
+                                      const ticketStatus = STATUS_MAP[t.Ticket_Status_Code] || STATUS_MAP[0];
                                         return(
                                     
                                     <tr key={t.Ticket_ID}>
                                         <td><code>{t.Ticket_ID}</code></td>
                                         <td>{t.User_ID || "—"}</td>
                                         <td>{t.Package_ID || "—"}</td>
-                                        <td>{t.Issue_Type || "—"}</td>
-                                        {/* <td>{t.Resolution_Note || "—"}</td> */}
-                                        {/* <td>{t.Ticket_Status_Code}</td> */}
+                                        <td>{t.Name || "—"}</td>
+                                        <td>{t.Date_Created ? new Date(t.Date_Created).toLocaleDateString() : "—"}</td>
+                                        <td>{t.Date_Updated ? new Date(t.Date_Updated).toLocaleDateString() : "—"}</td>
+                                        
+                                        <td>
+                                          <span className={`status-badge ${getStatusBadgeClass(t.Ticket_Status_Code)}`}>
+                                            {ticketStatus.label}
+                                          </span>
+                                        </td>
                                         
                                     </tr>
                                     );
                                     })
                                 }
                                 {!(employeeTickets[c.Employee_ID] || []).some(t => t.Ticket_Status_Code == 0) && (
-                                    <tr><td colSpan={7} style={{ textAlign: "center" }}>—</td></tr>
+                                    <tr><td colSpan={8} style={{ textAlign: "center" }}>—</td></tr>
                                 )}
                                 </tbody>
                             </table>

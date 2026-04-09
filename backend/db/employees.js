@@ -3,7 +3,7 @@
 // from payment sum up total tickets completed, and total price sold out
 
 async function getEmployeesRatios(pool){
-    console.log("getEmployeesRatios called");
+   // console.log("getEmployeesRatios called");
     const employeeQ =
         `SELECT
             CONCAT(
@@ -24,6 +24,7 @@ async function getEmployeesRatios(pool){
         LEFT JOIN employee m ON m.Employee_ID = e.Supervisor_ID
         JOIN role r ON r.Role_ID = e.Role_ID
         JOIN department d ON d.Department_ID = e.Department_ID
+        WHERE r.Role_ID != 2
         `;
 
         const ticketQ =
@@ -46,6 +47,8 @@ async function getEmployeesRatios(pool){
 
     return ans;
 }
+// DATE(s.Date_Created) AS Date_Created1,
+        // DATE(s.Date_Updated) AS Date_Updated1,
 async function getTicketsByEmployee(pool,employeeId){
     console.log("get Tickets by employee called");
     const [results] = await pool.query(
@@ -53,16 +56,103 @@ async function getTicketsByEmployee(pool,employeeId){
         s.Ticket_ID,
         s.User_ID,
         s.Package_ID,
+        t.Name,
         s.Issue_Type,
-        If(s.Resolution_Note IS NOT NULL, s.Resolution_Note, '') AS Resolution_Note,
-        s.Ticket_Status_Code
+        
+        s.Date_Created,
+        s.Date_Updated,
+        s.Ticket_Status_Code,
+        If(s.Resolution_Note IS NOT NULL, s.Resolution_Note, '') AS Resolution_Note
+        
 
         FROM support_ticket s
-        WHERE s.Assigned_Employee_Id = ?`,
+        JOIN ticket_issue_type t ON t.Type_Id = s.Issue_Type
+        WHERE s.Assigned_Employee_Id = ?
+        ORDER BY s.Date_Created DESC`,
         [employeeId]
         
     );
     return results;
 }
 
-module.exports = {getEmployeesRatios,getTicketsByEmployee}
+async function getNetAverage(pool){
+    const[results] = await pool.query(
+        `SELECT
+            (SUM(IF(s.Ticket_Status_Code = 2, 1, 0))/ COUNT(DISTINCT WEEK(s.Date_Updated)) -
+            SUM(IF(s.Ticket_Status_Code = 0 OR s.Ticket_Status_Code = 1, 1, 0))/COUNT(DISTINCT WEEK(s.Date_Updated))) AS net_avg_week
+        FROM support_ticket s;
+            `
+    )
+    return results;
+}
+async function getWeeklyStatus(pool){
+    const [results] = await pool.query(
+        `SELECT
+            WEEK(CASE 
+                WHEN s.Ticket_Status_Code = 0 THEN s.Date_Created
+                ELSE s.Date_Updated
+                END) AS week,
+            SUM(IF(s.Ticket_Status_Code = 2, 1, 0)) as Resolved_Sum,
+            SUM(IF(s.Ticket_Status_Code = 1, 1, 0)) as Pending_Sum,
+            SUM(IF(s.Ticket_Status_Code = 0, 1, 0)) as Unresolved_Sum
+        FROM support_ticket s
+        GROUP BY(WEEK(CASE 
+                WHEN s.Ticket_Status_Code = 0 THEN s.Date_Created
+                ELSE s.Date_Updated
+                END))
+        ORDER BY(WEEK(CASE 
+                WHEN s.Ticket_Status_Code = 0 THEN s.Date_Created
+                ELSE s.Date_Updated
+                END));
+        `
+    )
+    return results;
+ }
+
+ async function netTicketsWeek(pool){
+    const[results] = await pool.query(
+        `SELECT
+            SUM(IF(s.Ticket_Status_Code = 2, 1, 0)) -
+            SUM(IF(s.Ticket_Status_Code IN (0, 1), 1, 0)) AS total
+        FROM support_ticket s
+        WHERE 
+            WEEK(
+                CASE 
+                    WHEN s.Ticket_Status_Code = 0 THEN s.Date_Created
+                    ELSE s.Date_Updated
+                END
+            ) = WEEK(CURDATE()); 
+        `
+    )
+    return results;
+ }
+
+ async function ticketByIssue(pool) {
+  const [results] = await pool.query(`
+    SELECT
+      t.Name,
+      COUNT(*) AS total
+    FROM support_ticket s
+    JOIN ticket_issue_type t ON t.Type_ID = s.Issue_Type
+    WHERE s.Date_Created >= CURDATE() - INTERVAL 30 DAY
+    GROUP BY t.Name;
+  `);
+  const formatted = [
+    results.reduce((acc, row) => {
+      acc[row.Name] = row.total;
+      return acc;
+    }, {})
+  ];
+
+  return formatted;
+
+//   const formatted = [
+//     results.reduce((acc, row) => {
+//       acc[row.Name] = row.total;
+//       return acc;
+//     }, {})
+//   ];
+
+  //return results;
+}
+module.exports = {getEmployeesRatios,getTicketsByEmployee, getNetAverage, getWeeklyStatus,netTicketsWeek,ticketByIssue}
