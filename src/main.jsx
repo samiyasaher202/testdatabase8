@@ -33,7 +33,7 @@ import CustomerPackages from './pages/customer_packages'
 import EmployeeSupport from './pages/Employeesupport.jsx'
 import Employee_SubmitTicket from './pages/Employee_SubmitTicket.jsx'
 
-import TicketsEmployees from './pages/tickets_employees.jsx'
+import TicketsReport from './pages/tickets_report.jsx'
 import EmployeesPage from './pages/employees.jsx'
 
 // global styles
@@ -50,7 +50,7 @@ function App() {
 
         
 
-        <Route path="/tickets_employees" element={<TicketsEmployees />} />
+        <Route path="/tickets_employees" element={<TicketsReport />} />
 
         {/* Customer Routes */}
         <Route path="/customer_home" element={<RequireCustomer><CustomerHome /></RequireCustomer>} />
