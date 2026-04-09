@@ -74,7 +74,7 @@ INSERT INTO Department (Department_Name) VALUES
 -- Supervisors inserted first (no supervisor themselves), then regular employees
 -- Password hash = bcrypt (cost 10) of 'employee123' — must be a full 60-char bcrypt string (bcryptjs $2a$)
 INSERT INTO Employee (Post_Office_ID, Supervisor_ID, Role_ID, Department_ID, First_Name, Middle_Name, Last_Name, Birth_Day, Birth_Month, Birth_Year, Password_Hash, Email_Address, Phone_Number, Sex, Salary) VALUES
---Admin (Full system access)
+-- Admin (Full system access)
 (1, NULL, 5, 4, 'Richard', 'A', 'Moore',   15, 3, 1975, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'richard.moore@postoffice8.com',   '713-500-2001', 'M', 72000.00),
 -- Managers (no supervisor)
 (2, NULL, 4, 4, 'Nancy',   'B', 'White',    8, 7, 1980, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'nancy.white@postoffice8.com',     '214-500-2002', 'F', 70000.00),
