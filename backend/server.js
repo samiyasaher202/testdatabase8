@@ -105,9 +105,9 @@ async function nextTrackingNumber(conn) {
 
 // ── Admin/Manager authorization middleware ─────────────────────────────────
 const requireAdmin = (req, res, next) => {
-  // Check if user role is Manager or Director (role_id 3 or 4)
+  // Check if user role is Manager or Admin (role_id 4 or 5)
   // Adjust role_ids based on your database
-  if (![3, 4].includes(req.user.role_id)) {
+  if (![4, 5].includes(req.user.role_id)) {
     return res.status(403).json({ message: 'Access denied. Manager/Admin role required.' })
   }
   next()

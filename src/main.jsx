@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { RequireEmployee, RequireCustomer, RequireAuth } from './AuthGuard'
+import { RequireEmployee, RequireCustomer, RequireAuth, RequireAdmin } from './AuthGuard'
 
 // pages
 import Home from './pages/home'
@@ -65,13 +65,13 @@ function App() {
         <Route path="/employee/submit-ticket" element={<RequireEmployee><Employee_SubmitTicket/></RequireEmployee>} />
         {/* <Route path="/employee/support" element={<RequireEmployee><EmployeeSupport /></RequireEmployee>} /> */}
         <Route path="/customers" element={<RequireEmployee><AllCustomers /></RequireEmployee>} />
-        <Route path="/admin-register" element={<RequireEmployee><AdminRegister /></RequireEmployee>} />
+        <Route path="/admin-register" element={<RequireAdmin><AdminRegister /></RequireAdmin>} />
         <Route path="/profile" element={<RequireEmployee><Profile /></RequireEmployee>} />
         <Route path="/employees" element={<RequireEmployee><EmployeesPage /></RequireEmployee>} />
 
         {/* Shared / Authenticated */}
         <Route path="/package_list" element={<RequireAuth><AllPackages /></RequireAuth>} />
-        <Route path="/inventory" element={<RequireAuth><Inventory /></RequireAuth>} />
+        <Route path="/inventory" element={<RequireEmployee><Inventory /></RequireEmployee>} />
         {/* <Route path="/support" element={<RequireAuth><SupportTicket /></RequireAuth>} /> */}
 
         {/* Optional/Test */}
