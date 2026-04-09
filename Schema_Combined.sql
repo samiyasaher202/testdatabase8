@@ -110,6 +110,7 @@ Phone_Number varchar(20) null,
 Sex char(1) not null,
 Salary decimal(10,2) not null,
 Hours_Worked decimal(6,2) not null default 0.00,
+Is_Active enum('1','0') not null default '1',
 
 foreign key (Post_Office_ID) references Post_Office(Post_Office_ID),
 foreign key (Supervisor_ID) references Employee(Employee_ID),

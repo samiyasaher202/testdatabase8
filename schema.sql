@@ -102,6 +102,7 @@ CREATE TABLE Employee (
   Sex CHAR(1),
   Salary DECIMAL(10,2),
   Hours_Worked DECIMAL(5,2) DEFAULT 0,
+  Is_Active ENUM('1','0') NOT NULL DEFAULT '1',
   FOREIGN KEY (Post_Office_ID) REFERENCES Post_Office(Post_Office_ID),
   FOREIGN KEY (Supervisor_ID) REFERENCES Employee(Employee_ID),
   FOREIGN KEY (Role_ID) REFERENCES Role(Role_ID),

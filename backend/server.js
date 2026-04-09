@@ -25,8 +25,8 @@ app.use(express.json())
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
-  host:               process.env.MYSQLHOST,
-  port:               process.env.MYSQLPORT,
+  host:               process.env.MYSQLHOST ,
+  port:               process.env.MYSQLPORT ,
   user:               process.env.MYSQLUSER,
   password:           process.env.MYSQLPASSWORD,
   database:           process.env.MYSQL_DATABASE,
@@ -113,6 +113,14 @@ const requireAdmin = (req, res, next) => {
   next()
 }
 
+const requireRole5Admin = (req, res, next) => {
+  const roleId = Number(req.user?.role_id)
+  if (req.user?.type !== 'employee' || !Number.isFinite(roleId) || roleId !== 5) {
+    return res.status(403).json({ message: 'Access denied. Admin role required.' })
+  }
+  next()
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 //  AUTH ROUTES
 // ════════════════════════════════════════════════════════════════════════════
@@ -141,7 +149,12 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' })
 
     const token = jwt.sign(
-      { employee_id: emp.Employee_ID, email: emp.Email_Address, role_id: emp.Role_ID, type: 'employee' },
+      {
+        employee_id: Number(emp.Employee_ID),
+        email: emp.Email_Address,
+        role_id: Number(emp.Role_ID),
+        type: 'employee',
+      },
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '24h' }
     )
@@ -316,6 +329,66 @@ app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: 'Server error', error: err.message })
+  }
+})
+
+// ── Admin-only employee directory (Role_ID = 5) ────────────────────────────
+app.get('/api/admin/employees', authenticate, requireRole5Admin, async (_req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+         e.Employee_ID,
+         po.Street AS Post_Office_Street,
+         d.Department_Name,
+         r.Role_Name,
+         e.First_Name,
+         e.Last_Name,
+         e.Email_Address,
+         e.Sex,
+         e.Phone_Number,
+         e.Is_Active
+       FROM employee e
+       JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+       JOIN department d   ON e.Department_ID  = d.Department_ID
+       JOIN role r         ON e.Role_ID        = r.Role_ID
+       WHERE e.Is_Active IN ('1', 1)
+       ORDER BY e.Last_Name, e.First_Name, e.Employee_ID`
+    )
+    res.json({ employees: rows })
+  } catch (err) {
+    console.error(err)
+    if (err.code === 'ER_BAD_FIELD_ERROR') {
+      return res.status(500).json({
+        message:
+          'Database is missing Employee.Is_Active. Run backend/db/migrations/002_add_employee_is_active.sql (and 003 if converting from TINYINT).',
+      })
+    }
+    res.status(500).json({ message: err.sqlMessage || err.message || 'Server error' })
+  }
+})
+
+app.patch('/api/admin/employees/:employeeId/deactivate', authenticate, requireRole5Admin, async (req, res) => {
+  const employeeId = Number(req.params.employeeId)
+  if (!Number.isFinite(employeeId)) {
+    return res.status(400).json({ message: 'Invalid employee id' })
+  }
+
+  try {
+    const [result] = await pool.query(
+      "UPDATE employee SET Is_Active = '0' WHERE Employee_ID = ?",
+      [employeeId]
+    )
+    if (!result.affectedRows) return res.status(404).json({ message: 'Employee not found' })
+    res.json({ ok: true })
+  } catch (err) {
+    console.error(err)
+    if (err.code === 'ER_BAD_FIELD_ERROR') {
+      return res.status(500).json({
+        message:
+          'Database is missing Employee.Is_Active. Run backend/db/migrations/002_add_employee_is_active.sql (and 003 if converting from TINYINT).',
+      })
+    }
+    res.status(500).json({ message: err.sqlMessage || err.message || 'Server error' })
   }
 })
 
@@ -1031,6 +1104,7 @@ app.put('/api/support-tickets/:id', async (req, res) => {
 
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
+console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
 console.log("Connecting to Database:", process.env.MYSQL_DATABASE);
 

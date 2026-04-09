@@ -18,8 +18,22 @@ function getStoredEmployeeFullName() {
   }
 }
 
+function getStoredEmployeeRoleId() {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw) return null
+    const u = JSON.parse(raw)
+    const roleId = Number(u.Role_ID ?? u.role_id)
+    return Number.isFinite(roleId) ? roleId : null
+  } catch {
+    return null
+  }
+}
+
 export default function EmployeeHome() {
   const navigate = useNavigate()
+  const roleId = getStoredEmployeeRoleId()
+  const isAdmin = roleId === 5
 
   function handleLogout(e) {
     e.preventDefault()
@@ -135,6 +149,16 @@ export default function EmployeeHome() {
                 Add package
               </button>
             </div>
+
+            {isAdmin && (
+              <div className="card">
+                <h3>Employees</h3>
+                <p>View and manage employee accounts.</p>
+                <button type="button" className="btn primary" onClick={() => navigate('/employees')}>
+                  View Employees
+                </button>
+              </div>
+            )}
 
              <div className="card">
               <h3>Employee Review</h3>

@@ -33,6 +33,7 @@ import CustomerPackages from './pages/customer_packages'
 import EmployeeSupport from './pages/Employeesupport.jsx'
 
 import TicketsEmployees from './pages/tickets_employees.jsx'
+import EmployeesPage from './pages/employees.jsx'
 
 // global styles
 import './pages/css/index.css'
@@ -65,6 +66,7 @@ function App() {
         <Route path="/customers" element={<RequireEmployee><AllCustomers /></RequireEmployee>} />
         <Route path="/admin-register" element={<RequireEmployee><AdminRegister /></RequireEmployee>} />
         <Route path="/profile" element={<RequireEmployee><Profile /></RequireEmployee>} />
+        <Route path="/employees" element={<RequireEmployee><EmployeesPage /></RequireEmployee>} />
 
         {/* Shared / Authenticated */}
         <Route path="/package_list" element={<RequireAuth><AllPackages /></RequireAuth>} />
