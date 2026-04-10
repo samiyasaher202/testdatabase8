@@ -920,6 +920,36 @@ async function router(req, res) {
     }
   }
 
+  // ── POST /api/support-tickets ────────────────────────────────────────────
+  if (method === 'POST' && pathname === '/api/support-tickets') {
+    const { User_ID, Package_ID, Assigned_Employee_ID, Issue_Type, Description } = await getBody(req)
+    if (!User_ID || !Package_ID || !Assigned_Employee_ID || Issue_Type === undefined || !Description) {
+      return send(res, 400, { message: 'Missing required fields' })
+    }
+    try {
+      await pool.query(
+        `INSERT INTO support_ticket (User_ID, Package_ID, Assigned_Employee_ID, Issue_Type, Description, Ticket_Status_Code)
+        VALUES (?, ?, ?, ?, ?, 0)`,
+        [User_ID, Package_ID, Assigned_Employee_ID, Issue_Type, Description]
+      )
+      return send(res, 201, { message: 'Ticket submitted successfully' })
+    } catch (err) {
+      console.error('POST /api/support-tickets error:', err)
+      return send(res, 500, { error: err.message || 'Failed to create ticket' })
+    }
+  }
+
+  if (method === 'GET' && pathname === '/api/employees') {
+    try {
+      const [rows] = await pool.query(
+        `SELECT Employee_ID, First_Name, Last_Name FROM employee WHERE Is_Active = 1`
+      )
+      return send(res, 200, rows)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+  }
+
   // ── 404 ──────────────────────────────────────────────────────────────────
   send(res, 404, { error: 'Not found' })
 }
