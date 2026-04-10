@@ -1,0 +1,86 @@
+.pickup-page .pickup-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 56px;
+}
+
+.pickup-page h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.5rem, 2.5vw, 1.85rem);
+  color: var(--text, #0f172a);
+}
+
+.pickup-lead {
+  margin: 0 0 24px;
+  color: var(--text-soft, #475569);
+  line-height: 1.55;
+  max-width: 720px;
+}
+
+.pickup-banner {
+  margin-bottom: 16px;
+}
+
+.pickup-success {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.pickup-section {
+  margin-bottom: 32px;
+}
+
+.pickup-section h2 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+  color: var(--text, #0f172a);
+}
+
+.pickup-form-section {
+  padding-top: 8px;
+  border-top: 1px solid var(--border, #dbe4ef);
+}
+
+.pickup-form {
+  display: grid;
+  gap: 16px;
+  max-width: 420px;
+}
+
+.pickup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text, #0f172a);
+}
+
+.pickup-field input,
+.pickup-field select {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #dbe4ef);
+  background: #fff;
+}
+
+.pickup-field input[readonly] {
+  background: var(--surface-soft, #f8fafc);
+  color: var(--text-soft, #475569);
+}
+
+.pickup-submit {
+  margin-top: 8px;
+  justify-self: start;
+}
+
+.pickup-page .inventory-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
