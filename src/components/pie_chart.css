@@ -1,0 +1,102 @@
+
+
+/* Container holding both boxes side by side */
+.pie-chart-container {
+  display: flex;
+  flex-direction: row;        /* explicitly row */
+  flex-wrap: nowrap;          /* prevent stacking */
+  gap: 24px;
+  align-items: stretch;       /* equal height */
+  margin-top: 24px;
+  max-width: 1180px;          /* match your column chart */
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 24px;
+}
+
+.pie-chart-box {
+  /* background: var(--surface, #fff); */
+  background: #f8f8f8;
+  border: 1px solid var(--border, #dbe4ef);
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 24px;
+  flex: 1; 
+}
+
+.pie-chart-stats-box {
+  background:  #f8f8f8;
+  border: 1px solid var(--border, #dbe4ef);
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 24px;
+  flex: 1;                    /* take remaining space */
+}
+
+/* Pie chart itself */
+.pie-chart {
+  width: 100%;
+  font-family: inherit;
+}
+
+.pie-chart__canvas-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.pie-chart__legend-pct {
+  font-size: .75rem;
+  color: #94a3b8;
+  margin-left: 2px;
+}
+/* Stats numbers */
+.pie-chart__stat-large {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.pie-chart__stat-label {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.pie-chart__stat-num {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1d4ed8;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 760px) {
+  .pie-chart-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .pie-chart-stats-box {
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .pie-chart__stat-num {
+    font-size: 1.5rem;
+  }
+}
