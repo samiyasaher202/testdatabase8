@@ -1,0 +1,301 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── ROOT ── */
+.dr-root {
+  min-height: 100vh;
+  background: #e8e4dc;
+  font-family: 'DM Sans', sans-serif;
+  color: #0a0f2c;
+}
+
+/* ── NAV ── */
+.dr-nav {
+  background: linear-gradient(135deg, #0a0f2c 0%, #1a3bcc 100%);
+  padding: 0 2rem;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dr-nav-brand {
+  font-family: 'Sora', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.dr-nav-link {
+  color: rgba(255,255,255,0.85);
+  font-size: 0.875rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.dr-nav-link:hover { color: #fff; }
+
+/* ── HEADER BAND ── */
+.dr-header {
+  background: linear-gradient(135deg, #0a0f2c 0%, #1a3bcc 100%);
+  padding: 2.5rem 2rem 2rem;
+  color: #fff;
+}
+.dr-header h1 {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+.dr-header p {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.7);
+}
+
+/* ── BODY ── */
+.dr-body {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── SUMMARY CARDS ── */
+.dr-cards {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  flex-wrap: wrap;
+}
+.dr-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  min-width: 200px;
+  flex: 1;
+  box-shadow: 0 2px 16px rgba(10,15,44,0.08);
+}
+.dr-card-label {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #999;
+  margin-bottom: 0.4rem;
+}
+.dr-card-value {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0a0f2c;
+}
+.dr-card-value.small {
+  font-size: 1.1rem;
+}
+
+/* ── FILTERS ── */
+.dr-filters {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 2px 16px rgba(10,15,44,0.08);
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.dr-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.dr-filter-label {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #999;
+}
+.dr-input,
+.dr-select {
+  padding: 0.45rem 0.85rem;
+  border: 1.5px solid #e0ddd8;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  color: #2a2f4a;
+  background: #fafaf8;
+  outline: none;
+  transition: border-color 0.18s;
+}
+.dr-input:focus,
+.dr-select:focus {
+  border-color: #1a3bcc;
+  background: #fff;
+}
+.dr-input { width: 220px; }
+.dr-select { min-width: 150px; }
+
+.dr-run-btn {
+  padding: 0.5rem 1.5rem;
+  background: linear-gradient(135deg, #0a0f2c, #1a3bcc);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.18s, transform 0.18s;
+  letter-spacing: 0.02em;
+  align-self: flex-end;
+}
+.dr-run-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+.dr-run-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── TABS ── */
+.dr-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.dr-tab {
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  border: 1.5px solid #c8c4bb;
+  background: #fff;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #555;
+  transition: all 0.18s;
+}
+.dr-tab:hover { border-color: #999; color: #555; }
+.dr-tab.active {
+  background: linear-gradient(135deg, #0a0f2c, #1a3bcc);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* ── TABLE SECTION ── */
+.dr-section-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0a0f2c;
+  margin-bottom: 0.85rem;
+}
+
+.dr-table-wrap {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px rgba(10,15,44,0.08);
+  overflow: hidden;
+}
+.dr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  table-layout: auto;
+}
+.dr-table thead {
+  background: #f4f2ee;
+}
+.dr-table thead th {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
+  border-bottom: 1.5px solid #e8e4dc;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+.dr-table thead th:hover { color: #1a3bcc; }
+
+.dr-table tbody tr {
+  border-bottom: 1px solid #f0ede8;
+  transition: background 0.15s;
+}
+.dr-table tbody tr:last-child { border-bottom: none; }
+.dr-table tbody tr:hover { background: #fafaf8; }
+.dr-table td {
+  padding: 0.85rem 1rem;
+  color: #2a2f4a;
+  vertical-align: middle;
+}
+
+/* ── CELL STYLES ── */
+.dr-mono {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  background: #f0ede8;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  color: #444;
+}
+.dr-amount {
+  font-family: 'Sora', sans-serif;
+  font-weight: 600;
+  color: #16a34a;
+}
+.dr-fee-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Sora', sans-serif;
+  background: #eef1fd;
+  color: #1a3bcc;
+}
+
+/* ── EMPTY / LOADING ── */
+.dr-empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #aaa;
+  font-size: 0.9rem;
+  font-family: 'DM Sans', sans-serif;
+}
+.dr-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e0ddd8;
+  border-top-color: #1a3bcc;
+  border-radius: 50%;
+  animation: dr-spin 0.7s linear infinite;
+  margin: 3rem auto;
+}
+@keyframes dr-spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .dr-body { padding: 1rem; }
+  .dr-table { font-size: 0.8rem; }
+  .dr-table td, .dr-table th { padding: 0.65rem 0.6rem; }
+  .dr-cards { flex-direction: column; }
+  .dr-input { width: 100%; }
+}
+
+/* Chart containers */
+.dr-chart-wrap {
+  padding: 1.5rem;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.dr-chart-wrap .pie-chart,
+.dr-chart-wrap .column-chart {
+  height: 100%;
+}

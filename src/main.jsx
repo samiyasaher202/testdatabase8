@@ -34,6 +34,7 @@ import EmployeeSupport from './pages/Employeesupport.jsx'
 import Employee_SubmitTicket from './pages/Employee_SubmitTicket.jsx'
 
 import TicketsReport from './pages/tickets_report.jsx'
+import RevenueReport from './pages/Revenue_Report.jsx'
 import EmployeesPage from './pages/employees.jsx'
 
 // global styles
@@ -48,9 +49,11 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        
+        {/* Data report testing*/}
+
 
         <Route path="/tickets_employees" element={<TicketsReport />} />
+        <Route path="revenue-report" element={<RevenueReport />} />
 
         {/* Customer Routes */}
         <Route path="/customer_home" element={<RequireCustomer><CustomerHome /></RequireCustomer>} />

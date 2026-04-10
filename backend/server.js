@@ -950,9 +950,148 @@ async function router(req, res) {
     }
   }
 
-  // ── 404 ──────────────────────────────────────────────────────────────────
-  send(res, 404, { error: 'Not found' })
-}
+  // ── GET /api/report/fee-breakdown ────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/report/fee-breakdown') {
+    try {
+      const { search, dateFrom, dateTo, feeType } = query
+      let sql = `
+        SELECT 
+          ef.Type_Name AS fee_type,
+          COUNT(*) AS times_applied,
+          SUM(ef.Additional_Price) AS total_revenue,
+          AVG(ef.Additional_Price) AS avg_fee
+        FROM package_excess_fee pef
+        JOIN excess_fee ef ON pef.Fee_Type_Code = ef.Fee_Type_Code
+        JOIN package p ON pef.Tracking_Number = p.Tracking_Number
+        WHERE 1=1
+      `
+      const params = []
+      if (search) { sql += ` AND (ef.Type_Name LIKE ? OR pef.Tracking_Number LIKE ?)`; params.push(`%${search}%`, `%${search}%`) }
+      if (dateFrom) { sql += ` AND p.Date_Created >= ?`; params.push(dateFrom) }
+      if (dateTo) { sql += ` AND p.Date_Created <= ?`; params.push(dateTo) }
+      if (feeType) { sql += ` AND ef.Type_Name = ?`; params.push(feeType) }
+      sql += ` GROUP BY ef.Fee_Type_Code, ef.Type_Name ORDER BY total_revenue DESC`
+      const [rows] = await pool.query(sql, params)
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+  // ── GET /api/report/packages ──────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/report/packages') {
+    try {
+      const { search, dateFrom, dateTo } = query
+      let sql = `
+        SELECT 
+          p.Tracking_Number AS package_id,
+          p.Package_Type_Code AS package_type,
+          p.Weight AS weight,
+          p.Price AS price,
+          p.Zone AS zone,
+          p.Date_Created AS created_at,
+          CONCAT(s.First_Name, ' ', s.Last_Name) AS sender_name,
+          CONCAT(r.First_Name, ' ', r.Last_Name) AS recipient_name
+        FROM package p
+        JOIN customer s ON p.Sender_ID = s.Customer_ID
+        JOIN customer r ON p.Recipient_ID = r.Customer_ID
+        WHERE 1=1
+      `
+      const params = []
+      if (search) { sql += ` AND (p.Tracking_Number LIKE ?)`; params.push(`%${search}%`) }
+      if (dateFrom) { sql += ` AND p.Date_Created >= ?`; params.push(dateFrom) }
+      if (dateTo) { sql += ` AND p.Date_Created <= ?`; params.push(dateTo) }
+      sql += ` ORDER BY p.Date_Created DESC`
+      const [rows] = await pool.query(sql, params)
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+  // ── GET /api/report/payments ──────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/report/payments') {
+    try {
+      const { dateFrom, dateTo } = query
+      let sql = `
+        SELECT
+          Payment_ID AS payment_id,
+          Customer_ID AS customer_id,
+          Payment_Amount AS amount,
+          Payment_Type AS payment_method,
+          Payment_Status AS payment_status,
+          Payment_Date AS payment_date
+        FROM payment
+        WHERE 1=1
+      `
+      const params = []
+      if (dateFrom) { sql += ` AND Payment_Date >= ?`; params.push(dateFrom) }
+      if (dateTo) { sql += ` AND Payment_Date <= ?`; params.push(dateTo) }
+      sql += ` ORDER BY Payment_Date DESC`
+      const [rows] = await pool.query(sql, params)
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+  // ── GET /api/report/excess-fees ───────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/report/excess-fees') {
+    try {
+      const { search, dateFrom, dateTo, feeType } = query
+      let sql = `
+        SELECT
+          pef.Tracking_Number AS package_id,
+          ef.Type_Name AS fee_type,
+          ef.Additional_Price AS amount,
+          p.Date_Created AS applied_date
+        FROM package_excess_fee pef
+        JOIN excess_fee ef ON pef.Fee_Type_Code = ef.Fee_Type_Code
+        JOIN package p ON pef.Tracking_Number = p.Tracking_Number
+        WHERE 1=1
+      `
+      const params = []
+      if (search) { sql += ` AND (ef.Type_Name LIKE ? OR pef.Tracking_Number LIKE ?)`; params.push(`%${search}%`, `%${search}%`) }
+      if (dateFrom) { sql += ` AND p.Date_Created >= ?`; params.push(dateFrom) }
+      if (dateTo) { sql += ` AND p.Date_Created <= ?`; params.push(dateTo) }
+      if (feeType) { sql += ` AND ef.Type_Name = ?`; params.push(feeType) }
+      sql += ` ORDER BY p.Date_Created DESC`
+      const [rows] = await pool.query(sql, params)
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+  // ── GET /api/report/revenue-by-month ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/report/revenue-by-month') {
+    try {
+      const [rows] = await pool.query(`
+        SELECT 
+          DATE_FORMAT(p.Date_Created, '%b %Y') AS month,
+          DATE_FORMAT(p.Date_Created, '%Y-%m') AS sort_key,
+          SUM(ef.Additional_Price) AS revenue
+        FROM package_excess_fee pef
+        JOIN excess_fee ef ON pef.Fee_Type_Code = ef.Fee_Type_Code
+        JOIN package p ON pef.Tracking_Number = p.Tracking_Number
+        GROUP BY month, sort_key
+        ORDER BY sort_key ASC
+        LIMIT 12
+      `)
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+    // ── 404 ──────────────────────────────────────────────────────────────────
+    send(res, 404, { error: 'Not found' })
+  }
 
 // ── Start server ──────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
