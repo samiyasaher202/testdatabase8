@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './css/Employee_SubmitTicket.css';
 
@@ -8,14 +8,41 @@ function Employee_SubmitTicket() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    transactionId: '',
-    category: '',
+    userId: '',
+    packageId: '',
+    employeeId: '',
+    issueType: '',
     description: ''
   });
 
   const [successMessage, setSuccessMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  //Drop down menu for these items to make it easier to showcase
+  const [customers, setCustomers] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  useEffect(() => {
+  fetch(`${API_BASE}/api/customers`)
+    .then(r => r.json())
+    .then(data => {
+      setCustomers(Array.isArray(data) ? data : []);
+    })
+    .catch(() => setCustomers([]))
+
+    fetch(`${API_BASE}/api/packages`)
+      .then(r => r.json())
+      .then(data => setPackages(Array.isArray(data) ? data : []))
+      .catch(() => setPackages([]));
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`${API_BASE}/api/employees`)
+        .then(r => r.json())
+        .then(data => setEmployees(Array.isArray(data) ? data : []))
+        .catch(() => setEmployees([]));
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,13 +56,17 @@ function Employee_SubmitTicket() {
     e.preventDefault();
 
     try {
-      const response = await fetch(`${API_BASE}/api/tickets`, {
+      const response = await fetch(`${API_BASE}/api/support-tickets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          ...formData,
+          User_ID: formData.userId,
+          Package_ID: formData.packageId,
+          Assigned_Employee_ID: formData.employeeId,
+          Issue_Type: Number(formData.issueType),
+          Description: formData.description,
           submittedAt: new Date().toISOString()
         })
       });
@@ -43,10 +74,10 @@ function Employee_SubmitTicket() {
       if (response.ok) {
         setSuccessMessage(true);
         setFormData({
-          name: '',
-          email: '',
-          transactionId: '',
-          category: '',
+          userId: '',
+          packageId: '',
+          employeeId: '',
+          issueType: '',
           description: ''
         });
 
@@ -54,6 +85,7 @@ function Employee_SubmitTicket() {
       }
     } catch (error) {
       console.error('Error submitting ticket:', error);
+      setErrorMessage('Failed to submut Ticket. Please try again.');
     }
   };
 
@@ -71,38 +103,44 @@ function Employee_SubmitTicket() {
         </div>
       )}
 
+      {errorMessage && (
+        <div className="error-message">
+          ⚠ {errorMessage}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label htmlFor="name">Full Name *</label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
+          <label htmlFor="userId">Customer ID *</label>
+          <select id="userId" name="userId" value={formData.userId} onChange={handleChange} required>
+            <option value="">-- Select Customer --</option>
+            {customers.map(c => (
+              <option key={c.Customer_ID} value={c.Customer_ID}>
+                {c.Customer_ID} — {c.Full_Name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">
-          <label htmlFor="email">Email *</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
+          <label htmlFor="packageId">Package ID *</label>
+          <select id="packageId" name="packageId" value={formData.packageId} onChange={handleChange} required>
+            <option value="">-- Select Package --</option>
+            {packages.map(p => (
+              <option key={p.Tracking_Number} value={p.Tracking_Number}>
+                {p.Tracking_Number}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">
-          <label htmlFor="transactionId">Transaction ID *</label>
+          <label htmlFor="employeeId">Employee ID *</label>
           <input
             type="text"
-            id="transactionId"
-            name="transactionId"
-            value={formData.transactionId}
+            id="employeeId"
+            name="employeeId"
+            value={formData.employeeId}
             onChange={handleChange}
             required
           />
@@ -111,17 +149,19 @@ function Employee_SubmitTicket() {
         <div className="form-group">
           <label htmlFor="category">Issue Category *</label>
           <select
-            id="category"
-            name="category"
-            value={formData.category}
+            id="issueType"
+            name="issueType"
+            value={formData.issueType}
             onChange={handleChange}
             required
           >
             <option value="">-- Select --</option>
-            <option value="transaction-failed">Transaction Failed</option>
-            <option value="payment-issue">Payment Issue</option>
-            <option value="delivery-issue">Delivery Issue</option>
-            <option value="other">Other</option>
+            <option value="0">Lost Package</option>
+            <option value="1">Damaged Package</option>
+            <option value="2">Delivery Delay</option>
+            <option value="3">Wrong Address</option>
+            <option value="4">Missing Item</option>
+            <option value="5">Other</option>
           </select>
         </div>
 
