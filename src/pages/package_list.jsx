@@ -11,6 +11,9 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 function getStatusBadgeClass(status) {
   const s = (status || '').toLowerCase()
   if (s.includes('deliver')) return 'status-delivered'
+  if (s.includes('picked up')) return 'status-delivered'
+  if (s.includes('disposed')) return 'status-delivered'
+  if (s.includes('at office')) return 'status-pending'
   if (s.includes('transit') || s.includes('shipping')) return 'status-transit'
   if (s.includes('pending') || s.includes('processing')) return 'status-pending'
   if (s.includes('delay') || s.includes('exception')) return 'status-delayed'
@@ -275,7 +278,7 @@ export default function AllPackages() {
                               aria-label={`Status for ${p.Tracking_Number}`}
                               value={String(p.Delivery_Status_Code)}
                               onChange={(e) => handleStatusChange(p.Tracking_Number, e.target.value)}
-                              disabled={statusUpdating === p.Tracking_Number}
+                              disabled={statusUpdating === p.Tracking_Number || !!p.Is_Final_Status}
                             >
                               {statusCodes.map((s) => (
                                 <option key={s.Status_Code} value={String(s.Status_Code)}>

@@ -16,6 +16,15 @@ function authHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+/** API datetime → value for `<input type="datetime-local" />` */
+function toDatetimeLocalValue(value) {
+  if (value == null || value === '') return ''
+  const d = new Date(String(value).replace(' ', 'T'))
+  if (Number.isNaN(d.getTime())) return ''
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 export default function PackageForPickup() {
   const navigate = useNavigate()
   const [atOffice, setAtOffice] = useState([])
@@ -28,18 +37,25 @@ export default function PackageForPickup() {
   const [postOfficeId, setPostOfficeId] = useState('')
   const [arrivalTime, setArrivalTime] = useState('')
   const [pickupTime, setPickupTime] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const [submittingArrival, setSubmittingArrival] = useState(false)
+  const [submittingPickup, setSubmittingPickup] = useState(false)
   const [success, setSuccess] = useState('')
 
   useEffect(() => {
-    let cancelled = false
+    const ac = new AbortController()
     async function load() {
       setLoading(true)
       setError('')
       try {
         const [r1, r2] = await Promise.all([
-          fetch(`${API_BASE}/api/employee/packages-at-office`, { headers: { ...authHeader() } }),
-          fetch(`${API_BASE}/api/employee/post-offices`, { headers: { ...authHeader() } }),
+          fetch(`${API_BASE}/api/employee/packages-at-office`, {
+            headers: { ...authHeader() },
+            signal: ac.signal,
+          }),
+          fetch(`${API_BASE}/api/employee/post-offices`, {
+            headers: { ...authHeader() },
+            signal: ac.signal,
+          }),
         ])
         const t1 = await r1.text()
         const t2 = await r2.text()
@@ -57,20 +73,17 @@ export default function PackageForPickup() {
         }
         if (!r1.ok) throw new Error(d1.message || t1.slice(0, 120) || 'Could not load at-office packages')
         if (!r2.ok) throw new Error(d2.message || t2.slice(0, 120) || 'Could not load post offices')
-        if (!cancelled) {
-          setAtOffice(Array.isArray(d1) ? d1 : [])
-          setOffices(Array.isArray(d2) ? d2 : [])
-        }
+        setAtOffice(Array.isArray(d1) ? d1 : [])
+        setOffices(Array.isArray(d2) ? d2 : [])
       } catch (e) {
-        if (!cancelled) setError(String(e.message || e))
+        if (e?.name === 'AbortError') return
+        setError(String(e.message || e))
       } finally {
-        if (!cancelled) setLoading(false)
+        setLoading(false)
       }
     }
     load()
-    return () => {
-      cancelled = true
-    }
+    return () => ac.abort()
   }, [])
 
   const selectedPkg = useMemo(
@@ -81,13 +94,76 @@ export default function PackageForPickup() {
   useEffect(() => {
     if (selectedPkg?.Recipient_ID != null) setRecipientId(String(selectedPkg.Recipient_ID))
     else setRecipientId('')
+    if (selectedPkg?.Pickup_Arrival_Time) {
+      setArrivalTime(toDatetimeLocalValue(selectedPkg.Pickup_Arrival_Time))
+    } else if (selectedPkg?.Shipment_Arrival_Stamp) {
+      setArrivalTime(toDatetimeLocalValue(selectedPkg.Shipment_Arrival_Stamp))
+    } else {
+      setArrivalTime('')
+    }
+    setPickupTime('')
   }, [selectedPkg])
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  const arrivalFromShipmentOrPickup = Boolean(
+    selectedPkg?.Pickup_Arrival_Time || selectedPkg?.Shipment_Arrival_Stamp
+  )
+
+  async function refreshAtOfficeList() {
+    const r = await fetch(`${API_BASE}/api/employee/packages-at-office`, { headers: { ...authHeader() } })
+    const t = await r.text()
+    let d = []
+    try {
+      if (t) d = JSON.parse(t)
+    } catch {
+      /* */
+    }
+    if (r.ok && Array.isArray(d)) setAtOffice(d)
+  }
+
+  async function handleRecordArrival() {
     setSuccess('')
     setError('')
-    setSubmitting(true)
+    if (!tracking.trim() || !recipientId || !postOfficeId || (!arrivalFromShipmentOrPickup && !arrivalTime)) {
+      setError('Choose a package and post office. Enter arrival time if none is stored on the shipment yet.')
+      return
+    }
+    setSubmittingArrival(true)
+    try {
+      const res = await fetch(`${API_BASE}/api/employee/package-pickup-arrival`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify({
+          tracking_number: tracking.trim(),
+          recipient_id: Number(recipientId),
+          post_office_id: Number(postOfficeId),
+          arrival_time: arrivalTime,
+        }),
+      })
+      const text = await res.text()
+      let data = {}
+      try {
+        if (text) data = JSON.parse(text)
+      } catch {
+        /* */
+      }
+      if (!res.ok) throw new Error(data.message || text.slice(0, 160) || `HTTP ${res.status}`)
+      setSuccess(`Arrival saved for ${tracking.trim()}. Pickup time stays empty until the customer picks up.`)
+      await refreshAtOfficeList()
+    } catch (err) {
+      setError(String(err.message || err))
+    } finally {
+      setSubmittingArrival(false)
+    }
+  }
+
+  async function handleCompletePickup() {
+    setSuccess('')
+    setError('')
+    if (!tracking.trim() || !recipientId || !postOfficeId || (!arrivalFromShipmentOrPickup && !arrivalTime) || !pickupTime) {
+      setError('Fill in package, post office, pickup time, and arrival if the shipment has no office arrival yet.')
+      return
+    }
+    setSubmittingPickup(true)
     try {
       const res = await fetch(`${API_BASE}/api/employee/package-pickup`, {
         method: 'POST',
@@ -108,24 +184,16 @@ export default function PackageForPickup() {
         /* */
       }
       if (!res.ok) throw new Error(data.message || text.slice(0, 160) || `HTTP ${res.status}`)
-      setSuccess(`Pickup recorded for ${tracking.trim()}. Is_picked_Up set to 1.`)
+      setSuccess(`Pickup recorded for ${tracking.trim()}. Status set to Picked Up when configured.`)
       setTracking('')
       setPostOfficeId('')
       setArrivalTime('')
       setPickupTime('')
-      const r = await fetch(`${API_BASE}/api/employee/packages-at-office`, { headers: { ...authHeader() } })
-      const t = await r.text()
-      let d = []
-      try {
-        if (t) d = JSON.parse(t)
-      } catch {
-        /* */
-      }
-      if (r.ok && Array.isArray(d)) setAtOffice(d)
+      await refreshAtOfficeList()
     } catch (err) {
       setError(String(err.message || err))
     } finally {
-      setSubmitting(false)
+      setSubmittingPickup(false)
     }
   }
 
@@ -161,12 +229,7 @@ export default function PackageForPickup() {
 
       <main className="pickup-main">
         <h1>Package for pickup</h1>
-        <p className="pickup-lead">
-          Packages whose delivery status is <strong>At Office</strong>. Record arrival and customer pickup below; this
-          sets <code>package_pickup.Is_picked_Up</code> to <code>1</code> and moves status to <strong>Picked Up</strong>{' '}
-          when that status exists.
-        </p>
-
+       
         {error && (
           <div className="inventory-error pickup-banner">
             <span>{error}</span>
@@ -195,6 +258,7 @@ export default function PackageForPickup() {
                         <th>Recipient</th>
                         <th>Type</th>
                         <th>Weight</th>
+                        <th>Arrival logged</th>
                         <th>Status</th>
                       </tr>
                     </thead>
@@ -208,6 +272,11 @@ export default function PackageForPickup() {
                           <td>{p.Recipient_Name || '—'}</td>
                           <td>{p.Package_Type_Code}</td>
                           <td>{p.Weight} lbs</td>
+                          <td>
+                            {p.Pickup_Arrival_Time
+                              ? toDatetimeLocalValue(p.Pickup_Arrival_Time).replace('T', ' ')
+                              : '—'}
+                          </td>
                           <td>{p.Status_Name}</td>
                         </tr>
                       ))}
@@ -218,8 +287,14 @@ export default function PackageForPickup() {
             </section>
 
             <section className="pickup-section pickup-form-section">
-              <h2>Record pickup</h2>
-              <form className="pickup-form" onSubmit={handleSubmit}>
+              <h2>Office log</h2>
+              
+              <form
+                className="pickup-form"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                }}
+              >
                 <label className="pickup-field">
                   <span>Tracking number</span>
                   <select
@@ -259,25 +334,46 @@ export default function PackageForPickup() {
                   <span>Arrival at office</span>
                   <input
                     type="datetime-local"
-                    required
+                    required={!arrivalFromShipmentOrPickup}
                     value={arrivalTime}
                     onChange={(e) => setArrivalTime(e.target.value)}
                   />
                 </label>
+                {arrivalFromShipmentOrPickup && (
+                  <p className="pickup-field-note">
+                    Prefilled from the shipment’s office arrival (set when status becomes At Office) or from a saved
+                    pickup log. Edit to override; clear to use the shipment time only.
+                  </p>
+                )}
 
                 <label className="pickup-field">
                   <span>Customer pickup</span>
                   <input
                     type="datetime-local"
-                    required
                     value={pickupTime}
                     onChange={(e) => setPickupTime(e.target.value)}
                   />
                 </label>
+                <p className="pickup-field-note">Pickup time is only required when you click Complete pickup.</p>
 
-                <button type="submit" className="btn primary pickup-submit" disabled={submitting || atOffice.length === 0}>
-                  {submitting ? 'Saving…' : 'Complete pickup'}
-                </button>
+                <div className="pickup-form-actions">
+                  <button
+                    type="button"
+                    className="btn primary pickup-submit"
+                    disabled={submittingArrival || submittingPickup || atOffice.length === 0}
+                    onClick={() => handleRecordArrival()}
+                  >
+                    {submittingArrival ? 'Saving…' : 'Record arrival'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn primary pickup-submit"
+                    disabled={submittingArrival || submittingPickup || atOffice.length === 0}
+                    onClick={() => handleCompletePickup()}
+                  >
+                    {submittingPickup ? 'Saving…' : 'Complete pickup'}
+                  </button>
+                </div>
               </form>
             </section>
           </>

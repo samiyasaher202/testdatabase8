@@ -73,8 +73,32 @@
   color: var(--text-soft, #475569);
 }
 
-.pickup-submit {
+.pickup-hint {
+  margin: 0 0 16px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--text-soft, #475569);
+  line-height: 1.5;
+  max-width: 640px;
+}
+
+.pickup-field-note {
+  margin: -8px 0 0;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-soft, #64748b);
+}
+
+.pickup-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-top: 8px;
+  align-items: center;
+}
+
+.pickup-submit {
+  margin-top: 0;
   justify-self: start;
 }
 

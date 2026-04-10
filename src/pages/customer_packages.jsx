@@ -77,8 +77,7 @@ export default function CustomerPackages() {
 
         <div className="inventory-inner">
           <h2>My packages</h2>
-          <p className="inventory-subtitle">Shipments where you are the sender or recipient.</p>
-
+          
           {error && (
             <div className="inventory-error">
               <span>{error}</span>
@@ -101,6 +100,8 @@ export default function CustomerPackages() {
                     <th>Weight</th>
                     <th>Zone</th>
                     <th>Price</th>
+                    <th>Days at post office</th>
+                    <th>Late fee</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -113,6 +114,16 @@ export default function CustomerPackages() {
                       <td>{p.Weight} lbs</td>
                       <td>{p.Zone}</td>
                       <td>${parseFloat(p.Price || 0).toFixed(2)}</td>
+                      <td>
+                        {p.Days_At_Post_Office != null
+                          ? `${p.Days_At_Post_Office} day${p.Days_At_Post_Office === 1 ? '' : 's'}`
+                          : '—'}
+                      </td>
+                      <td>
+                        {p.Late_Fee_Due != null
+                          ? `$${parseFloat(p.Late_Fee_Due).toFixed(2)}`
+                          : '—'}
+                      </td>
                       <td>
                         <span className={`status-badge ${getStatusBadgeClass(p.Status_Name)}`}>
                           {p.Status_Name || '—'}

@@ -11,6 +11,7 @@ const customerDB    = require('./db/customers')
 const packageTrackDB = require('./db/package_track')
 const employeeDB    = require('./db/employees')
 const priceDB       = require('./db/package_type')
+const packagePickupStorageJob = require('./db/package_pickup_storage_job')
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
@@ -26,6 +27,16 @@ const pool = mysql.createPool({
 pool.getConnection()
   .then(c => { console.log('✅ MySQL connected'); c.release() })
   .catch(e => console.error('❌ MySQL connection failed:', e))
+
+if (process.env.DISABLE_PACKAGE_PICKUP_JOB !== '1' && process.env.DISABLE_PACKAGE_PICKUP_JOB !== 'true') {
+  const jobMs = Number(process.env.PACKAGE_PICKUP_JOB_MS)
+  const runOnStartEnv = process.env.PACKAGE_PICKUP_JOB_RUN_ON_START
+  packagePickupStorageJob.startPackagePickupStorageJob(pool, {
+    intervalMs: Number.isFinite(jobMs) && jobMs > 0 ? jobMs : undefined,
+    // Default: run once at startup so 30-day disposal applies without waiting for the first 24h tick.
+    runOnStart: runOnStartEnv !== '0' && runOnStartEnv !== 'false',
+  })
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -139,6 +150,35 @@ const TYPE_NAME_TO_CODE = {
   express: 'EXP',
   'general shipping': 'GEN',
   oversize: 'OVR',
+}
+
+function toMysqlDateTime(value) {
+  if (value == null || value === '') return null
+  const s = String(value).trim().replace('T', ' ')
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) return `${s}:00`
+  return s
+}
+
+/** mysql2 Date or string → 'YYYY-MM-DD HH:MM:SS' for SQL parameters. */
+function dateToMysqlDateTime(value) {
+  if (value == null) return null
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())} ${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}`
+  }
+  return toMysqlDateTime(value)
+}
+
+/** Form value wins if present; otherwise use shipment.Arrival_Time_Stamp (set when status → At Office). */
+function resolveArrivalForPickup(shipmentArrivalStamp, bodyArrivalTime) {
+  return toMysqlDateTime(bodyArrivalTime) || dateToMysqlDateTime(shipmentArrivalStamp) || null
+}
+
+function isAtOfficeStatusName(name) {
+  const raw = String(name || '').trim().toLowerCase()
+  const spaced = raw.replace(/_/g, ' ').replace(/-/g, ' ').replace(/\s+/g, ' ').trim()
+  const underscored = spaced.replace(/\s+/g, '_')
+  return spaced === 'at office' || underscored === 'at_office'
 }
 
 function getPricePromise(pool, excessFeeTypeName, packageTypeName, weight, zone) {
@@ -530,6 +570,11 @@ async function router(req, res) {
     if (user?.type !== 'customer' || user.customer_id == null) {
       return send(res, 403, { message: 'Customer access required' })
     }
+    try {
+      await packagePickupStorageJob.runNodeDisposalSweep(pool)
+    } catch (e) {
+      console.error('[my-packages] disposal sweep:', e.message || e)
+    }
     packagesDB.getPackagesForCustomer(pool, user.customer_id, (err, results) => {
       if (err) { console.error(err); return send(res, 500, { error: 'Database error' }) }
       send(res, 200, results)
@@ -600,24 +645,31 @@ async function router(req, res) {
     try {
       await conn.beginTransaction()
 
+      let senderInitialPassword = null
+      let recipientInitialPassword = null
+
       let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
       if (!senderId) {
-        senderId = await customerDB.createCustomerMinimal(conn, {
+        const created = await customerDB.createCustomerMinimal(conn, {
           first_name: sender_first_name, last_name: sender_last_name, email: senderEmail,
           house_number: sender_house_number, street: sender_street, city: sender_city, state: sender_state,
           zip_first3: sender_zip_first3, zip_last2: sender_zip_last2, apt_number: sender_apt_number,
           zip_plus4: b.sender_zip_plus4, country: sender_country, phone_number: sender_phone,
         })
+        senderId = created.customerId
+        senderInitialPassword = created.initialPassword
       }
 
       let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
       if (!recipientId) {
-        recipientId = await customerDB.createCustomerMinimal(conn, {
+        const created = await customerDB.createCustomerMinimal(conn, {
           first_name: recipient_first_name, last_name: recipient_last_name, email: recipientEmail,
           house_number: recipient_house_number, street: recipient_street, city: recipient_city, state: recipient_state,
           zip_first3: recipient_zip_first3, zip_last2: recipient_zip_last2, apt_number: recipient_apt_number,
           zip_plus4: b.recipient_zip_plus4, country: recipient_country, phone_number: recipient_phone,
         })
+        recipientId = created.customerId
+        recipientInitialPassword = created.initialPassword
       }
 
       if (senderId === recipientId) {
@@ -693,7 +745,20 @@ async function router(req, res) {
       await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [shipmentId, tracking])
 
       await conn.commit()
-      return send(res, 201, { tracking_number: tracking, price: priceAmount, sender_id: senderId, recipient_id: recipientId })
+      const newCustomerCredentials = {}
+      if (senderInitialPassword) {
+        newCustomerCredentials.sender = { email: senderEmail, initial_password: senderInitialPassword }
+      }
+      if (recipientInitialPassword) {
+        newCustomerCredentials.recipient = { email: recipientEmail, initial_password: recipientInitialPassword }
+      }
+      return send(res, 201, {
+        tracking_number: tracking,
+        price: priceAmount,
+        sender_id: senderId,
+        recipient_id: recipientId,
+        ...(Object.keys(newCustomerCredentials).length > 0 && { new_customer_credentials: newCustomerCredentials }),
+      })
     } catch (err) {
       await conn.rollback()
       console.error(err)
@@ -701,6 +766,285 @@ async function router(req, res) {
       return send(res, 500, { message: err.message || 'Could not create package' })
     } finally {
       conn.release()
+    }
+  }
+
+  // ── GET /api/employee/packages-at-office ───────────────────────────────────
+  if (method === 'GET' && pathname === '/api/employee/packages-at-office') {
+    const user = authenticate(req, res); if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      await packagePickupStorageJob.runNodeDisposalSweep(pool)
+    } catch (e) {
+      console.error('[packages-at-office] disposal sweep:', e.message || e)
+    }
+    try {
+      const [rows] = await pool.query(
+        `SELECT
+           p.Tracking_Number,
+           p.Recipient_ID,
+           CONCAT(cr.First_Name, ' ', cr.Last_Name) AS Recipient_Name,
+           p.Weight,
+           p.Package_Type_Code,
+           d.Delivery_Status_Code,
+           sc.Status_Name,
+           pp.Arrival_Time AS Pickup_Arrival_Time,
+           pp.Pickup_Time AS Customer_Pickup_Time,
+           pp.Is_picked_Up AS Pickup_Is_Picked_Up,
+           (SELECT sh.Arrival_Time_Stamp
+              FROM shipment_package spx
+              JOIN shipment sh ON sh.Shipment_ID = spx.Shipment_ID
+             WHERE spx.Tracking_Number = p.Tracking_Number
+             ORDER BY sh.Shipment_ID DESC
+             LIMIT 1) AS Shipment_Arrival_Stamp
+         FROM package p
+         JOIN delivery d ON d.Tracking_Number = p.Tracking_Number
+         JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
+         LEFT JOIN customer cr ON p.Recipient_ID = cr.Customer_ID
+         LEFT JOIN package_pickup pp ON pp.Tracking_Number = p.Tracking_Number
+         WHERE LOWER(TRIM(sc.Status_Name)) = 'at office'
+            OR LOWER(REPLACE(REPLACE(TRIM(sc.Status_Name), '-', '_'), ' ', '_')) = 'at_office'
+         ORDER BY p.Date_Created DESC`
+      )
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: err.sqlMessage || err.message || 'Database error' })
+    }
+  }
+
+  // ── GET /api/employee/post-offices ─────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/employee/post-offices') {
+    const user = authenticate(req, res); if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const [rows] = await pool.query(
+        `SELECT Post_Office_ID, Street, City, State,
+                CONCAT(Street, ', ', City, ', ', State) AS Street_Label
+         FROM post_office
+         ORDER BY Street, City`
+      )
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: err.sqlMessage || err.message || 'Database error' })
+    }
+  }
+
+  // ── POST /api/employee/package-pickup-arrival (arrival only; not picked up yet) ─
+  if (method === 'POST' && pathname === '/api/employee/package-pickup-arrival') {
+    const user = authenticate(req, res); if (!user) return
+    if (!requireEmployee(user, res)) return
+    const body = await getBody(req)
+    const { tracking_number, recipient_id, post_office_id, arrival_time } = body
+
+    const tracking = String(tracking_number || '').trim()
+    const rid = Number(recipient_id)
+    const poid = Number(post_office_id)
+    if (!tracking) return send(res, 400, { message: 'tracking_number is required' })
+    if (!Number.isFinite(rid)) return send(res, 400, { message: 'recipient_id is required' })
+    if (!Number.isFinite(poid)) return send(res, 400, { message: 'post_office_id is required' })
+
+    const arrConn = await pool.getConnection()
+    try {
+      await arrConn.beginTransaction()
+
+      const [[pkg]] = await arrConn.query(
+        `SELECT p.Tracking_Number, p.Recipient_ID, sc.Status_Name
+         FROM package p
+         JOIN delivery d ON d.Tracking_Number = p.Tracking_Number
+         JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
+         WHERE p.Tracking_Number = ?`,
+        [tracking]
+      )
+      if (!pkg) {
+        await arrConn.rollback()
+        return send(res, 404, { message: 'Package or delivery not found' })
+      }
+      if (!isAtOfficeStatusName(pkg.Status_Name)) {
+        await arrConn.rollback()
+        return send(res, 400, { message: 'Package is not in "At Office" status' })
+      }
+      if (Number(pkg.Recipient_ID) !== rid) {
+        await arrConn.rollback()
+        return send(res, 400, { message: 'Recipient_ID does not match this package' })
+      }
+
+      const [[shipRow]] = await arrConn.query(
+        `SELECT sh.Arrival_Time_Stamp
+         FROM shipment sh
+         INNER JOIN shipment_package sp ON sp.Shipment_ID = sh.Shipment_ID
+         WHERE sp.Tracking_Number = ?
+         ORDER BY sh.Shipment_ID DESC
+         LIMIT 1`,
+        [tracking]
+      )
+      const effectiveArrival = resolveArrivalForPickup(shipRow?.Arrival_Time_Stamp, arrival_time)
+      if (!effectiveArrival) {
+        await arrConn.rollback()
+        return send(res, 400, {
+          message:
+            'No arrival time: shipment has no Arrival_Time_Stamp yet (re-mark At Office or set arrival_time in the form)',
+        })
+      }
+
+      const [[existing]] = await arrConn.query(
+        `SELECT Is_picked_Up FROM package_pickup WHERE Tracking_Number = ?`,
+        [tracking]
+      )
+      if (existing && String(existing.Is_picked_Up) === '1') {
+        await arrConn.rollback()
+        return send(res, 400, { message: 'Package is already marked picked up' })
+      }
+
+      await arrConn.query(
+        `INSERT INTO package_pickup (Tracking_Number, Recipient_ID, Post_Office_ID, Arrival_Time, Pickup_Time, Is_picked_Up)
+         VALUES (?, ?, ?, ?, NULL, '0')
+         ON DUPLICATE KEY UPDATE
+           Recipient_ID = IF(Is_picked_Up = '0', VALUES(Recipient_ID), Recipient_ID),
+           Post_Office_ID = IF(Is_picked_Up = '0', VALUES(Post_Office_ID), Post_Office_ID),
+           Arrival_Time = IF(Is_picked_Up = '0', VALUES(Arrival_Time), Arrival_Time)`,
+        [tracking, rid, poid, effectiveArrival]
+      )
+
+      await arrConn.commit()
+      return send(res, 201, { ok: true, tracking_number: tracking, Is_picked_Up: '0' })
+    } catch (err) {
+      await arrConn.rollback()
+      console.error(err)
+      if (err.code === 'ER_NO_SUCH_TABLE') {
+        return send(res, 500, {
+          message:
+            'Table package_pickup is missing. Run backend/db/migrations/005_create_package_pickup.sql',
+        })
+      }
+      return send(res, 500, { message: err.sqlMessage || err.message || 'Could not record arrival' })
+    } finally {
+      arrConn.release()
+    }
+  }
+
+  // ── POST /api/employee/package-pickup ─────────────────────────────────────
+  if (method === 'POST' && pathname === '/api/employee/package-pickup') {
+    const user = authenticate(req, res); if (!user) return
+    if (!requireEmployee(user, res)) return
+    const body = await getBody(req)
+    const {
+      tracking_number,
+      recipient_id,
+      post_office_id,
+      arrival_time,
+      pickup_time,
+    } = body
+
+    const tracking = String(tracking_number || '').trim()
+    const rid = Number(recipient_id)
+    const poid = Number(post_office_id)
+    const pickup = toMysqlDateTime(pickup_time)
+
+    if (!tracking) return send(res, 400, { message: 'tracking_number is required' })
+    if (!Number.isFinite(rid)) return send(res, 400, { message: 'recipient_id is required' })
+    if (!Number.isFinite(poid)) return send(res, 400, { message: 'post_office_id is required' })
+    if (!pickup) return send(res, 400, { message: 'pickup_time is required' })
+
+    const pickupConn = await pool.getConnection()
+    try {
+      await pickupConn.beginTransaction()
+
+      const [[pkg]] = await pickupConn.query(
+        `SELECT p.Tracking_Number, p.Recipient_ID, sc.Status_Name
+         FROM package p
+         JOIN delivery d ON d.Tracking_Number = p.Tracking_Number
+         JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
+         WHERE p.Tracking_Number = ?`,
+        [tracking]
+      )
+      if (!pkg) {
+        await pickupConn.rollback()
+        return send(res, 404, { message: 'Package or delivery not found' })
+      }
+      if (!isAtOfficeStatusName(pkg.Status_Name)) {
+        await pickupConn.rollback()
+        return send(res, 400, { message: 'Package is not in "At Office" status' })
+      }
+      if (Number(pkg.Recipient_ID) !== rid) {
+        await pickupConn.rollback()
+        return send(res, 400, { message: 'Recipient_ID does not match this package' })
+      }
+
+      const [[shipRow]] = await pickupConn.query(
+        `SELECT sh.Arrival_Time_Stamp
+         FROM shipment sh
+         INNER JOIN shipment_package sp ON sp.Shipment_ID = sh.Shipment_ID
+         WHERE sp.Tracking_Number = ?
+         ORDER BY sh.Shipment_ID DESC
+         LIMIT 1`,
+        [tracking]
+      )
+      const effectiveArrival = resolveArrivalForPickup(shipRow?.Arrival_Time_Stamp, arrival_time)
+      if (!effectiveArrival) {
+        await pickupConn.rollback()
+        return send(res, 400, {
+          message:
+            'No arrival time: shipment has no Arrival_Time_Stamp yet, or send arrival_time in the request body',
+        })
+      }
+
+      const arrMs = new Date(String(effectiveArrival).replace(' ', 'T')).getTime()
+      const pkuMs = new Date(String(pickup_time).replace(' ', 'T')).getTime()
+      if (Number.isFinite(arrMs) && Number.isFinite(pkuMs) && pkuMs < arrMs) {
+        await pickupConn.rollback()
+        return send(res, 400, { message: 'Pickup time must be on or after arrival time' })
+      }
+
+      await pickupConn.query(
+        `INSERT INTO package_pickup (Tracking_Number, Recipient_ID, Post_Office_ID, Arrival_Time, Pickup_Time, Is_picked_Up)
+         VALUES (?, ?, ?, ?, ?, '1')
+         ON DUPLICATE KEY UPDATE
+           Recipient_ID = VALUES(Recipient_ID),
+           Post_Office_ID = VALUES(Post_Office_ID),
+           Arrival_Time = VALUES(Arrival_Time),
+           Pickup_Time = VALUES(Pickup_Time),
+           Is_picked_Up = '1'`,
+        [tracking, rid, poid, effectiveArrival, pickup]
+      )
+
+      const [[pickedUp]] = await pickupConn.query(
+        `SELECT Status_Code FROM status_code
+         WHERE LOWER(TRIM(Status_Name)) = 'picked up'
+         LIMIT 1`
+      )
+      if (pickedUp) {
+        await pickupConn.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [
+          pickedUp.Status_Code,
+          tracking,
+        ])
+        const [sp] = await pickupConn.query(
+          `SELECT Shipment_ID FROM shipment_package WHERE Tracking_Number = ? LIMIT 1`,
+          [tracking]
+        )
+        if (sp.length) {
+          await pickupConn.query(`UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`, [
+            pickedUp.Status_Code,
+            sp[0].Shipment_ID,
+          ])
+        }
+      }
+
+      await pickupConn.commit()
+      return send(res, 201, { ok: true, tracking_number: tracking, Is_picked_Up: '1' })
+    } catch (err) {
+      await pickupConn.rollback()
+      console.error(err)
+      if (err.code === 'ER_NO_SUCH_TABLE') {
+        return send(res, 500, {
+          message:
+            'Table package_pickup is missing. Run backend/db/migrations/005_create_package_pickup.sql',
+        })
+      }
+      return send(res, 500, { message: err.sqlMessage || err.message || 'Could not record pickup' })
+    } finally {
+      pickupConn.release()
     }
   }
 
@@ -714,6 +1058,21 @@ async function router(req, res) {
     } catch (err) {
       console.error(err)
       return send(res, 500, { message: 'Database error' })
+    }
+  }
+
+  // ── POST /api/employee/package-pickup-sweep (late fees + 30-day disposal; same as nightly procedure) ──
+  if (method === 'POST' && pathname === '/api/employee/package-pickup-sweep') {
+    const user = authenticate(req, res); if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      await packagePickupStorageJob.runDailyPackagePickupStorage(pool)
+      return send(res, 200, { ok: true, message: 'Pickup storage sweep completed (procedure if present + Node disposal)' })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, {
+        message: err.sqlMessage || err.message || 'Sweep failed',
+      })
     }
   }
 
@@ -737,7 +1096,18 @@ async function router(req, res) {
         if (!d) { await conn.rollback(); return send(res, 404, { message: 'Delivery record not found for this package' }) }
         await conn.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [code, trackingNumber])
         const [sp] = await conn.query(`SELECT Shipment_ID FROM shipment_package WHERE Tracking_Number = ? LIMIT 1`, [trackingNumber])
-        if (sp.length) await conn.query(`UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`, [code, sp[0].Shipment_ID])
+        if (sp.length) {
+          const [[scRow]] = await conn.query(`SELECT Status_Name FROM status_code WHERE Status_Code = ? LIMIT 1`, [code])
+          const newStatusName = scRow?.Status_Name
+          if (isAtOfficeStatusName(newStatusName)) {
+            await conn.query(
+              `UPDATE shipment SET Status_Code = ?, Arrival_Time_Stamp = COALESCE(Arrival_Time_Stamp, NOW()) WHERE Shipment_ID = ?`,
+              [code, sp[0].Shipment_ID]
+            )
+          } else {
+            await conn.query(`UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`, [code, sp[0].Shipment_ID])
+          }
+        }
         await conn.commit()
         return send(res, 200, { ok: true, tracking_number: trackingNumber, status_code: code })
       } catch (err) {
@@ -790,11 +1160,12 @@ async function router(req, res) {
     }
   }
 
-  // ── GET /api/packages/:tracking_number/tracking ──────────────────────────
+  // ── GET /api/packages/:tracking_number/tracking ───────────────────────────
   {
     const m = matchPath('/api/packages/:tracking_number/tracking', pathname)
     if (method === 'GET' && m.matched) {
-      packageTrackDB.getPackageTracking(pool, m.params.tracking_number, (err, results) => {
+      const tn = m.params.tracking_number
+      packageTrackDB.getPackageTracking(pool, tn, (err, results) => {
         if (err) return send(res, 500, { error: 'Database error', details: err.message })
         send(res, 200, results)
       })
@@ -824,7 +1195,7 @@ async function router(req, res) {
     }
   }
 
-  // ── GET /api/employee/tickets_comp ──────────────────────────────────────
+  // ── GET /api/employee/tickets_comp ───────────────────────────────────────
   if (method === 'GET' && pathname === '/api/employee/tickets_comp') {
     try {
       const results = await employeeDB.getEmployeesRatios(pool)
@@ -887,36 +1258,81 @@ async function router(req, res) {
     }
   }
 
-  // ── GET /api/support-tickets ─────────────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/support-tickets') {
+  // ── GET /api/report/payments ──────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/report/payments') {
     try {
-      const [rows] = await pool.query(
-        `SELECT Ticket_ID, User_ID, Package_ID, Assigned_Employee_ID,
-                Issue_Type, Description, Resolution_Note, Ticket_Status_Code
-         FROM support_ticket ORDER BY Ticket_ID DESC`
-      )
+      const { dateFrom, dateTo } = query
+      let sql = `
+        SELECT
+          Payment_ID AS payment_id,
+          Customer_ID AS customer_id,
+          Payment_Amount AS amount,
+          Payment_Type AS payment_method,
+          Payment_Status AS payment_status,
+          Payment_Date AS payment_date
+        FROM payment
+        WHERE 1=1
+      `
+      const params = []
+      if (dateFrom) { sql += ` AND Payment_Date >= ?`; params.push(dateFrom) }
+      if (dateTo) { sql += ` AND Payment_Date <= ?`; params.push(dateTo) }
+      sql += ` ORDER BY Payment_Date DESC`
+      const [rows] = await pool.query(sql, params)
       return send(res, 200, rows)
     } catch (err) {
-      console.error('GET /api/support-tickets error:', err)
-      return send(res, 500, { error: 'Failed to fetch tickets' })
+      console.error(err)
+      return send(res, 500, { error: err.message })
     }
   }
 
-  // ── PUT /api/support-tickets/:id ─────────────────────────────────────────
-  {
-    const m = matchPath('/api/support-tickets/:id', pathname)
-    if (method === 'PUT' && m.matched) {
-      const { Ticket_Status_Code, Resolution_Note } = await getBody(req)
-      try {
-        await pool.query(
-          `UPDATE Support_Ticket SET Ticket_Status_Code = ?, Resolution_Note = ? WHERE Ticket_ID = ?`,
-          [Ticket_Status_Code, Resolution_Note ?? null, m.params.id]
-        )
-        return send(res, 200, { success: true })
-      } catch (err) {
-        console.error('PUT /api/support-tickets/:id error:', err)
-        return send(res, 500, { error: 'Failed to update ticket' })
-      }
+  // ── GET /api/report/excess-fees ───────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/report/excess-fees') {
+    try {
+      const { search, dateFrom, dateTo, feeType } = query
+      let sql = `
+        SELECT
+          pef.Tracking_Number AS package_id,
+          ef.Type_Name AS fee_type,
+          ef.Additional_Price AS amount,
+          p.Date_Created AS applied_date
+        FROM package_excess_fee pef
+        JOIN excess_fee ef ON pef.Fee_Type_Code = ef.Fee_Type_Code
+        JOIN package p ON pef.Tracking_Number = p.Tracking_Number
+        WHERE 1=1
+      `
+      const params = []
+      if (search) { sql += ` AND (ef.Type_Name LIKE ? OR pef.Tracking_Number LIKE ?)`; params.push(`%${search}%`, `%${search}%`) }
+      if (dateFrom) { sql += ` AND p.Date_Created >= ?`; params.push(dateFrom) }
+      if (dateTo) { sql += ` AND p.Date_Created <= ?`; params.push(dateTo) }
+      if (feeType) { sql += ` AND ef.Type_Name = ?`; params.push(feeType) }
+      sql += ` ORDER BY p.Date_Created DESC`
+      const [rows] = await pool.query(sql, params)
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+  // ── GET /api/report/revenue-by-month ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/report/revenue-by-month') {
+    try {
+      const [rows] = await pool.query(`
+        SELECT 
+          DATE_FORMAT(p.Date_Created, '%b %Y') AS month,
+          DATE_FORMAT(p.Date_Created, '%Y-%m') AS sort_key,
+          SUM(ef.Additional_Price) AS revenue
+        FROM package_excess_fee pef
+        JOIN excess_fee ef ON pef.Fee_Type_Code = ef.Fee_Type_Code
+        JOIN package p ON pef.Tracking_Number = p.Tracking_Number
+        GROUP BY month, sort_key
+        ORDER BY sort_key ASC
+        LIMIT 12
+      `)
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { error: err.message })
     }
   }
 

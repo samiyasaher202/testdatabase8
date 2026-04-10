@@ -263,6 +263,22 @@ CREATE TABLE Delivery (
         ON UPDATE CASCADE
 );
 
+CREATE TABLE Package_Pickup (
+    Tracking_Number VARCHAR(10) NOT NULL PRIMARY KEY,
+    Recipient_ID INT NOT NULL,
+    Post_Office_ID INT NOT NULL,
+    Arrival_Time DATETIME NULL,
+    Pickup_Time DATETIME NULL,
+    Is_picked_Up ENUM('1','0') NOT NULL DEFAULT '0',
+    FOREIGN KEY (Tracking_Number) REFERENCES Package(Tracking_Number)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    FOREIGN KEY (Recipient_ID) REFERENCES Customer(Customer_ID)
+        ON UPDATE CASCADE,
+    FOREIGN KEY (Post_Office_ID) REFERENCES Post_Office(Post_Office_ID)
+        ON UPDATE CASCADE
+);
+
 
 create table Package_Excess_Fee(
 Tracking_Number varchar(10) not null,
