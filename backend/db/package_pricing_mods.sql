@@ -329,3 +329,100 @@ alter table employee drop Birth_Day;
 alter table employee drop Birth_Month;
 alter table employee drop Birth_Year;
 alter table employee add Birthday Date null constraint ch_date_after check(Birthday >= '1900-01-01');
+
+
+-- adding Date_Created and Date_Updated to all the tables since TA told me to
+ALTER TABLE customer
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE delivery
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE department
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE employee
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE excess_fee
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE package_excess_fee
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE package_pricing
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE package_type
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE payment
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE post_office
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE product
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE role
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE shipment
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE shipment_package
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE status_code
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE store
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE support_ticket
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+ALTER TABLE ticket_issue_type
+  ADD COLUMN Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
+
+--seed data to test weekly report things
+  INSERT INTO Tickets 
+(User_ID, Package_ID, Assigned_Employee_ID, Issue_Type, Description, Resolution_Note, Ticket_Status_Code, Date_Created, Date_Updated)
+VALUES
+(10, 'TRK0000001', 8,  1, 'Package not delivered on expected date.',   NULL, 0, '2026-03-18 08:30:00', NULL),
+(5,  'TRK0000002', 10, 2, 'Package arrived visibly damaged.',          NULL, 1, '2026-03-19 09:15:00', NULL),
+(11, 'TRK0000003', 12, 3, 'Incorrect item received in shipment.',      NULL, 1, '2026-03-20 10:00:00', NULL),
+(7,  'TRK0000004', 4,  4, 'Tracking number not updating in system.',   'updated number', 2, '2026-03-21 11:45:00', NULL),
+(23, 'TRK0000005', 5,  1, 'Package stuck in transit over a week.',     'found pacakage', 2, '2026-03-22 08:00:00', NULL),
+
+(24, 'TRK0000006', 6,  2, 'Item missing from delivered package.',      NULL, 0, '2026-03-25 09:30:00', NULL),
+(1,  'TRK0000007', 7,  3, 'Package delivered to wrong address.',       NULL, 1, '2026-03-26 10:00:00', NULL),
+(4,  'TRK0000008', 1,  4, 'Unable to update delivery address online.', 'assisted customer', 2, '2026-03-27 13:00:00', NULL),
+(2,  'TRK0000009', 2,  1, 'No delivery attempt made by courier.',      'refuned customer', 2, '2026-03-28 14:30:00', NULL),
+(9,  'TRK0000010', 3,  2, 'Package shows delivered but not received.', 'assisted customer', 2, '2026-03-29 15:00:00', NULL);
+
+ALTER TABLE package 
+ADD COLUMN Payment_ID INT, 
+ADD FOREIGN KEY (Payment_ID) REFERENCES payment(Payment_ID);
+ALTER TABLE payment 
+ADD COLUMN Employee_ID INT,
+ADD FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID);

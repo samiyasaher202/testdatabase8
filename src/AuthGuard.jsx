@@ -66,3 +66,42 @@ export function RequireAuth({ children }) {
 
   return children;
 }
+
+//Requires for Admin login
+
+export function RequireAdmin({ children }) {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userType = localStorage.getItem('userType');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    // Admin must be an employee account
+    if (userType !== 'employee') {
+      navigate('/customer_home');
+      return;
+    }
+
+    // TODO: adjust this line to match what your backend returns
+    const isAdmin = user.Role_Name === 'Admin';
+
+    if (!isAdmin) {
+      navigate('/employee_home'); // logged in employee, but not admin
+    }
+  }, [navigate]);
+
+  const token = localStorage.getItem('token');
+  const userType = localStorage.getItem('userType');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = user.Role_Name === 'Admin'; // same TODO as above
+
+  if (!token || userType !== 'employee' || !isAdmin) return null;
+
+  return children;
+}

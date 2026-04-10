@@ -102,6 +102,7 @@ CREATE TABLE Employee (
   Sex CHAR(1),
   Salary DECIMAL(10,2),
   Hours_Worked DECIMAL(5,2) DEFAULT 0,
+  Is_Active ENUM('1','0') NOT NULL DEFAULT '1',
   FOREIGN KEY (Post_Office_ID) REFERENCES Post_Office(Post_Office_ID),
   FOREIGN KEY (Supervisor_ID) REFERENCES Employee(Employee_ID),
   FOREIGN KEY (Role_ID) REFERENCES Role(Role_ID),
@@ -223,8 +224,10 @@ CREATE TABLE Payment (
   Payment_Amount DECIMAL(10,2),
   Payment_Status VARCHAR(20),
   Payment_Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  Employee_ID INT NOT NULL,
   FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID),
-  FOREIGN KEY (Store_ID) REFERENCES Store(Store_ID)
+  FOREIGN KEY (Store_ID) REFERENCES Store(Store_ID),
+  FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID)
 );
 
 -- ── 17. PACKAGE PRICING ──────────────────────────────────────────────────

@@ -38,7 +38,7 @@ const AdminRegister = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASEL}/api/auth/admin-register`, {
+      const response = await fetch(`${API_BASE}/api/auth/admin-register`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
