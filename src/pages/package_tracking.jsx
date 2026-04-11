@@ -18,8 +18,8 @@ export default function PackageTracking() {
   const [trackingNumber, setTrackingNumber] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [packageData, setPackageData] = useState(null)
-
+  // const [packageData, setPackageData] = useState(null)
+  const [results, setResults] = useState(null)
   useEffect(() => {
     const onStorage = () => setLoggedIn(!!localStorage.getItem('token'))
     window.addEventListener('storage', onStorage)
@@ -43,11 +43,12 @@ export default function PackageTracking() {
 
     setLoading(true)
     setError(null)
-    setPackageData(null)
+    setResults(null)
 
     const id = encodeURIComponent(trackingNumber.trim())
     try {
-      const res = await fetch(`${API_BASE}/api/packages/track/${id}`)
+      // const res = await fetch(`${API_BASE}/api/packages/track/${id}`)
+      const res = await fetch(`${API_BASE}/api/packages/${id}/tracking`)
       const raw = await res.text()
       const contentType = res.headers.get('content-type') || ''
       let data = {}
@@ -61,7 +62,7 @@ export default function PackageTracking() {
       if (!res.ok) {
         throw new Error(data.error || data.message || raw || 'Failed to fetch tracking info')
       }
-      setPackageData(data)
+      setResults(Array.isArray(data) ? data : [data])
     } catch (err) {
       setError(err.message || 'Could not load tracking information')
     } finally {
@@ -73,15 +74,17 @@ export default function PackageTracking() {
     if (e.key === 'Enter') handleSearch()
   }
 
-  function getStatusBadgeClass(status) {
-    const s = (status || '').toLowerCase()
-    if (s.includes('deliver')) return 'status-delivered'
-    if (s.includes('transit') || s.includes('shipping')) return 'status-transit'
-    if (s.includes('pending') || s.includes('processing')) return 'status-pending'
-    if (s.includes('delay') || s.includes('exception')) return 'status-delayed'
-    return 'status-default'
-  }
-
+  function statusBadge(status) {
+  const s = (status || '').toLowerCase()
+  const cls = s.includes('deliver')                        ? 'status-delivered'
+    : s.includes('transit') || s.includes('shipping')     ? 'status-transit'
+    : s.includes('pending') || s.includes('processing')   ? 'status-pending'
+    : s.includes('delay')   || s.includes('exception')    ? 'status-delayed'
+    : 'status-default'
+  return <span className={`status-badge ${cls}`}>{status || 'Unknown'}</span>
+}
+  const shipments = (results || []).filter(r => r.Instance_Type === 'Shipment')
+  const delivery  = (results || []).find(r  => r.Instance_Type === 'Delivery')
   return (
     <div className="tracking-page">
       <header className="site-header">
@@ -149,72 +152,79 @@ export default function PackageTracking() {
           {error && (
             <div className="tracking-error-banner">
               <span>{error}</span>
+              {/* <button onClick={() => setError(null)}>✕</button> */}
               <button type="button" onClick={() => setError(null)} aria-label="Dismiss">
                 ×
               </button>
             </div>
           )}
 
-          {loading && (
-            <div className="tracking-state-msg">Looking up your package…</div>
+          {loading && <p className="state-msg">Looking up tracking number...</p>}
+
+          {/* No results */}
+          {results && results.length === 0 && (
+            <p className="state-msg">No tracking information found for <code>{trackingNumber}</code>.</p>
           )}
 
-          {!loading && packageData && (
+          {shipments.length > 0 && (
             <>
               <h3 className="tracking-section-title">Package details</h3>
               <div className="table-wrapper">
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Tracking #</th>
+                      <th>Shipment_ID</th>
                       <th>Status</th>
-                      <th>Type</th>
-                      <th>Weight</th>
-                      <th>Dimensions</th>
-                      <th>Price</th>
+                      <th>From Address</th>
+                      <th>To Address</th>
+                      <th>Departed</th>
+                      <th>Arrived</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shipments.map((s) => (
+                        <tr key={s.Shipment_ID}>
+                        <td><code>{s.Shipment_ID}</code></td>
+                        <td>{statusBadge(s.Status_Name)}</td>
+                        <td>{s.From_Full_Address || "—"}</td>
+                        <td>{s.To_Full_Address || "—"}</td>
+                        <td>{s.Departure_Time_Stamp ? new Date(s.Departure_Time_Stamp).toLocaleString() : "—"}</td>
+                        <td>{s.Arrival_Time_Stamp   ? new Date(s.Arrival_Time_Stamp).toLocaleString()   : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+              {delivery && (
+            <>
+              <h3 style={{ marginTop: "2rem" }}>Delivery</h3>
+              <div className="table-wrapper">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Delivery ID</th>
+                      <th>Status</th>
+                      <th>Delivered Date</th>
+                      <th>Signature Received</th>
+                      <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td>{packageData.Tracking_Number}</td>
-                      <td>
-                        <span className={`status-badge ${getStatusBadgeClass(packageData.Status_Name)}`}>
-                          {packageData.Status_Name || '—'}
-                        </span>
-                      </td>
-                      <td>{packageData.Type_Name || '—'}</td>
-                      <td>{packageData.Weight != null ? `${packageData.Weight} lbs` : '—'}</td>
-                      <td>
-                        {packageData.Dim_X != null && packageData.Dim_Y != null && packageData.Dim_Z != null
-                          ? `${packageData.Dim_X} × ${packageData.Dim_Y} × ${packageData.Dim_Z} in`
-                          : '—'}
-                      </td>
-                      <td>{packageData.Price != null ? `$${Number(packageData.Price).toFixed(2)}` : '—'}</td>
+                      <td><code>{delivery.Shipment_ID}</code></td>
+                      <td>{statusBadge(delivery.Status_Name)}</td>
+                      <td>{delivery.Delivered_Date ? new Date(delivery.Delivered_Date).toLocaleString() : "—"}</td>
+                      <td>{delivery.Signature_Received || "—"}</td>
+                      <td>{delivery.Is_Final_Status ? "Final" : "In Progress"}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
-
-              <div className="tracking-detail-grid">
-                <div className="tracking-detail-item">
-                  <span className="tracking-detail-label">Sender</span>
-                  <p>{packageData.Sender_Name || '—'}</p>
-                </div>
-                <div className="tracking-detail-item">
-                  <span className="tracking-detail-label">Recipient</span>
-                  <p>{packageData.Recipient_Name || '—'}</p>
-                </div>
-                {packageData.Delivered_Date && (
-                  <div className="tracking-detail-item">
-                    <span className="tracking-detail-label">Delivered</span>
-                    <p>{new Date(packageData.Delivered_Date).toLocaleString()}</p>
-                  </div>
-                )}
-              </div>
             </>
           )}
-
-          {!loading && !packageData && !error && trackingNumber === '' && (
+          {!loading && !results && !error && (
             <div className="tracking-state-msg">Enter a tracking number above to get started.</div>
           )}
         </div>

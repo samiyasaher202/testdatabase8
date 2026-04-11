@@ -38,6 +38,7 @@ async function getEmployeesRatios(pool){
     
         const ans = await Promise.all(employeeResults.map(async (emp) => {
             const [ticketResults] = await pool.query(ticketQ, [emp.Employee_ID]);
+             console.log(`Employee ${emp.Employee_ID} tickets:`, ticketResults);
             const ticketCounts = ticketResults.reduce((acc, row) => {
                 acc[row.Ticket_Status_Code] = row.Ticket_Count;
                     return acc;
@@ -47,8 +48,7 @@ async function getEmployeesRatios(pool){
 
     return ans;
 }
-// DATE(s.Date_Created) AS Date_Created1,
-        // DATE(s.Date_Updated) AS Date_Updated1,
+
 async function getTicketsByEmployee(pool,employeeId){
     console.log("get Tickets by employee called");
     const [results] = await pool.query(
@@ -78,8 +78,8 @@ async function getTicketsByEmployee(pool,employeeId){
 async function getNetAverage(pool){
     const[results] = await pool.query(
         `SELECT
-            (SUM(IF(s.Ticket_Status_Code = 2, 1, 0))/ COUNT(DISTINCT WEEK(s.Date_Updated)) -
-            SUM(IF(s.Ticket_Status_Code = 0 OR s.Ticket_Status_Code = 1, 1, 0))/COUNT(DISTINCT WEEK(s.Date_Updated))) AS net_avg_week
+            SUM(IF(s.Ticket_Status_Code = 2, 1, 0))/ COUNT(DISTINCT WEEK(s.Date_Updated)) as complete,
+            SUM(IF(s.Ticket_Status_Code = 0 OR s.Ticket_Status_Code = 1, 1, 0))/COUNT(DISTINCT WEEK(s.Date_Updated)) AS incomplete
         FROM support_ticket s;
             `
     )
@@ -88,7 +88,7 @@ async function getNetAverage(pool){
 async function getWeeklyStatus(pool){
     const [results] = await pool.query(
         `SELECT
-            WEEK(CASE 
+            YEARWEEK(CASE 
                 WHEN s.Ticket_Status_Code = 0 THEN s.Date_Created
                 ELSE s.Date_Updated
                 END) AS week,
@@ -96,11 +96,11 @@ async function getWeeklyStatus(pool){
             SUM(IF(s.Ticket_Status_Code = 1, 1, 0)) as Pending_Sum,
             SUM(IF(s.Ticket_Status_Code = 0, 1, 0)) as Unresolved_Sum
         FROM support_ticket s
-        GROUP BY(WEEK(CASE 
+        GROUP BY(YEARWEEK(CASE 
                 WHEN s.Ticket_Status_Code = 0 THEN s.Date_Created
                 ELSE s.Date_Updated
                 END))
-        ORDER BY(WEEK(CASE 
+        ORDER BY(YEARWEEK(CASE 
                 WHEN s.Ticket_Status_Code = 0 THEN s.Date_Created
                 ELSE s.Date_Updated
                 END));
@@ -112,8 +112,8 @@ async function getWeeklyStatus(pool){
  async function netTicketsWeek(pool){
     const[results] = await pool.query(
         `SELECT
-            SUM(IF(s.Ticket_Status_Code = 2, 1, 0)) -
-            SUM(IF(s.Ticket_Status_Code IN (0, 1), 1, 0)) AS total
+            SUM(IF(s.Ticket_Status_Code = 2, 1, 0)) as complete,
+            SUM(IF(s.Ticket_Status_Code IN (0, 1), 1, 0)) AS incomplete
         FROM support_ticket s
         WHERE 
             WEEK(
@@ -145,14 +145,5 @@ async function getWeeklyStatus(pool){
   ];
 
   return formatted;
-
-//   const formatted = [
-//     results.reduce((acc, row) => {
-//       acc[row.Name] = row.total;
-//       return acc;
-//     }, {})
-//   ];
-
-  //return results;
 }
 module.exports = {getEmployeesRatios,getTicketsByEmployee, getNetAverage, getWeeklyStatus,netTicketsWeek,ticketByIssue}

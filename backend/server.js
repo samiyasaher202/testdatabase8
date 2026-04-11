@@ -12,6 +12,7 @@ const packageTrackDB = require('./db/package_track')
 const employeeDB = require('./db/employees')
 const priceDB = require('./db/package_type')
 const packagePickupStorageJob = require('./db/package_pickup_storage_job')
+const { report } = require('process')
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
@@ -1024,9 +1025,9 @@ async function router(req, res) {
   {
     const m = matchPath('/api/packages/:tracking_number/tracking', pathname)
     if (method === 'GET' && m.matched) {
-      const user = authenticate(req, res)
-      if (!user) return
-      if (!requireEmployee(user, res)) return
+      // const user = authenticate(req, res)
+      // if (!user) return
+      // if (!requireEmployee(user, res)) return
 
       packageTrackDB.getPackageTracking(pool, m.params.tracking_number, (err, results) => {
         if (err) return send(res, 500, { error: 'Database error', details: err.message })
@@ -1061,6 +1062,11 @@ async function router(req, res) {
     }
   }
 
+  // ========================================
+  // ticket data report
+  // ========================================
+  
+
   // ── GET /api/employee/tickets_comp (employee+admin) ──────────────────────
   if (method === 'GET' && pathname === '/api/employee/tickets_comp') {
     const user = authenticate(req, res)
@@ -1075,18 +1081,71 @@ async function router(req, res) {
   }
 
   // ── GET /api/employee/:employee_id/tickets (employee+admin) ──────────────
-  {
+  // {
     const m = matchPath('/api/employee/:employee_id/tickets', pathname)
     if (method === 'GET' && m.matched) {
-      const user = authenticate(req, res)
-      if (!user) return
-      if (!requireEmployee(user, res)) return
+      // const user = authenticate(req, res)
+      // if (!user) return
+      // if (!requireEmployee(user, res)) return
       try {
         const results = await employeeDB.getTicketsByEmployee(pool, m.params.employee_id)
         return send(res, 200, results)
       } catch (err) {
         return send(res, 500, { error: err.message })
       }
+    }
+  // }
+
+  // ── GET /api/employee/weeklyTickets ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/employee/weeklyTickets') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const results = await employeeDB.getWeeklyStatus(pool)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+    
+  }
+ 
+  // ── GET /api/employee/net-tickets ────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/employee/net-tickets') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const results = await employeeDB.getNetAverage(pool)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+  }
+ 
+  // ── GET /api/employee/week-net-tickets ───────────────────────────────────
+  if (method === 'GET' && pathname === '/api/employee/week-net-tickets') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const results = await employeeDB.netTicketsWeek(pool)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+  }
+ 
+  // ── GET /api/employee/tickets-by-issue ───────────────────────────────────
+  if (method === 'GET' && pathname === '/api/employee/tickets-by-issue') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const results = await employeeDB.ticketByIssue(pool)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
     }
   }
 

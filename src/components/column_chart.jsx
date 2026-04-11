@@ -28,6 +28,7 @@ export default function ColumnChart({
     );
   }
 
+
   const totals = columns.map((col, i) => ({
     label: col.label || col.key,
     value: data.reduce((sum, row) => sum + (Number(row[col.key]) || 0), 0),
@@ -39,9 +40,11 @@ export default function ColumnChart({
   );
 
   const yTickCount = 5;
-  const yTicks = Array.from({ length: yTickCount + 1 }, (_, i) =>
-    Math.round((maxValue / yTickCount) * i)
-  );
+  const yTicks = [...new Set(
+    Array.from({ length: yTickCount + 1 }, (_, i) =>
+      Math.round((maxValue / yTickCount) * i)
+    )
+  )];
 
   const plotHeight = CHART_HEIGHT - PADDING.top - PADDING.bottom;
   const groupWidth = 100 / data.length;
@@ -62,10 +65,10 @@ export default function ColumnChart({
             style={{ overflow: "visible", display: "block" }}
           >
             {/* Y axis gridlines + labels */}
-            {yTicks.map((tick) => {
+            {yTicks.map((tick, i) => {
               const y = PADDING.top + plotHeight - (tick / maxValue) * plotHeight;
               return (
-                <g key={tick}>
+                <g key={i}>
                   <line
                     x1={PADDING.left}
                     x2="100%"
