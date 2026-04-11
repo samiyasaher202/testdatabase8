@@ -38,6 +38,8 @@ import TicketsReport from './pages/tickets_report.jsx'
 import RevenueReport from './pages/Revenue_Report.jsx'
 import EmployeesPage from './pages/employees.jsx'
 
+import EmployeePerformanceReport from './pages/EmployeePerformanceReport'
+
 // global styles
 import './pages/css/index.css'
 
@@ -73,6 +75,7 @@ function App() {
         <Route path="/admin-register" element={<RequireAdmin><AdminRegister /></RequireAdmin>} />
         <Route path="/profile" element={<RequireEmployee><Profile /></RequireEmployee>} />
         <Route path="/employees" element={<RequireEmployee><EmployeesPage /></RequireEmployee>} />
+        <Route path="/reports/employee-performance" element={<RequireEmployee><EmployeePerformanceReport /></RequireEmployee>} />
 
         {/* Shared / Authenticated */}
         <Route path="/package_list" element={<RequireAuth><AllPackages /></RequireAuth>} />
