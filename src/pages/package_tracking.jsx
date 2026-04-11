@@ -3,7 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import './css/home.css'
 import './css/package_tracking.css'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+// In dev, prefer same-origin `/api` so Vite's proxy can reach the backend without CORS surprises.
+const envApi = import.meta.env.VITE_API_URL
+const API_BASE =
+  envApi != null && String(envApi).trim() !== ''
+    ? String(envApi).replace(/\/$/, '')
+    : import.meta.env.DEV
+      ? ''
+      : 'http://localhost:5000'
 
 export default function PackageTracking() {
   const navigate = useNavigate()
@@ -171,30 +178,18 @@ export default function PackageTracking() {
                     <tr>
                       <td>{packageData.Tracking_Number}</td>
                       <td>
-                        <span
-                          className={`status-badge ${getStatusBadgeClass(packageData.Status_Name)}`}
-                        >
+                        <span className={`status-badge ${getStatusBadgeClass(packageData.Status_Name)}`}>
                           {packageData.Status_Name || '—'}
                         </span>
                       </td>
                       <td>{packageData.Type_Name || '—'}</td>
+                      <td>{packageData.Weight != null ? `${packageData.Weight} lbs` : '—'}</td>
                       <td>
-                        {packageData.Weight != null
-                          ? `${packageData.Weight} lbs`
-                          : '—'}
-                      </td>
-                      <td>
-                        {packageData.Dim_X != null &&
-                        packageData.Dim_Y != null &&
-                        packageData.Dim_Z != null
+                        {packageData.Dim_X != null && packageData.Dim_Y != null && packageData.Dim_Z != null
                           ? `${packageData.Dim_X} × ${packageData.Dim_Y} × ${packageData.Dim_Z} in`
                           : '—'}
                       </td>
-                      <td>
-                        {packageData.Price != null
-                          ? `$${Number(packageData.Price).toFixed(2)}`
-                          : '—'}
-                      </td>
+                      <td>{packageData.Price != null ? `$${Number(packageData.Price).toFixed(2)}` : '—'}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -220,9 +215,7 @@ export default function PackageTracking() {
           )}
 
           {!loading && !packageData && !error && trackingNumber === '' && (
-            <div className="tracking-state-msg">
-              Enter a tracking number above to get started.
-            </div>
+            <div className="tracking-state-msg">Enter a tracking number above to get started.</div>
           )}
         </div>
       </main>

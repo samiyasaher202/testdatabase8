@@ -4,8 +4,7 @@ import './css/home.css'
 import './css/customer_home.css'
 import './css/inventory.css'
 import skyline from '../assets/houston-skyline.jpeg'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { authFetch } from '../authFetch'
 
 function getStatusBadgeClass(status) {
   const s = (status || '').toLowerCase()
@@ -22,12 +21,8 @@ export default function CustomerPackages() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const token = localStorage.getItem('token')
-
   useEffect(() => {
-    fetch(`${API_BASE}/api/customer/my-packages`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    authFetch('/api/customer/my-packages')
       .then((res) => {
         if (res.status === 401) {
           navigate('/login')
@@ -37,14 +32,14 @@ export default function CustomerPackages() {
         return res.json()
       })
       .then((data) => {
-        setRows(data)
+        setRows(Array.isArray(data) ? data : [])
         setLoading(false)
       })
       .catch((err) => {
         setError(err.message)
         setLoading(false)
       })
-  }, [navigate, token])
+  }, [navigate])
 
   function handleLogout() {
     localStorage.removeItem('token')
@@ -61,9 +56,23 @@ export default function CustomerPackages() {
             National Postal Service
           </Link>
           <nav className="top-nav">
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>Dashboard</a>
-            <span className="nav-current" aria-current="page">My packages</span>
-            <button type="button" className="customer-nav-logout" onClick={handleLogout}>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/customer_home')
+              }}
+            >
+              Dashboard
+            </a>
+            <span className="nav-current" aria-current="page">
+              My packages
+            </span>
+            <button
+              type="button"
+              className="customer-nav-logout"
+              onClick={handleLogout}
+            >
               Logout
             </button>
           </nav>
@@ -77,11 +86,17 @@ export default function CustomerPackages() {
 
         <div className="inventory-inner">
           <h2>My packages</h2>
-          
+
           {error && (
             <div className="inventory-error">
               <span>{error}</span>
-              <button type="button" onClick={() => setError(null)} aria-label="Dismiss">×</button>
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
             </div>
           )}
 
@@ -108,7 +123,9 @@ export default function CustomerPackages() {
                 <tbody>
                   {rows.map((p) => (
                     <tr key={p.Tracking_Number}>
-                      <td><code>{p.Tracking_Number}</code></td>
+                      <td>
+                        <code>{p.Tracking_Number}</code>
+                      </td>
                       <td>{p.role || '—'}</td>
                       <td>{p.Package_Type_Code}</td>
                       <td>{p.Weight} lbs</td>
@@ -116,7 +133,9 @@ export default function CustomerPackages() {
                       <td>${parseFloat(p.Price || 0).toFixed(2)}</td>
                       <td>
                         {p.Days_At_Post_Office != null
-                          ? `${p.Days_At_Post_Office} day${p.Days_At_Post_Office === 1 ? '' : 's'}`
+                          ? `${p.Days_At_Post_Office} day${
+                              p.Days_At_Post_Office === 1 ? '' : 's'
+                            }`
                           : '—'}
                       </td>
                       <td>
@@ -125,7 +144,11 @@ export default function CustomerPackages() {
                           : '—'}
                       </td>
                       <td>
-                        <span className={`status-badge ${getStatusBadgeClass(p.Status_Name)}`}>
+                        <span
+                          className={`status-badge ${getStatusBadgeClass(
+                            p.Status_Name
+                          )}`}
+                        >
                           {p.Status_Name || '—'}
                         </span>
                       </td>

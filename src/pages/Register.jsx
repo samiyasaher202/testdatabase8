@@ -3,7 +3,14 @@ import { useNavigate, Link } from 'react-router-dom'
 import './css/home.css'
 import '../components/Auth.css'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+// In dev, prefer same-origin `/api` so Vite's proxy can reach the backend without CORS surprises.
+const envApi = import.meta.env.VITE_API_URL
+const API_BASE =
+  envApi != null && String(envApi).trim() !== ''
+    ? String(envApi).replace(/\/$/, '')
+    : import.meta.env.DEV
+      ? ''
+      : 'http://localhost:5000'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -23,9 +30,6 @@ const Register = () => {
     zip_last2: '',
     zip_plus4: '',
     country: 'USA',
-    // birth_day: '',
-    // birth_month: '',
-    // birth_year: '',
     sex: 'U',
   })
 
@@ -70,9 +74,6 @@ const Register = () => {
           zip_last2: formData.zip_last2,
           zip_plus4: formData.zip_plus4 || null,
           country: formData.country || 'USA',
-          // birth_day: formData.birth_day,
-          // birth_month: formData.birth_month,
-          // birth_year: formData.birth_year,
           sex: formData.sex,
         }),
       })
@@ -88,12 +89,14 @@ const Register = () => {
       }
 
       if (!response.ok) {
-        const errorMsg = data.message || `Registration failed (status ${response.status})`
+        const errorMsg =
+          data.message || `Registration failed (status ${response.status})`
         setError(errorMsg)
         console.error('Registration failed', { status: response.status, body: data })
         return
       }
 
+      // If your backend returns a token on registration, store it (same as before)
       if (data.token) {
         localStorage.setItem('token', data.token)
         localStorage.setItem('userType', 'customer')
@@ -101,6 +104,7 @@ const Register = () => {
       if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user))
       }
+
       navigate('/customer_home')
     } catch (err) {
       setError('An error occurred. Please try again.')
@@ -118,7 +122,11 @@ const Register = () => {
             National Postal Service
           </Link>
           <nav className="top-nav">
-            <button type="button" className="nav-back-btn" onClick={() => navigate('/')}>
+            <button
+              type="button"
+              className="nav-back-btn"
+              onClick={() => navigate('/')}
+            >
               ← Back
             </button>
           </nav>
@@ -127,276 +135,241 @@ const Register = () => {
 
       <div className="login-page-body">
         <div className="register-card register-card-wide login-card--branded">
-        <h2>Create an account</h2>
-        <p className="subtitle">Customer registration — all fields marked * are required.</p>
+          <h2>Create an account</h2>
+          <p className="subtitle">
+            Customer registration — all fields marked * are required.
+          </p>
 
-        <form onSubmit={handleSubmit}>
-          {error && <div className="error-message">{error}</div>}
+          <form onSubmit={handleSubmit}>
+            {error && <div className="error-message">{error}</div>}
 
-          <h3 className="register-section-heading">Your name</h3>
-          <div className="form-row form-row--3">
-            <div className="form-group">
-              <label>First name *</label>
-              <input
-                type="text"
-                name="first_name"
-                value={formData.first_name}
-                onChange={handleChange}
-                required
-                placeholder="John"
-              />
+            <h3 className="register-section-heading">Your name</h3>
+            <div className="form-row form-row--3">
+              <div className="form-group">
+                <label>First name *</label>
+                <input
+                  type="text"
+                  name="first_name"
+                  value={formData.first_name}
+                  onChange={handleChange}
+                  required
+                  placeholder="John"
+                />
+              </div>
+              <div className="form-group">
+                <label>Middle name</label>
+                <input
+                  type="text"
+                  name="middle_name"
+                  value={formData.middle_name}
+                  onChange={handleChange}
+                  placeholder="Optional"
+                />
+              </div>
+              <div className="form-group">
+                <label>Last name *</label>
+                <input
+                  type="text"
+                  name="last_name"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  required
+                  placeholder="Doe"
+                />
+              </div>
             </div>
-            <div className="form-group">
-              <label>Middle name</label>
-              <input
-                type="text"
-                name="middle_name"
-                value={formData.middle_name}
-                onChange={handleChange}
-                placeholder="Optional"
-              />
-            </div>
-            <div className="form-group">
-              <label>Last name *</label>
-              <input
-                type="text"
-                name="last_name"
-                value={formData.last_name}
-                onChange={handleChange}
-                required
-                placeholder="Doe"
-              />
-            </div>
-          </div>
 
-          <h3 className="register-section-heading">Contact</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Email *</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="john@example.com"
-              />
+            <h3 className="register-section-heading">Contact</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Email *</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  placeholder="john@example.com"
+                />
+              </div>
+              <div className="form-group">
+                <label>Phone number</label>
+                <input
+                  type="tel"
+                  name="phone_number"
+                  value={formData.phone_number}
+                  onChange={handleChange}
+                  placeholder="713-555-0101"
+                />
+              </div>
             </div>
-            <div className="form-group">
-              <label>Phone number</label>
-              <input
-                type="tel"
-                name="phone_number"
-                value={formData.phone_number}
-                onChange={handleChange}
-                placeholder="713-555-0101"
-              />
-            </div>
-          </div>
 
-          <h3 className="register-section-heading">Address</h3>
-          <div className="form-row form-row--3">
-            <div className="form-group">
-              <label>Apt / unit</label>
-              <input
-                type="text"
-                name="apt_number"
-                value={formData.apt_number}
-                onChange={handleChange}
-                placeholder="Optional"
-              />
+            <h3 className="register-section-heading">Address</h3>
+            <div className="form-row form-row--3">
+              <div className="form-group">
+                <label>Apt / unit</label>
+                <input
+                  type="text"
+                  name="apt_number"
+                  value={formData.apt_number}
+                  onChange={handleChange}
+                  placeholder="Optional"
+                />
+              </div>
+              <div className="form-group">
+                <label>House number *</label>
+                <input
+                  type="text"
+                  name="house_number"
+                  value={formData.house_number}
+                  onChange={handleChange}
+                  required
+                  placeholder="123"
+                />
+              </div>
+              <div className="form-group">
+                <label>Street *</label>
+                <input
+                  type="text"
+                  name="street"
+                  value={formData.street}
+                  onChange={handleChange}
+                  required
+                  placeholder="Main St"
+                />
+              </div>
             </div>
-            <div className="form-group">
-              <label>House number *</label>
-              <input
-                type="text"
-                name="house_number"
-                value={formData.house_number}
-                onChange={handleChange}
-                required
-                placeholder="123"
-              />
-            </div>
-            <div className="form-group">
-              <label>Street *</label>
-              <input
-                type="text"
-                name="street"
-                value={formData.street}
-                onChange={handleChange}
-                required
-                placeholder="Main St"
-              />
-            </div>
-          </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>City *</label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                required
-                placeholder="Houston"
-              />
+            <div className="form-row">
+              <div className="form-group">
+                <label>City *</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  required
+                  placeholder="Houston"
+                />
+              </div>
+              <div className="form-group">
+                <label>State *</label>
+                <input
+                  type="text"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  required
+                  placeholder="TX"
+                  maxLength={50}
+                />
+              </div>
             </div>
+
+            <div className="form-row form-row--3">
+              <div className="form-group">
+                <label>ZIP (first 3) *</label>
+                <input
+                  type="text"
+                  name="zip_first3"
+                  value={formData.zip_first3}
+                  onChange={handleChange}
+                  required
+                  placeholder="770"
+                  maxLength={3}
+                  inputMode="numeric"
+                />
+              </div>
+              <div className="form-group">
+                <label>ZIP (last 2) *</label>
+                <input
+                  type="text"
+                  name="zip_last2"
+                  value={formData.zip_last2}
+                  onChange={handleChange}
+                  required
+                  placeholder="01"
+                  maxLength={2}
+                  inputMode="numeric"
+                />
+              </div>
+              <div className="form-group">
+                <label>ZIP +4</label>
+                <input
+                  type="text"
+                  name="zip_plus4"
+                  value={formData.zip_plus4}
+                  onChange={handleChange}
+                  placeholder="Optional"
+                  maxLength={4}
+                  inputMode="numeric"
+                />
+              </div>
+            </div>
+
             <div className="form-group">
-              <label>State *</label>
+              <label>Country *</label>
               <input
                 type="text"
-                name="state"
-                value={formData.state}
+                name="country"
+                value={formData.country}
                 onChange={handleChange}
                 required
-                placeholder="TX"
+                placeholder="USA"
                 maxLength={50}
               />
             </div>
-          </div>
 
-          <div className="form-row form-row--3">
             <div className="form-group">
-              <label>ZIP (first 3) *</label>
-              <input
-                type="text"
-                name="zip_first3"
-                value={formData.zip_first3}
+              <label>Sex *</label>
+              <select
+                name="sex"
+                value={formData.sex}
                 onChange={handleChange}
                 required
-                placeholder="770"
-                maxLength={3}
-                inputMode="numeric"
-              />
+              >
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+                <option value="O">Other</option>
+                <option value="U">Prefer not to say</option>
+              </select>
             </div>
-            <div className="form-group">
-              <label>ZIP (last 2) *</label>
-              <input
-                type="text"
-                name="zip_last2"
-                value={formData.zip_last2}
-                onChange={handleChange}
-                required
-                placeholder="01"
-                maxLength={2}
-                inputMode="numeric"
-              />
-            </div>
-            <div className="form-group">
-              <label>ZIP +4</label>
-              <input
-                type="text"
-                name="zip_plus4"
-                value={formData.zip_plus4}
-                onChange={handleChange}
-                placeholder="Optional"
-                maxLength={4}
-                inputMode="numeric"
-              />
-            </div>
-          </div>
 
-          <div className="form-group">
-            <label>Country *</label>
-            <input
-              type="text"
-              name="country"
-              value={formData.country}
-              onChange={handleChange}
-              required
-              placeholder="USA"
-              maxLength={50}
-            />
-          </div>
-
-          {/* <div className="form-row"> */}
-            {/* <div className="form-group">
-              <label>Birth day *</label>
-              <input
-                type="number"
-                name="birth_day"
-                value={formData.birth_day}
-                onChange={handleChange}
-                required
-                min={1}
-                max={31}
-                placeholder="15"
-              />
+            <h3 className="register-section-heading">Password</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Password *</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  minLength={6}
+                  placeholder="At least 6 characters"
+                />
+              </div>
+              <div className="form-group">
+                <label>Confirm password *</label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  placeholder="Confirm your password"
+                />
+              </div>
             </div>
-            <div className="form-group">
-              <label>Birth month *</label>
-              <input
-                type="number"
-                name="birth_month"
-                value={formData.birth_month}
-                onChange={handleChange}
-                required
-                min={1}
-                max={12}
-                placeholder="6"
-              />
-            </div>
-            <div className="form-group">
-              <label>Birth year *</label>
-              <input
-                type="number"
-                name="birth_year"
-                value={formData.birth_year}
-                onChange={handleChange}
-                required
-                min={1900}
-                max={new Date().getFullYear()}
-                placeholder="1995"
-              />
-            </div>
-          </div> */}
 
-          <div className="form-group">
-            <label>Sex *</label>
-            <select name="sex" value={formData.sex} onChange={handleChange} required>
-              <option value="M">Male</option>
-              <option value="F">Female</option>
-              <option value="O">Other</option>
-              <option value="U">Prefer not to say</option>
-            </select>
-          </div>
+            <button type="submit" disabled={loading} className="submit-btn">
+              {loading ? 'Creating account…' : 'Create account'}
+            </button>
+          </form>
 
-          <h3 className="register-section-heading">Password</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Password *</label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                minLength={6}
-                placeholder="At least 6 characters"
-              />
-            </div>
-            <div className="form-group">
-              <label>Confirm password *</label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                placeholder="Confirm your password"
-              />
-            </div>
-          </div>
-
-          <button type="submit" disabled={loading} className="submit-btn">
-            {loading ? 'Creating account…' : 'Create account'}
-          </button>
-        </form>
-
-        <p className="register-footer-link">
-          Already have an account? <Link to="/login">Sign in</Link>
-        </p>
+          <p className="register-footer-link">
+            Already have an account? <Link to="/login">Sign in</Link>
+          </p>
         </div>
       </div>
     </div>

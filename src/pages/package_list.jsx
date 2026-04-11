@@ -5,8 +5,7 @@ import './css/customer_home.css'
 import './css/inventory.css'
 import './css/package_list.css'
 import skyline from '../assets/houston-skyline.jpeg'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { authFetch } from '../authFetch'
 
 function getStatusBadgeClass(status) {
   const s = (status || '').toLowerCase()
@@ -35,7 +34,7 @@ export default function AllPackages() {
   const [statusUpdating, setStatusUpdating] = useState(null)
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/packages`)
+    authFetch('/api/packages')
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load packages')
         return res.json()
@@ -52,10 +51,7 @@ export default function AllPackages() {
 
   useEffect(() => {
     if (userType !== 'employee') return
-    const token = localStorage.getItem('token')
-    fetch(`${API_BASE}/api/status-codes`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    authFetch('/api/status-codes')
       .then((r) => {
         if (!r.ok) throw new Error('status codes')
         return r.json()
@@ -65,17 +61,15 @@ export default function AllPackages() {
   }, [userType])
 
   async function handleStatusChange(trackingNumber, statusCodeStr) {
-    const token = localStorage.getItem('token')
     setStatusUpdating(trackingNumber)
     setError(null)
     try {
-      const res = await fetch(
-        `${API_BASE}/api/employee/packages/${encodeURIComponent(trackingNumber)}/status`,
+      const res = await authFetch(
+        `/api/employee/packages/${encodeURIComponent(trackingNumber)}/status`,
         {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ status_code: Number(statusCodeStr) }),
         }
@@ -137,21 +131,73 @@ export default function AllPackages() {
           </Link>
           <nav className="top-nav">
             {userType !== 'employee' && (
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/') }}>Home</a>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  navigate('/')
+                }}
+              >
+                Home
+              </a>
             )}
 
             {userType === 'employee' ? (
               <>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
-                <span className="nav-current" aria-current="page">Packages</span>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigate('/employee_home')
+                  }}
+                >
+                  Dashboard
+                </a>
+                <span className="nav-current" aria-current="page">
+                  Packages
+                </span>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigate('/inventory')
+                  }}
+                >
+                  Inventory
+                </a>
               </>
             ) : (
               <>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>Dashboard</a>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_packages') }}>My packages</a>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Store</a>
-                <span className="nav-current" aria-current="page">Packages</span>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigate('/customer_home')
+                  }}
+                >
+                  Dashboard
+                </a>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigate('/customer_packages')
+                  }}
+                >
+                  My packages
+                </a>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigate('/inventory')
+                  }}
+                >
+                  Store
+                </a>
+                <span className="nav-current" aria-current="page">
+                  Packages
+                </span>
               </>
             )}
 
@@ -160,7 +206,9 @@ export default function AllPackages() {
                 Logout
               </button>
             ) : (
-              <a href="#" onClick={handleLogout}>Logout</a>
+              <a href="#" onClick={handleLogout}>
+                Logout
+              </a>
             )}
           </nav>
         </div>
@@ -173,9 +221,7 @@ export default function AllPackages() {
 
         <div className="inventory-inner">
           <h2>All packages</h2>
-          <p className="inventory-subtitle">
-            Search, filter, and inspect package records across the network.
-          </p>
+          <p className="inventory-subtitle">Search, filter, and inspect package records across the network.</p>
 
           {error && (
             <div className="inventory-error">
@@ -263,7 +309,9 @@ export default function AllPackages() {
                   {filtered.map((p) => (
                     <Fragment key={p.Tracking_Number}>
                       <tr>
-                        <td><code>{p.Tracking_Number}</code></td>
+                        <td>
+                          <code>{p.Tracking_Number}</code>
+                        </td>
                         <td>{p.Package_Type_Code}</td>
                         <td>{p.Weight} lbs</td>
                         <td>{p.Zone}</td>
@@ -293,11 +341,7 @@ export default function AllPackages() {
                           )}
                         </td>
                         <td>
-                          <button
-                            type="button"
-                            className="pkg-expand-btn"
-                            onClick={() => toggleExpand(p.Tracking_Number)}
-                          >
+                          <button type="button" className="pkg-expand-btn" onClick={() => toggleExpand(p.Tracking_Number)}>
                             {expanded === p.Tracking_Number ? '▲ Hide' : '▼ More'}
                           </button>
                         </td>
@@ -309,7 +353,9 @@ export default function AllPackages() {
                             <div className="detail-grid">
                               <div className="detail-item">
                                 <label>Dimensions</label>
-                                <p>{p.Dim_X}&quot; × {p.Dim_Y}&quot; × {p.Dim_Z}&quot;</p>
+                                <p>
+                                  {p.Dim_X}&quot; × {p.Dim_Y}&quot; × {p.Dim_Z}&quot;
+                                </p>
                               </div>
                               <div className="detail-item">
                                 <label>Sender ID</label>

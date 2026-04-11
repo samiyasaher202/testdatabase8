@@ -1,105 +1,138 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react'
 import './css/home.css'
 import './css/employee_home.css'
-import "./css/packages.css";
-import skyline from "../assets/houston-skyline.jpeg";
+import './css/packages.css'
+import skyline from '../assets/houston-skyline.jpeg'
 import React from 'react'
-
-import { Link, useNavigate } from 'react-router-dom';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { Link, useNavigate } from 'react-router-dom'
+import { authFetch } from '../authFetch'
 
 export default function AllCustomers() {
-  const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const userType = localStorage.getItem('userType');
-  const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('token'))
-  const [error, setError] = useState(null);
-  const [search, setSearch] = useState("");
-  const [sortValue, setSortValue] = useState("");
-  const [expanded, setExpanded] = useState(null);
-  const [customerPackages, setCustomerPackages] = useState({});
+  const [customers, setCustomers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const userType = localStorage.getItem('userType')
+  const [loggedIn] = useState(!!localStorage.getItem('token'))
+  const [error, setError] = useState(null)
+  const [search, setSearch] = useState('')
+  const [sortValue, setSortValue] = useState('')
+  const [expanded, setExpanded] = useState(null)
+  const [customerPackages, setCustomerPackages] = useState({})
 
-  
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/customers`)
+    authFetch('/api/customers')
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load customers");
-        return res.json();
+        if (!res.ok) throw new Error('Failed to load customers')
+        return res.json()
       })
       .then((data) => {
-        setCustomers(data);
-        setLoading(false);
+        setCustomers(data)
+        setLoading(false)
       })
       .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
+        setError(err.message)
+        setLoading(false)
+      })
+  }, [])
 
   let filtered = customers.filter((c) => {
-    const q = search.toLowerCase();
+    const q = search.toLowerCase()
     return (
-      (c.Full_Name || "").toLowerCase().includes(q) ||
-      (c.Email_Address || "").toLowerCase().includes(q) ||
-      (c.Phone_Number || "").toLowerCase().includes(q) ||
-      (c.Full_Address || "").toLowerCase().includes(q)
-    );
-  });
+      (c.Full_Name || '').toLowerCase().includes(q) ||
+      (c.Email_Address || '').toLowerCase().includes(q) ||
+      (c.Phone_Number || '').toLowerCase().includes(q) ||
+      (c.Full_Address || '').toLowerCase().includes(q)
+    )
+  })
 
-    if (sortValue === "name_asc")  filtered = [...filtered].sort((a, b) => a.Full_Name.localeCompare(b.Full_Name));
-    if (sortValue === "name_desc") filtered = [...filtered].sort((a, b) => b.Full_Name.localeCompare(a.Full_Name));
+  if (sortValue === 'name_asc')
+    filtered = [...filtered].sort((a, b) => a.Full_Name.localeCompare(b.Full_Name))
+  if (sortValue === 'name_desc')
+    filtered = [...filtered].sort((a, b) => b.Full_Name.localeCompare(a.Full_Name))
 
-    
-
-function toggleExpand(id) {
+  function toggleExpand(id) {
     if (expanded === id) {
-    setExpanded(null);
-    return;
+      setExpanded(null)
+      return
     }
-    setExpanded(id);
-    fetch(`${API_BASE}/api/customers/${id}/packages`)
-    .then(res => res.json())
-    .then(data => setCustomerPackages(prev => ({ ...prev, [id]: data })))
-    .catch(() => setCustomerPackages(prev => ({ ...prev, [id]: [] })));
-}
-function handleLogout(e) {
-    e.preventDefault()
-    localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('userType')
-    navigate('/')
+    setExpanded(id)
+
+    authFetch(`/api/customers/${id}/packages`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load customer packages')
+        return res.json()
+      })
+      .then((data) =>
+        setCustomerPackages((prev) => ({
+          ...prev,
+          [id]: Array.isArray(data) ? data : [],
+        }))
+      )
+      .catch(() =>
+        setCustomerPackages((prev) => ({
+          ...prev,
+          [id]: [],
+        }))
+      )
   }
 
+  function handleLogout(e) {
+    e.preventDefault()
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('userType')
+    navigate('/')
+  }
 
   return (
     <div className={`packages-page ${userType === 'employee' ? 'employee-home' : ''}`}>
       <header className="site-header">
-              <div className="header-inner">
-                <Link className="logo" to="/">
-                  National Postal Service
-                </Link>
-                <nav className="top-nav">
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/') }}>
-                    Home
+        <div className="header-inner">
+          <Link className="logo" to="/">
+            National Postal Service
+          </Link>
+          <nav className="top-nav">
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/')
+              }}
+            >
+              Home
+            </a>
+            {loggedIn ? (
+              <>
+                {localStorage.getItem('userType') === 'employee' && (
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      navigate('/employee_home')
+                    }}
+                  >
+                    Employee Portal
                   </a>
-                  {loggedIn ? (
-                    <>
-                      {localStorage.getItem('userType') === 'employee' && (
-                        <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>
-                          Employee Portal
-                        </a>
-                      )}
-                      <a href="#" onClick={handleLogout}>Logout</a>
-                    </>
-                  ) : (
-                    <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login') }}>
-                      Login
-                    </a>
-                  )}
-                </nav>
-              </div>
-            </header>
+                )}
+                <a href="#" onClick={handleLogout}>
+                  Logout
+                </a>
+              </>
+            ) : (
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  navigate('/login')
+                }}
+              >
+                Login
+              </a>
+            )}
+          </nav>
+        </div>
+      </header>
 
       <main>
         <div className="inventory-hero">
@@ -133,12 +166,18 @@ function handleLogout(e) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <select className="filter-select" value={sortValue} onChange={(e) => setSortValue(e.target.value)}>
+            <select
+              className="filter-select"
+              value={sortValue}
+              onChange={(e) => setSortValue(e.target.value)}
+            >
               <option value="">Sort: Default</option>
               <option value="name_asc">Name (A → Z)</option>
               <option value="name_desc">Name (Z → A)</option>
             </select>
-            <span className="result-count">{filtered.length} of {customers.length} customers</span>
+            <span className="result-count">
+              {filtered.length} of {customers.length} customers
+            </span>
           </div>
 
           {loading ? (
@@ -155,65 +194,89 @@ function handleLogout(e) {
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Address</th>
-                    <th></th>
+                    <th />
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((c) => (
                     <React.Fragment key={c.Customer_ID}>
-                      <tr key={c.Customer_ID}>
-                        <td><code>{c.Customer_ID}</code></td>
+                      <tr>
+                        <td>
+                          <code>{c.Customer_ID}</code>
+                        </td>
                         <td>{c.Full_Name}</td>
-                        <td>{c.Email_Address || "—"}</td>
-                        <td>{c.Phone_Number || "—"}</td>
-                        <td>{c.Full_Address || "—"}</td>
+                        <td>{c.Email_Address || '—'}</td>
+                        <td>{c.Phone_Number || '—'}</td>
+                        <td>{c.Full_Address || '—'}</td>
                         <td>
                           <button
                             className="button"
-                            style={{ padding: "5px 12px", fontSize: "0.8rem", marginTop: 0 }}
+                            style={{
+                              padding: '5px 12px',
+                              fontSize: '0.8rem',
+                              marginTop: 0,
+                            }}
                             onClick={() => toggleExpand(c.Customer_ID)}
                           >
-                            {expanded === c.Customer_ID ? "▲ Hide" : "▼ More"}
+                            {expanded === c.Customer_ID ? '▲ Hide' : '▼ More'}
                           </button>
                         </td>
                       </tr>
 
                       {expanded === c.Customer_ID && (
-                        <tr key={`${c.Customer_ID}-detail`} className="detail-row">
-                            <td colSpan={6}>
-                                <div className="detail-grid">
-                                    <div className="detail-item">
-                                        <label>Country</label>
-                                        <p>{c.Country || "—"}</p>
-                                     </div>
-                                    <div className="detail-item">
-                                        <label>ZIP+4</label>
-                                        <p>{c.Zip_Plus4 || "—"}</p>
-                                    </div>
-                                    <div className="detail-item">
-                                         <label>Sending</label>
-                                        <p>
-                                            {(customerPackages[c.Customer_ID] || [])
-                                            .filter(p => p.role === 'Sending')
-                                            .map(p => <code key={p.Tracking_Number} style={{ display: 'block' }}>{p.Tracking_Number}</code>)
-                                            }
-                                            {!(customerPackages[c.Customer_ID] || []).some(p => p.Role === 'Sending') && "—"}
-                                        </p>
-                                    </div>
-                                    <div className="detail-item">
-                                        <label>Receiving</label>
-                                        <p>
-                                        {(customerPackages[c.Customer_ID] || [])
-                                        .filter(p => p.role === 'Receiving')
-                                        .map(p => <code key={p.Tracking_Number} style={{ display: 'block' }}>{p.Tracking_Number}</code>)
-                                        }
-                                        {!(customerPackages[c.Customer_ID] || []).some(p => p.Role === 'Receiving') && "—"}
-                                        </p>
-                                    </div>
-                                </div>
-                            </td>
+                        <tr className="detail-row">
+                          <td colSpan={6}>
+                            <div className="detail-grid">
+                              <div className="detail-item">
+                                <label>Country</label>
+                                <p>{c.Country || '—'}</p>
+                              </div>
+                              <div className="detail-item">
+                                <label>ZIP+4</label>
+                                <p>{c.Zip_Plus4 || '—'}</p>
+                              </div>
+
+                              <div className="detail-item">
+                                <label>Sending</label>
+                                <p>
+                                  {(customerPackages[c.Customer_ID] || [])
+                                    .filter((p) => p.Role === 'Sending')
+                                    .map((p) => (
+                                      <code
+                                        key={p.Tracking_Number}
+                                        style={{ display: 'block' }}
+                                      >
+                                        {p.Tracking_Number}
+                                      </code>
+                                    ))}
+                                  {!(customerPackages[c.Customer_ID] || []).some(
+                                    (p) => p.Role === 'Sending'
+                                  ) && '—'}
+                                </p>
+                              </div>
+
+                              <div className="detail-item">
+                                <label>Receiving</label>
+                                <p>
+                                  {(customerPackages[c.Customer_ID] || [])
+                                    .filter((p) => p.Role === 'Receiving')
+                                    .map((p) => (
+                                      <code
+                                        key={p.Tracking_Number}
+                                        style={{ display: 'block' }}
+                                      >
+                                        {p.Tracking_Number}
+                                      </code>
+                                    ))}
+                                  {!(customerPackages[c.Customer_ID] || []).some(
+                                    (p) => p.Role === 'Receiving'
+                                  ) && '—'}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
                         </tr>
-                    )}
+                      )}
                     </React.Fragment>
                   ))}
                 </tbody>
@@ -226,10 +289,9 @@ function handleLogout(e) {
       <footer className="site-footer">
         <div className="footer-inner">
           <span>© {new Date().getFullYear()} National Postal Service</span>
-          <span className="footer-links">
-          </span>
+          <span className="footer-links" />
         </div>
       </footer>
     </div>
-  );
+  )
 }

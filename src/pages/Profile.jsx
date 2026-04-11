@@ -4,8 +4,7 @@ import './css/home.css'
 import './css/employee_home.css'
 import './css/employee_profile.css'
 import skyline from '../assets/houston-skyline.jpeg'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { authFetch } from '../authFetch'
 
 async function parseJsonResponse(response) {
   const raw = await response.text()
@@ -42,6 +41,7 @@ export default function Profile() {
 
   useEffect(() => {
     fetchProfile()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchProfile = async () => {
@@ -53,10 +53,7 @@ export default function Profile() {
         return
       }
 
-      const response = await fetch(`${API_BASE}/api/auth/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
+      const response = await authFetch('/api/auth/profile')
       const { data, raw } = await parseJsonResponse(response)
 
       if (!response.ok) {
@@ -99,20 +96,20 @@ export default function Profile() {
     setError('')
     setSuccess('')
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_BASE}/api/auth/profile`, {
+      const response = await authFetch('/api/auth/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       })
+
       const { data, raw } = await parseJsonResponse(response)
       if (!response.ok) {
         setError(data?.message || raw || 'Update failed')
         return
       }
+
       setUser(data.user)
       setIsEditing(false)
       setSuccess('Profile updated successfully!')
@@ -127,28 +124,30 @@ export default function Profile() {
     e.preventDefault()
     setError('')
     setSuccess('')
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setError('New passwords do not match')
       return
     }
+
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_BASE}/api/auth/change-password`, {
+      const response = await authFetch('/api/auth/change-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,
         }),
       })
+
       const { data, raw } = await parseJsonResponse(response)
       if (!response.ok) {
         setError(data?.message || raw || 'Password change failed')
         return
       }
+
       setSuccess('Password changed successfully!')
       setShowChangePassword(false)
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
@@ -174,12 +173,48 @@ export default function Profile() {
           National Postal Service
         </Link>
         <nav className="top-nav">
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/') }}>Home</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_list') }}>Packages</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
-          <span className="nav-current" aria-current="page">Profile</span>
-          <a href="#" onClick={handleLogout}>Logout</a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate('/')
+            }}
+          >
+            Home
+          </a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate('/package_list')
+            }}
+          >
+            Packages
+          </a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate('/inventory')
+            }}
+          >
+            Inventory
+          </a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate('/employee_home')
+            }}
+          >
+            Dashboard
+          </a>
+          <span className="nav-current" aria-current="page">
+            Profile
+          </span>
+          <a href="#" onClick={handleLogout}>
+            Logout
+          </a>
         </nav>
       </div>
     </header>
@@ -228,7 +263,12 @@ export default function Profile() {
               <p className="error-message" style={{ margin: 0 }}>
                 {error || 'Could not load profile.'}
               </p>
-              <button type="button" className="btn primary" style={{ marginTop: 16 }} onClick={() => navigate('/employee_home')}>
+              <button
+                type="button"
+                className="btn primary"
+                style={{ marginTop: 16 }}
+                onClick={() => navigate('/employee_home')}
+              >
                 Back to dashboard
               </button>
             </div>
@@ -258,7 +298,13 @@ export default function Profile() {
                 </div>
                 <div>
                   <h2>Employee profile</h2>
-                  <p style={{ margin: 0, color: 'var(--text-soft, #475569)', fontSize: '0.95rem' }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: 'var(--text-soft, #475569)',
+                      fontSize: '0.95rem',
+                    }}
+                  >
                     {user.First_Name} {user.Last_Name}
                   </p>
                 </div>
@@ -321,7 +367,9 @@ export default function Profile() {
                     </div>
                     <div className="employee-profile-item">
                       <label>Hours worked</label>
-                      <p>{user.Hours_Worked != null ? `${user.Hours_Worked} hrs` : '—'}</p>
+                      <p>
+                        {user.Hours_Worked != null ? `${user.Hours_Worked} hrs` : '—'}
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -110,7 +110,6 @@ Phone_Number varchar(20) null,
 Sex char(1) not null,
 Salary decimal(10,2) not null,
 Hours_Worked decimal(6,2) not null default 0.00,
-Is_Active enum('1','0') not null default '1',
 
 foreign key (Post_Office_ID) references Post_Office(Post_Office_ID),
 foreign key (Supervisor_ID) references Employee(Employee_ID),
@@ -230,10 +229,8 @@ CREATE TABLE Payment (
     Payment_Amount DECIMAL(10, 2) NOT NULL,
     Payment_Date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Payment_Status VARCHAR(50) NOT NULL DEFAULT 'pending',
-    Employee_ID INT NOT NULL,
     FOREIGN KEY (Customer_ID) REFERENCES Customer(Customer_ID),
-    FOREIGN KEY(Store_ID) REFERENCES Store(Store_ID),
-    FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID)
+    FOREIGN KEY(Store_ID) REFERENCES Store(Store_ID)
 );
 
 
@@ -260,22 +257,6 @@ CREATE TABLE Delivery (
         
 	FOREIGN KEY (Delivered_By)
 		REFERENCES Employee(Employee_ID)
-        ON UPDATE CASCADE
-);
-
-CREATE TABLE Package_Pickup (
-    Tracking_Number VARCHAR(10) NOT NULL PRIMARY KEY,
-    Recipient_ID INT NOT NULL,
-    Post_Office_ID INT NOT NULL,
-    Arrival_Time DATETIME NULL,
-    Pickup_Time DATETIME NULL,
-    Is_picked_Up ENUM('1','0') NOT NULL DEFAULT '0',
-    FOREIGN KEY (Tracking_Number) REFERENCES Package(Tracking_Number)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-    FOREIGN KEY (Recipient_ID) REFERENCES Customer(Customer_ID)
-        ON UPDATE CASCADE,
-    FOREIGN KEY (Post_Office_ID) REFERENCES Post_Office(Post_Office_ID)
         ON UPDATE CASCADE
 );
 

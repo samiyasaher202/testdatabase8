@@ -19,7 +19,7 @@ const AdminRegister = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const departments = ['Mail Sorting', 'Customer Service', 'Delivery', 'Management', 'Finance', 'IT Support'];
+  const departments = ['Customer Service', 'Delivery', 'IT', 'Management', 'Sorting'];
   const positions = ['Clerk', 'Supervisor', 'Manager', 'Director', 'Staff'];
 
   const handleChange = (e) => {
@@ -75,7 +75,7 @@ const AdminRegister = () => {
         hireDate: ''
       });
 
-      setTimeout(() => navigate('/dashboard'), 2000);
+      setTimeout(() => navigate('/employee_home'), 2000);
     } catch (err) {
       setError('An error occurred. Please try again.');
       console.error('Admin register error:', err);

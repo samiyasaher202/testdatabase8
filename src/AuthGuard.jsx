@@ -70,38 +70,33 @@ export function RequireAuth({ children }) {
 //Requires for Admin login
 
 export function RequireAdmin({ children }) {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+
+  function isAdminRole5() {
+    try {
+      const userType = localStorage.getItem('userType')
+      if (userType !== 'employee') return false
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      const roleId = Number(user.Role_ID ?? user.role_id)
+      return roleId === 5
+    } catch {
+      return false
+    }
+  }
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userType = localStorage.getItem('userType');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token')
+    const userType = localStorage.getItem('userType')
 
-    if (!token) {
-      navigate('/login');
-      return;
-    }
+    if (!token) return navigate('/login')
+    if (userType !== 'employee') return navigate('/customer_home')
+    if (!isAdminRole5()) return navigate('/employee_home')
+  }, [navigate])
 
-    // Admin must be an employee account
-    if (userType !== 'employee') {
-      navigate('/customer_home');
-      return;
-    }
+  const token = localStorage.getItem('token')
+  const userType = localStorage.getItem('userType')
+  const isAdmin = isAdminRole5()
 
-    // TODO: adjust this line to match what your backend returns
-    const isAdmin = user.Role_Name === 'Admin';
-
-    if (!isAdmin) {
-      navigate('/employee_home'); // logged in employee, but not admin
-    }
-  }, [navigate]);
-
-  const token = localStorage.getItem('token');
-  const userType = localStorage.getItem('userType');
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const isAdmin = user.Role_Name === 'Admin'; // same TODO as above
-
-  if (!token || userType !== 'employee' || !isAdmin) return null;
-
-  return children;
+  if (!token || userType !== 'employee' || !isAdmin) return null
+  return children
 }

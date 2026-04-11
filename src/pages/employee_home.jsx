@@ -100,9 +100,7 @@ export default function EmployeeHome() {
         </div>
 
         <section className="employee-welcome">
-          <h2>
-            Welcome, {getStoredEmployeeFullName() ?? 'Employee'}
-          </h2>
+          <h2>Welcome, {getStoredEmployeeFullName() ?? 'Employee'}</h2>
           <p className="employee-welcome-sub">
             Tools for post office staff — packages, inventory, and customer records.
           </p>
@@ -159,16 +157,26 @@ export default function EmployeeHome() {
             </div>
 
             {isAdmin && (
-              <div className="card">
-                <h3>Employees</h3>
-                <p>View and manage employee accounts.</p>
-                <button type="button" className="btn primary" onClick={() => navigate('/employees')}>
-                  View Employees
-                </button>
-              </div>
+              <>
+                <div className="card">
+                  <h3>Employees</h3>
+                  <p>View and manage employee accounts.</p>
+                  <button type="button" className="btn primary" onClick={() => navigate('/employees')}>
+                    View Employees
+                  </button>
+                </div>
+
+                <div className="card">
+                  <h3>Register new employee</h3>
+                  <p>Create a new employee account (admin only).</p>
+                  <button type="button" className="btn primary" onClick={() => navigate('/admin-register')}>
+                    Add employee
+                  </button>
+                </div>
+              </>
             )}
 
-             <div className="card">
+            <div className="card">
               <h3>Employee Review</h3>
               <p>Tempory relocation for testing untill admin is set up.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/tickets_employees')}>

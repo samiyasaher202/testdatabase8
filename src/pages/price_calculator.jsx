@@ -32,18 +32,43 @@ export default function PriceCalculator() {
             National Postal Service
           </Link>
           <nav className="top-nav">
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/') }}>Home</a>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/')
+              }}
+            >
+              Home
+            </a>
+
             {loggedIn ? (
               <>
                 {localStorage.getItem('userType') === 'customer' && (
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      navigate('/customer_home')
+                    }}
+                  >
                     Customer Portal
                   </a>
                 )}
-                <a href="#" onClick={handleLogout}>Logout</a>
+                <a href="#" onClick={handleLogout}>
+                  Logout
+                </a>
               </>
             ) : (
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login') }}>Login</a>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  navigate('/login')
+                }}
+              >
+                Login
+              </a>
             )}
           </nav>
         </div>

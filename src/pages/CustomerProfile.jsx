@@ -4,8 +4,7 @@ import './css/home.css'
 import './css/customer_home.css'
 import './css/customer_profile.css'
 import skyline from '../assets/houston-skyline.jpeg'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { authFetch } from '../authFetch'
 
 export default function CustomerProfile() {
   const [user, setUser] = useState(null)
@@ -33,9 +32,7 @@ export default function CustomerProfile() {
       return
     }
 
-    fetch(`${API_BASE}/api/customer/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    authFetch('/api/customer/profile')
       .then(async (r) => {
         const raw = await r.text()
         const ct = r.headers.get('content-type') || ''
@@ -75,12 +72,10 @@ export default function CustomerProfile() {
     setSuccess('')
 
     try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`${API_BASE}/api/customer/profile`, {
+      const response = await authFetch('/api/customer/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       })
@@ -124,11 +119,47 @@ export default function CustomerProfile() {
           National Postal Service
         </Link>
         <nav className="top-nav">
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/') }}>Home</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>Dashboard</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_packages') }}>My Packages</a>
-          <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Store</a>
-          <button type="button" className="customer-nav-logout" onClick={handleLogout}>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate('/')
+            }}
+          >
+            Home
+          </a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate('/customer_home')
+            }}
+          >
+            Dashboard
+          </a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate('/customer_packages')
+            }}
+          >
+            My Packages
+          </a>
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault()
+              navigate('/inventory')
+            }}
+          >
+            Store
+          </a>
+          <button
+            type="button"
+            className="customer-nav-logout"
+            onClick={handleLogout}
+          >
             Logout
           </button>
         </nav>
@@ -214,7 +245,13 @@ export default function CustomerProfile() {
                 </div>
                 <div>
                   <h2>Your profile</h2>
-                  <p style={{ margin: 0, color: 'var(--text-soft, #475569)', fontSize: '0.95rem' }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: 'var(--text-soft, #475569)',
+                      fontSize: '0.95rem',
+                    }}
+                  >
                     {user.First_Name} {user.Last_Name}
                   </p>
                 </div>
@@ -243,7 +280,10 @@ export default function CustomerProfile() {
                       <label>Phone</label>
                       <p>{user.Phone_Number || '—'}</p>
                     </div>
-                    <div className="customer-profile-item" style={{ gridColumn: '1 / -1' }}>
+                    <div
+                      className="customer-profile-item"
+                      style={{ gridColumn: '1 / -1' }}
+                    >
                       <label>Address</label>
                       <p>
                         {user.House_Number} {user.Street}
@@ -256,10 +296,18 @@ export default function CustomerProfile() {
                 </div>
 
                 <div className="customer-profile-actions">
-                  <button type="button" className="btn primary" onClick={() => setIsEditing(true)}>
+                  <button
+                    type="button"
+                    className="btn primary"
+                    onClick={() => setIsEditing(true)}
+                  >
                     Edit profile
                   </button>
-                  <button type="button" className="btn primary" onClick={() => navigate('/customer_home')}>
+                  <button
+                    type="button"
+                    className="btn primary"
+                    onClick={() => navigate('/customer_home')}
+                  >
                     Dashboard
                   </button>
                 </div>
@@ -268,7 +316,15 @@ export default function CustomerProfile() {
 
             {isEditing && (
               <form onSubmit={handleUpdateProfile}>
-                <h3 style={{ marginTop: 0, color: 'var(--primary-strong, #1e40af)', fontSize: '1.05rem' }}>Edit profile</h3>
+                <h3
+                  style={{
+                    marginTop: 0,
+                    color: 'var(--primary-strong, #1e40af)',
+                    fontSize: '1.05rem',
+                  }}
+                >
+                  Edit profile
+                </h3>
 
                 <div className="form-group">
                   <label htmlFor="Email_Address">Email</label>
@@ -318,7 +374,13 @@ export default function CustomerProfile() {
                 <div className="form-row">
                   <div className="form-group">
                     <label htmlFor="City">City</label>
-                    <input type="text" id="City" name="City" value={formData.City} onChange={handleFormChange} />
+                    <input
+                      type="text"
+                      id="City"
+                      name="City"
+                      value={formData.City}
+                      onChange={handleFormChange}
+                    />
                   </div>
                   <div className="form-group">
                     <label htmlFor="State">State</label>
@@ -363,7 +425,11 @@ export default function CustomerProfile() {
                   <button type="submit" className="btn primary">
                     Save changes
                   </button>
-                  <button type="button" className="btn" onClick={() => setIsEditing(false)}>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => setIsEditing(false)}
+                  >
                     Cancel
                   </button>
                 </div>

@@ -4,18 +4,16 @@ import './css/home.css'
 import './css/customer_home.css'
 import './css/inventory.css'
 import skyline from '../assets/houston-skyline.jpeg'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { authFetch } from '../authFetch'
 
 const LOW_STOCK = 15
 
 export default function Inventory() {
   const navigate = useNavigate()
   const userType = localStorage.getItem('userType')
-  const token = localStorage.getItem('token')
   const isEmployee = userType === 'employee'
 
-  const [editingKey, setEditingKey] = useState(null)   // e.g. "STOREID:UPC"
+  const [editingKey, setEditingKey] = useState(null) // e.g. "STOREID:UPC"
   const [editingQty, setEditingQty] = useState('')
   const [saving, setSaving] = useState(false)
   const [inventory, setInventory] = useState([])
@@ -26,7 +24,7 @@ export default function Inventory() {
   const [stockFilter, setStockFilter] = useState('')
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/inventory`)
+    authFetch('/api/inventory')
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load inventory')
         return res.json()
@@ -66,7 +64,8 @@ export default function Inventory() {
     localStorage.removeItem('userType')
     navigate('/')
   }
-    async function saveQuantity(item) {
+
+  async function saveQuantity(item) {
     const storeId = item.store_id
     const upc = item.upc
     const qty = Number(editingQty)
@@ -79,14 +78,16 @@ export default function Inventory() {
     setSaving(true)
     setError(null)
     try {
-      const res = await fetch(`${API_BASE}/api/inventory/${storeId}/${encodeURIComponent(upc)}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ quantity: qty }),
-      })
+      const res = await authFetch(
+        `/api/inventory/${storeId}/${encodeURIComponent(upc)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ quantity: qty }),
+        }
+      )
 
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.message || 'Failed to update stock')
@@ -107,7 +108,9 @@ export default function Inventory() {
     }
   }
 
-  const locations = [...new Set(inventory.map((i) => `${i.city}, ${i.state}`).filter(Boolean))]
+  const locations = [
+    ...new Set(inventory.map((i) => `${i.city}, ${i.state}`).filter(Boolean)),
+  ]
 
   const filtered = inventory.filter((item) => {
     const q = search.toLowerCase()
@@ -125,10 +128,16 @@ export default function Inventory() {
 
   const totalUnits = filtered.reduce((s, i) => s + (i.quantity || 0), 0)
   const outCount = filtered.filter((i) => i.quantity === 0).length
-  const lowCount = filtered.filter((i) => i.quantity > 0 && i.quantity <= LOW_STOCK).length
+  const lowCount = filtered.filter(
+    (i) => i.quantity > 0 && i.quantity <= LOW_STOCK
+  ).length
 
   return (
-    <div className={`inventory-page ${userType === 'customer' ? 'customer-home' : ''}`}>
+    <div
+      className={`inventory-page ${
+        userType === 'customer' ? 'customer-home' : ''
+      }`}
+    >
       <header className="site-header">
         <div className="header-inner">
           <Link className="logo" to="/">
@@ -136,29 +145,79 @@ export default function Inventory() {
           </Link>
           <nav className="top-nav">
             {userType !== 'employee' && (
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/') }}>Home</a>
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  navigate('/')
+                }}
+              >
+                Home
+              </a>
             )}
 
             {userType === 'employee' ? (
               <>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_list') }}>Packages</a>
-                <span className="nav-current" aria-current="page">Inventory</span>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigate('/employee_home')
+                  }}
+                >
+                  Dashboard
+                </a>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigate('/package_list')
+                  }}
+                >
+                  Packages
+                </a>
+                <span className="nav-current" aria-current="page">
+                  Inventory
+                </span>
               </>
             ) : (
               <>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>Dashboard</a>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_packages') }}>My packages</a>
-                <span className="nav-current" aria-current="page">Store</span>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigate('/customer_home')
+                  }}
+                >
+                  Dashboard
+                </a>
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    navigate('/customer_packages')
+                  }}
+                >
+                  My packages
+                </a>
+                <span className="nav-current" aria-current="page">
+                  Store
+                </span>
               </>
             )}
 
             {userType === 'customer' ? (
-              <button type="button" className="customer-nav-logout" onClick={handleLogout}>
+              <button
+                type="button"
+                className="customer-nav-logout"
+                onClick={handleLogout}
+              >
                 Logout
               </button>
             ) : (
-              <a href="#" onClick={handleLogout}>Logout</a>
+              <a href="#" onClick={handleLogout}>
+                Logout
+              </a>
             )}
           </nav>
         </div>
@@ -178,7 +237,11 @@ export default function Inventory() {
           {error && (
             <div className="inventory-error">
               <span>{error}</span>
-              <button type="button" onClick={() => setError(null)} aria-label="Dismiss">
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                aria-label="Dismiss"
+              >
                 ×
               </button>
             </div>
@@ -191,7 +254,9 @@ export default function Inventory() {
                 <span className="stat-label">Products</span>
               </div>
               <div className="inventory-stat">
-                <span className="stat-num delivered">{totalUnits.toLocaleString()}</span>
+                <span className="stat-num delivered">
+                  {totalUnits.toLocaleString()}
+                </span>
                 <span className="stat-label">Total units</span>
               </div>
               <div className="inventory-stat">
@@ -213,13 +278,23 @@ export default function Inventory() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <select className="filter-select" value={locFilter} onChange={(e) => setLocFilter(e.target.value)}>
+            <select
+              className="filter-select"
+              value={locFilter}
+              onChange={(e) => setLocFilter(e.target.value)}
+            >
               <option value="">All locations</option>
               {locations.map((l) => (
-                <option key={l} value={l}>{l}</option>
+                <option key={l} value={l}>
+                  {l}
+                </option>
               ))}
             </select>
-            <select className="filter-select" value={stockFilter} onChange={(e) => setStockFilter(e.target.value)}>
+            <select
+              className="filter-select"
+              value={stockFilter}
+              onChange={(e) => setStockFilter(e.target.value)}
+            >
               <option value="">All stock levels</option>
               <option value="In Stock">In stock</option>
               <option value="Low Stock">Low stock</option>
@@ -248,7 +323,7 @@ export default function Inventory() {
                     {isEmployee && <th style={{ width: 220 }}>Actions</th>}
                   </tr>
                 </thead>
-                                <tbody>
+                <tbody>
                   {filtered.map((item) => {
                     const key = `${item.store_id}:${item.upc}`
                     const isEditing = editingKey === key
@@ -256,14 +331,20 @@ export default function Inventory() {
                     return (
                       <tr key={`${item.post_office_id}-${item.upc}`}>
                         <td>
-                          <div className="td-name">{item.product_name || '—'}</div>
+                          <div className="td-name">
+                            {item.product_name || '—'}
+                          </div>
                           <div className="td-sub">Store #{item.store_id}</div>
                         </td>
 
-                        <td><code>{item.upc || '—'}</code></td>
+                        <td>
+                          <code>{item.upc || '—'}</code>
+                        </td>
 
                         <td>
-                          <div className="td-name">{item.city}, {item.state}</div>
+                          <div className="td-name">
+                            {item.city}, {item.state}
+                          </div>
                           <div className="td-sub">{item.office_address}</div>
                         </td>
 
@@ -279,9 +360,14 @@ export default function Inventory() {
                           <div className="stock-bar-wrap">
                             <div className="stock-bar-bg">
                               <div
-                                className={`stock-bar-fill ${stockBarClass(item.quantity)}`}
+                                className={`stock-bar-fill ${stockBarClass(
+                                  item.quantity
+                                )}`}
                                 style={{
-                                  width: `${Math.min((item.quantity / 500) * 100, 100)}%`,
+                                  width: `${Math.min(
+                                    (item.quantity / 500) * 100,
+                                    100
+                                  )}%`,
                                 }}
                               />
                             </div>
@@ -297,13 +383,19 @@ export default function Inventory() {
                                 disabled={saving}
                               />
                             ) : (
-                              <span className="stock-bar-num">{item.quantity}</span>
+                              <span className="stock-bar-num">
+                                {item.quantity}
+                              </span>
                             )}
                           </div>
                         </td>
 
                         <td>
-                          <span className={`inv-status-badge ${stockBadgeClass(item.quantity)}`}>
+                          <span
+                            className={`inv-status-badge ${stockBadgeClass(
+                              item.quantity
+                            )}`}
+                          >
                             {getLevel(item.quantity)}
                           </span>
                         </td>
