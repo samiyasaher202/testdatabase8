@@ -951,15 +951,36 @@ app.patch('/api/employee/packages/:trackingNumber/status', authenticate, require
     conn.release()
   }
 })
-
 // ════════════════════════════════════════════════════════════════════════════
 //  INVENTORY ROUTES
 // ════════════════════════════════════════════════════════════════════════════
 
+// Public (or you can also protect it if you want)
 app.get('/api/inventory', async (req, res) => {
   inventoryDB.getAllInventory(pool, (err, results) => {
     if (err) return res.status(500).json({ error: 'Database error' })
     res.json(results)
+  })
+})
+
+// Employee-only: update quantity for a product at a given store
+app.patch('/api/inventory/:storeId/:upc', authenticate, requireEmployee, async (req, res) => {
+  const storeId = Number(req.params.storeId)
+  const upc = String(req.params.upc || '').trim()
+  const quantity = Number(req.body?.quantity)
+
+  if (!Number.isFinite(storeId)) return res.status(400).json({ message: 'Invalid storeId' })
+  if (!upc) return res.status(400).json({ message: 'Invalid upc' })
+  if (!Number.isInteger(quantity) || quantity < 0) {
+    return res.status(400).json({ message: 'quantity must be an integer >= 0' })
+  }
+
+  inventoryDB.updateInventoryQuantity(pool, { upc, store_id: storeId, quantity }, (err, result) => {
+    if (err) return res.status(500).json({ message: err.message || 'Database error' })
+    if (!result?.affectedRows) {
+      return res.status(404).json({ message: 'Product not found for that store/upc' })
+    }
+    res.json({ ok: true, store_id: storeId, upc, quantity })
   })
 })
 

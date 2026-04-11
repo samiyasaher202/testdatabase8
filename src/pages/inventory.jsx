@@ -12,7 +12,12 @@ const LOW_STOCK = 15
 export default function Inventory() {
   const navigate = useNavigate()
   const userType = localStorage.getItem('userType')
+  const token = localStorage.getItem('token')
+  const isEmployee = userType === 'employee'
 
+  const [editingKey, setEditingKey] = useState(null)   // e.g. "STOREID:UPC"
+  const [editingQty, setEditingQty] = useState('')
+  const [saving, setSaving] = useState(false)
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -60,6 +65,46 @@ export default function Inventory() {
     localStorage.removeItem('user')
     localStorage.removeItem('userType')
     navigate('/')
+  }
+    async function saveQuantity(item) {
+    const storeId = item.store_id
+    const upc = item.upc
+    const qty = Number(editingQty)
+
+    if (!Number.isInteger(qty) || qty < 0) {
+      setError('Quantity must be a whole number 0 or greater.')
+      return
+    }
+
+    setSaving(true)
+    setError(null)
+    try {
+      const res = await fetch(`${API_BASE}/api/inventory/${storeId}/${encodeURIComponent(upc)}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ quantity: qty }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.message || 'Failed to update stock')
+
+      // update local UI
+      setInventory((prev) =>
+        prev.map((p) =>
+          p.store_id === storeId && p.upc === upc ? { ...p, quantity: qty } : p
+        )
+      )
+
+      setEditingKey(null)
+      setEditingQty('')
+    } catch (e) {
+      setError(String(e?.message || e))
+    } finally {
+      setSaving(false)
+    }
   }
 
   const locations = [...new Set(inventory.map((i) => `${i.city}, ${i.state}`).filter(Boolean))]
@@ -200,47 +245,112 @@ export default function Inventory() {
                     <th>Price</th>
                     <th>Stock level</th>
                     <th>Status</th>
+                    {isEmployee && <th style={{ width: 220 }}>Actions</th>}
                   </tr>
                 </thead>
-                <tbody>
-                  {filtered.map((item) => (
-                    <tr key={`${item.post_office_id}-${item.upc}`}>
-                      <td>
-                        <div className="td-name">{item.product_name || '—'}</div>
-                        <div className="td-sub">Store #{item.store_id}</div>
-                      </td>
-                      <td><code>{item.upc || '—'}</code></td>
-                      <td>
-                        <div className="td-name">{item.city}, {item.state}</div>
-                        <div className="td-sub">{item.office_address}</div>
-                      </td>
-                      <td>
-                        {item.price === 0 ? (
-                          <span className="free-label">Free</span>
-                        ) : (
-                          `$${parseFloat(item.price).toFixed(2)}`
-                        )}
-                      </td>
-                      <td>
-                        <div className="stock-bar-wrap">
-                          <div className="stock-bar-bg">
-                            <div
-                              className={`stock-bar-fill ${stockBarClass(item.quantity)}`}
-                              style={{
-                                width: `${Math.min((item.quantity / 500) * 100, 100)}%`,
-                              }}
-                            />
+                                <tbody>
+                  {filtered.map((item) => {
+                    const key = `${item.store_id}:${item.upc}`
+                    const isEditing = editingKey === key
+
+                    return (
+                      <tr key={`${item.post_office_id}-${item.upc}`}>
+                        <td>
+                          <div className="td-name">{item.product_name || '—'}</div>
+                          <div className="td-sub">Store #{item.store_id}</div>
+                        </td>
+
+                        <td><code>{item.upc || '—'}</code></td>
+
+                        <td>
+                          <div className="td-name">{item.city}, {item.state}</div>
+                          <div className="td-sub">{item.office_address}</div>
+                        </td>
+
+                        <td>
+                          {item.price === 0 ? (
+                            <span className="free-label">Free</span>
+                          ) : (
+                            `$${parseFloat(item.price).toFixed(2)}`
+                          )}
+                        </td>
+
+                        <td>
+                          <div className="stock-bar-wrap">
+                            <div className="stock-bar-bg">
+                              <div
+                                className={`stock-bar-fill ${stockBarClass(item.quantity)}`}
+                                style={{
+                                  width: `${Math.min((item.quantity / 500) * 100, 100)}%`,
+                                }}
+                              />
+                            </div>
+
+                            {isEmployee && isEditing ? (
+                              <input
+                                type="number"
+                                min="0"
+                                step="1"
+                                value={editingQty}
+                                onChange={(e) => setEditingQty(e.target.value)}
+                                style={{ width: 90 }}
+                                disabled={saving}
+                              />
+                            ) : (
+                              <span className="stock-bar-num">{item.quantity}</span>
+                            )}
                           </div>
-                          <span className="stock-bar-num">{item.quantity}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`inv-status-badge ${stockBadgeClass(item.quantity)}`}>
-                          {getLevel(item.quantity)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+
+                        <td>
+                          <span className={`inv-status-badge ${stockBadgeClass(item.quantity)}`}>
+                            {getLevel(item.quantity)}
+                          </span>
+                        </td>
+
+                        {isEmployee && (
+                          <td>
+                            {!isEditing ? (
+                              <button
+                                type="button"
+                                className="button"
+                                onClick={() => {
+                                  setError(null)
+                                  setEditingKey(key)
+                                  setEditingQty(String(item.quantity ?? 0))
+                                }}
+                              >
+                                Edit stock
+                              </button>
+                            ) : (
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <button
+                                  type="button"
+                                  className="button"
+                                  onClick={() => saveQuantity(item)}
+                                  disabled={saving}
+                                >
+                                  {saving ? 'Saving…' : 'Save'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="button"
+                                  onClick={() => {
+                                    setEditingKey(null)
+                                    setEditingQty('')
+                                    setError(null)
+                                  }}
+                                  disabled={saving}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
               <div className="table-footer">
