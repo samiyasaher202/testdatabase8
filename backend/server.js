@@ -5,30 +5,37 @@ const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 require('dotenv').config({ path: path.join(__dirname, '.env') })
 
-const packagesDB    = require('./db/packages')
-const inventoryDB   = require('./db/inventory')
-const customerDB    = require('./db/customers')
+const packagesDB = require('./db/packages')
+const inventoryDB = require('./db/inventory')
+const customerDB = require('./db/customers')
 const packageTrackDB = require('./db/package_track')
-const employeeDB    = require('./db/employees')
-const priceDB       = require('./db/package_type')
+const employeeDB = require('./db/employees')
+const priceDB = require('./db/package_type')
 const packagePickupStorageJob = require('./db/package_pickup_storage_job')
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
-  host:               process.env.MYSQLHOST,
-  port:               process.env.MYSQLPORT,
-  user:               process.env.MYSQLUSER,
-  password:           process.env.MYSQLPASSWORD,
-  database:           process.env.MYSQL_DATABASE,
+  host: process.env.MYSQLHOST,
+  port: process.env.MYSQLPORT,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQL_DATABASE,
   waitForConnections: true,
-  connectionLimit:    10,
+  connectionLimit: 10,
 })
 
-pool.getConnection()
-  .then(c => { console.log('✅ MySQL connected'); c.release() })
-  .catch(e => console.error('❌ MySQL connection failed:', e))
+pool
+  .getConnection()
+  .then((c) => {
+    console.log('✅ MySQL connected')
+    c.release()
+  })
+  .catch((e) => console.error('❌ MySQL connection failed:', e))
 
-if (process.env.DISABLE_PACKAGE_PICKUP_JOB !== '1' && process.env.DISABLE_PACKAGE_PICKUP_JOB !== 'true') {
+if (
+  process.env.DISABLE_PACKAGE_PICKUP_JOB !== '1' &&
+  process.env.DISABLE_PACKAGE_PICKUP_JOB !== 'true'
+) {
   const jobMs = Number(process.env.PACKAGE_PICKUP_JOB_MS)
   const runOnStartEnv = process.env.PACKAGE_PICKUP_JOB_RUN_ON_START
   packagePickupStorageJob.startPackagePickupStorageJob(pool, {
@@ -40,23 +47,19 @@ if (process.env.DISABLE_PACKAGE_PICKUP_JOB !== '1' && process.env.DISABLE_PACKAG
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-function parseCookies(req) {
-  const list = {}
-  const rc = req.headers.cookie
-  if (rc) rc.split(';').forEach(cookie => {
-    const parts = cookie.split('=')
-    list[parts[0].trim()] = decodeURIComponent((parts[1] || '').trim())
-  })
-  return list
-}
-
 function getBody(req) {
   return new Promise((resolve, reject) => {
     let data = ''
-    req.on('data', chunk => { data += chunk })
+    req.on('data', (chunk) => {
+      data += chunk
+    })
     req.on('end', () => {
       if (!data) return resolve({})
-      try { resolve(JSON.parse(data)) } catch { resolve({}) }
+      try {
+        resolve(JSON.parse(data))
+      } catch {
+        resolve({})
+      }
     })
     req.on('error', reject)
   })
@@ -73,12 +76,14 @@ function send(res, status, body) {
 
 function setCORSHeaders(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+  )
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 }
 
 // Match a URL path against a pattern like '/api/packages/:id/tracking'
-// Returns { matched: true, params: { id: '...' } } or { matched: false }
 function matchPath(pattern, urlPath) {
   const patternParts = pattern.split('/')
   const urlParts = urlPath.split('/')
@@ -97,7 +102,9 @@ function matchPath(pattern, urlPath) {
 function getQueryParams(urlString) {
   const u = new URL(urlString, 'http://localhost')
   const params = {}
-  u.searchParams.forEach((v, k) => { params[k] = v })
+  u.searchParams.forEach((v, k) => {
+    params[k] = v
+  })
   return params
 }
 
@@ -105,24 +112,30 @@ function getQueryParams(urlString) {
 
 function authenticate(req, res) {
   const token = (req.headers['authorization'] || '').split(' ')[1]
-  if (!token) { send(res, 401, { message: 'No token provided' }); return null }
+  if (!token) {
+    send(res, 401, { message: 'No token provided' })
+    return null
+  }
   try {
     return jwt.verify(token, process.env.JWT_SECRET || 'secret')
   } catch {
-    send(res, 403, { message: 'Invalid or expired token' }); return null
+    send(res, 403, { message: 'Invalid or expired token' })
+    return null
   }
 }
 
 function requireEmployee(user, res) {
   if (user?.type !== 'employee' || user?.employee_id == null) {
-    send(res, 403, { message: 'Employee access required' }); return false
+    send(res, 403, { message: 'Employee access required' })
+    return false
   }
   return true
 }
 
 function requireAdmin(user, res) {
   if (![4, 5].includes(user?.role_id)) {
-    send(res, 403, { message: 'Access denied. Manager/Admin role required.' }); return false
+    send(res, 403, { message: 'Access denied. Manager/Admin role required.' })
+    return false
   }
   return true
 }
@@ -130,7 +143,8 @@ function requireAdmin(user, res) {
 function requireRole5Admin(user, res) {
   const roleId = Number(user?.role_id)
   if (user?.type !== 'employee' || !Number.isFinite(roleId) || roleId !== 5) {
-    send(res, 403, { message: 'Access denied. Admin role required.' }); return false
+    send(res, 403, { message: 'Access denied. Admin role required.' })
+    return false
   }
   return true
 }
@@ -164,7 +178,11 @@ function dateToMysqlDateTime(value) {
   if (value == null) return null
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     const pad = (n) => String(n).padStart(2, '0')
-    return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())} ${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}`
+    return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(
+      value.getDate()
+    )} ${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(
+      value.getSeconds()
+    )}`
   }
   return toMysqlDateTime(value)
 }
@@ -175,17 +193,23 @@ function resolveArrivalForPickup(shipmentArrivalStamp, bodyArrivalTime) {
 }
 
 function isAtOfficeStatusName(name) {
-  const raw = String(name || '').trim().toLowerCase()
-  const spaced = raw.replace(/_/g, ' ').replace(/-/g, ' ').replace(/\s+/g, ' ').trim()
+  const raw = String(name || '')
+    .trim()
+    .toLowerCase()
+  const spaced = raw
+    .replace(/_/g, ' ')
+    .replace(/-/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
   const underscored = spaced.replace(/\s+/g, '_')
   return spaced === 'at office' || underscored === 'at_office'
 }
 
-function getPricePromise(pool, excessFeeTypeName, packageTypeName, weight, zone) {
+function getPricePromise(poolRef, excessFeeTypeName, packageTypeName, weight, zone) {
   return new Promise((resolve, reject) => {
     const w = Number(weight)
     const z = Number(zone)
-    priceDB.getPrice(pool, excessFeeTypeName || null, packageTypeName, w, z, (err, results) => {
+    priceDB.getPrice(poolRef, excessFeeTypeName || null, packageTypeName, w, z, (err, results) => {
       if (err) return reject(err)
       if (!results?.length) {
         const e = new Error('No matching price for weight, zone, and package type')
@@ -248,8 +272,14 @@ async function router(req, res) {
       const emp = rows[0]
       const valid = await bcrypt.compare(password, emp.Password_Hash)
       if (!valid) return send(res, 401, { message: 'Invalid credentials' })
+
       const token = jwt.sign(
-        { employee_id: Number(emp.Employee_ID), email: emp.Email_Address, role_id: Number(emp.Role_ID), type: 'employee' },
+        {
+          employee_id: Number(emp.Employee_ID),
+          email: emp.Email_Address,
+          role_id: Number(emp.Role_ID),
+          type: 'employee',
+        },
         process.env.JWT_SECRET || 'secret',
         { expiresIn: '24h' }
       )
@@ -263,7 +293,6 @@ async function router(req, res) {
 
   // ── POST /api/auth/customer-login ────────────────────────────────────────
   if (method === 'POST' && pathname === '/api/auth/customer-login') {
-    console.log('got to api/auth/customer-login')
     const { email, password } = await getBody(req)
     if (!email || !password) return send(res, 400, { message: 'Email and password required' })
     try {
@@ -272,6 +301,7 @@ async function router(req, res) {
       const customer = rows[0]
       const valid = await bcrypt.compare(password, customer.Password_Hash)
       if (!valid) return send(res, 401, { message: 'Invalid credentials' })
+
       const token = jwt.sign(
         { customer_id: customer.Customer_ID, email: customer.Email_Address, type: 'customer' },
         process.env.JWT_SECRET || 'secret',
@@ -306,32 +336,52 @@ async function router(req, res) {
     }
   }
 
-  // ── POST /api/auth/admin-register ────────────────────────────────────────
+  // ── POST /api/auth/admin-register ──────────────────────────────────���─────
   if (method === 'POST' && pathname === '/api/auth/admin-register') {
-    const user = authenticate(req, res); if (!user) return
+    const user = authenticate(req, res)
+    if (!user) return
     if (!requireAdmin(user, res)) return
+
     const { name, email, department, position, phoneNumber, workAddress, hireDate } = await getBody(req)
     if (!name || !email || !department || !position || !phoneNumber || !workAddress || !hireDate) {
       return send(res, 400, { message: 'Missing required fields' })
     }
+
     try {
       const [exists] = await pool.query('SELECT Employee_ID FROM employee WHERE Email_Address = ?', [email])
       if (exists.length) return send(res, 400, { message: 'Email already registered' })
+
       const tempPassword = Math.random().toString(36).slice(-10) + 'Temp1!'
       const hash = await bcrypt.hash(tempPassword, 10)
-      const departmentMap = { 'Mail Sorting': 1, 'Customer Service': 2, 'Delivery': 3, 'Management': 4, 'Finance': 5, 'IT Support': 6 }
-      const positionMap = { 'Clerk': 1, 'Supervisor': 2, 'Manager': 3, 'Director': 4, 'Staff': 5 }
+
+      const departmentMap = {
+        'Mail Sorting': 1,
+        'Customer Service': 2,
+        Delivery: 3,
+        Management: 4,
+        Finance: 5,
+        'IT Support': 6,
+      }
+      const positionMap = { Clerk: 1, Supervisor: 2, Manager: 3, Director: 4, Staff: 5 }
       const department_id = departmentMap[department] || 1
       const role_id = positionMap[position] || 1
+
       const [firstName, ...lastNameParts] = name.split(' ')
       const lastName = lastNameParts.join(' ') || 'Employee'
+
       const [result] = await pool.query(
         `INSERT INTO employee (Post_Office_ID, Role_ID, Department_ID, First_Name, Last_Name, Password_Hash, Email_Address, Phone_Number, Sex, Salary, Hours_Worked)
          VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
         [1, role_id, department_id, firstName, lastName, hash, email, phoneNumber, 'M', 0, 0]
       )
+
       console.log(`[TODO] Send email to ${email} with temporary password: ${tempPassword}`)
-      return send(res, 201, { message: 'Employee registered successfully', employee_id: result.insertId, email, note: 'Temporary password sent to employee email' })
+      return send(res, 201, {
+        message: 'Employee registered successfully',
+        employee_id: result.insertId,
+        email,
+        note: 'Temporary password sent to employee email',
+      })
     } catch (err) {
       console.error(err)
       return send(res, 500, { message: 'Server error', error: err.message })
@@ -340,8 +390,10 @@ async function router(req, res) {
 
   // ── GET /api/admin/employees ─────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/admin/employees') {
-    const user = authenticate(req, res); if (!user) return
+    const user = authenticate(req, res)
+    if (!user) return
     if (!requireRole5Admin(user, res)) return
+
     try {
       const [rows] = await pool.query(
         `SELECT e.Employee_ID, po.Street AS Post_Office_Street, d.Department_Name, r.Role_Name,
@@ -364,10 +416,13 @@ async function router(req, res) {
   {
     const m = matchPath('/api/admin/employees/:employeeId/deactivate', pathname)
     if (method === 'PATCH' && m.matched) {
-      const user = authenticate(req, res); if (!user) return
+      const user = authenticate(req, res)
+      if (!user) return
       if (!requireRole5Admin(user, res)) return
+
       const employeeId = Number(m.params.employeeId)
       if (!Number.isFinite(employeeId)) return send(res, 400, { message: 'Invalid employee id' })
+
       try {
         const [result] = await pool.query("UPDATE employee SET Is_Active = '0' WHERE Employee_ID = ?", [employeeId])
         if (!result.affectedRows) return send(res, 404, { message: 'Employee not found' })
@@ -381,7 +436,9 @@ async function router(req, res) {
 
   // ── GET /api/auth/profile ────────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/auth/profile') {
-    const user = authenticate(req, res); if (!user) return
+    const user = authenticate(req, res)
+    if (!user) return
+
     try {
       const [rows] = await pool.query(
         `SELECT e.Employee_ID, e.First_Name, e.Middle_Name, e.Last_Name,
@@ -407,13 +464,17 @@ async function router(req, res) {
 
   // ── PUT /api/auth/profile ────────────────────────────────────────────────
   if (method === 'PUT' && pathname === '/api/auth/profile') {
-    const user = authenticate(req, res); if (!user) return
+    const user = authenticate(req, res)
+    if (!user) return
+
     const { Email_Address, Phone_Number } = await getBody(req)
     try {
-      await pool.query(
-        'UPDATE employee SET Phone_Number = ?, Email_Address = ? WHERE Employee_ID = ?',
-        [Phone_Number, Email_Address, user.employee_id]
-      )
+      await pool.query('UPDATE employee SET Phone_Number = ?, Email_Address = ? WHERE Employee_ID = ?', [
+        Phone_Number,
+        Email_Address,
+        user.employee_id,
+      ])
+
       const [rows] = await pool.query(
         `SELECT e.Employee_ID, e.First_Name, e.Middle_Name, e.Last_Name,
                 e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked, e.Supervisor_ID,
@@ -428,6 +489,7 @@ async function router(req, res) {
          WHERE e.Employee_ID = ?`,
         [user.employee_id]
       )
+
       return send(res, 200, { message: 'Profile updated successfully', user: rows[0] })
     } catch (err) {
       console.error(err)
@@ -437,15 +499,20 @@ async function router(req, res) {
 
   // ── POST /api/auth/change-password ───────────────────────────────────────
   if (method === 'POST' && pathname === '/api/auth/change-password') {
-    const user = authenticate(req, res); if (!user) return
+    const user = authenticate(req, res)
+    if (!user) return
+
     const { currentPassword, newPassword } = await getBody(req)
     if (!currentPassword || !newPassword) return send(res, 400, { message: 'Both passwords are required' })
     if (newPassword.length < 6) return send(res, 400, { message: 'New password must be at least 6 characters' })
+
     try {
       const [rows] = await pool.query('SELECT Password_Hash FROM employee WHERE Employee_ID = ?', [user.employee_id])
       if (!rows.length) return send(res, 404, { message: 'Employee not found' })
+
       const valid = await bcrypt.compare(currentPassword, rows[0].Password_Hash)
       if (!valid) return send(res, 401, { message: 'Current password is incorrect' })
+
       const newHash = await bcrypt.hash(newPassword, 10)
       await pool.query('UPDATE employee SET Password_Hash = ? WHERE Employee_ID = ?', [newHash, user.employee_id])
       return send(res, 200, { message: 'Password changed successfully' })
@@ -457,7 +524,9 @@ async function router(req, res) {
 
   // ── GET /api/customer/profile ────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/customer/profile') {
-    const user = authenticate(req, res); if (!user) return
+    const user = authenticate(req, res)
+    if (!user) return
+
     try {
       const [rows] = await pool.query(
         `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
@@ -476,13 +545,18 @@ async function router(req, res) {
 
   // ── PUT /api/customer/profile ────────────────────────────────────────────
   if (method === 'PUT' && pathname === '/api/customer/profile') {
-    const user = authenticate(req, res); if (!user) return
-    const { Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2 } = await getBody(req)
+    const user = authenticate(req, res)
+    if (!user) return
+
+    const { Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2 } =
+      await getBody(req)
+
     try {
       await pool.query(
         `UPDATE customer SET Email_Address=?, Phone_Number=?, House_Number=?, Street=?, City=?, State=?, Zip_First3=?, Zip_Last2=? WHERE Customer_ID=?`,
         [Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2, user.customer_id]
       )
+
       const [rows] = await pool.query(
         `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
                 Phone_Number, House_Number, Street, City, State,
@@ -490,6 +564,7 @@ async function router(req, res) {
          FROM customer WHERE Customer_ID = ?`,
         [user.customer_id]
       )
+
       return send(res, 200, { message: 'Profile updated successfully', user: rows[0] })
     } catch (err) {
       console.error(err)
@@ -501,7 +576,7 @@ async function router(req, res) {
   if (method === 'GET' && pathname === '/api/packages') {
     packagesDB.getAllPackages(pool, (err, results) => {
       if (err) return send(res, 500, { error: 'Database error' })
-      send(res, 200, results)
+      return send(res, 200, results)
     })
     return
   }
@@ -512,10 +587,11 @@ async function router(req, res) {
     if (method === 'GET' && m.matched) {
       const trackingNumber = m.params.trackingNumber.trim()
       if (!trackingNumber) return send(res, 400, { error: 'trackingNumber is required' })
+
       packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
         if (err) return send(res, 500, { error: 'Database error' })
         if (!result) return send(res, 404, { error: 'Package not found' })
-        send(res, 200, result)
+        return send(res, 200, result)
       })
       return
     }
@@ -525,10 +601,11 @@ async function router(req, res) {
   if (method === 'GET' && pathname === '/qry_track_package') {
     const trackingNumber = (query.tracking_number || query.trackingNumber || '').trim()
     if (!trackingNumber) return send(res, 400, { error: 'tracking_number query parameter is required' })
+
     packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
       if (err) return send(res, 500, { error: 'Database error' })
       if (!result) return send(res, 404, { error: 'Package not found' })
-      send(res, 200, result)
+      return send(res, 200, result)
     })
     return
   }
@@ -540,10 +617,16 @@ async function router(req, res) {
     if (!pt || weight === undefined || weight === '' || zone === undefined || zone === '') {
       return send(res, 400, { error: 'package_type, weight, and zone are required' })
     }
+
     const w = Number(weight)
     const z = Number(zone)
-    if (!Number.isFinite(w) || w <= 0 || w > 70) return send(res, 400, { error: 'Weight must be greater than 0 and at most 70 lbs' })
-    if (!Number.isInteger(z) || z < 1 || z > 9) return send(res, 400, { error: 'Zone must be a whole number from 1 to 9' })
+    if (!Number.isFinite(w) || w <= 0 || w > 70) {
+      return send(res, 400, { error: 'Weight must be greater than 0 and at most 70 lbs' })
+    }
+    if (!Number.isInteger(z) || z < 1 || z > 9) {
+      return send(res, 400, { error: 'Zone must be a whole number from 1 to 9' })
+    }
+
     try {
       const tot = await new Promise((resolve, reject) => {
         priceDB.getPrice(pool, excess_fee || null, pt, weight, zone, (err, results) => {
@@ -566,36 +649,67 @@ async function router(req, res) {
 
   // ── GET /api/customer/my-packages ────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/customer/my-packages') {
-    const user = authenticate(req, res); if (!user) return
+    const user = authenticate(req, res)
+    if (!user) return
     if (user?.type !== 'customer' || user.customer_id == null) {
       return send(res, 403, { message: 'Customer access required' })
     }
+
     try {
       await packagePickupStorageJob.runNodeDisposalSweep(pool)
     } catch (e) {
       console.error('[my-packages] disposal sweep:', e.message || e)
     }
+
     packagesDB.getPackagesForCustomer(pool, user.customer_id, (err, results) => {
-      if (err) { console.error(err); return send(res, 500, { error: 'Database error' }) }
-      send(res, 200, results)
+      if (err) {
+        console.error(err)
+        return send(res, 500, { error: 'Database error' })
+      }
+      return send(res, 200, results)
     })
     return
   }
 
   // ── POST /api/employee/packages ──────────────────────────────────────────
   if (method === 'POST' && pathname === '/api/employee/packages') {
-    console.log('in api/employee/packages')
-    const user = authenticate(req, res); if (!user) return
+    const user = authenticate(req, res)
+    if (!user) return
     if (!requireEmployee(user, res)) return
+
     const b = await getBody(req)
     const {
-      sender_email, sender_first_name, sender_last_name,
-      sender_house_number, sender_street, sender_city, sender_state, sender_zip_first3, sender_zip_last2,
-      sender_apt_number, sender_country, sender_phone,
-      recipient_email, recipient_first_name, recipient_last_name,
-      recipient_house_number, recipient_street, recipient_city, recipient_state, recipient_zip_first3, recipient_zip_last2,
-      recipient_apt_number, recipient_country, recipient_phone,
-      package_type, weight, zone, excess_fee, dim_x, dim_y, dim_z,
+      sender_email,
+      sender_first_name,
+      sender_last_name,
+      sender_house_number,
+      sender_street,
+      sender_city,
+      sender_state,
+      sender_zip_first3,
+      sender_zip_last2,
+      sender_apt_number,
+      sender_country,
+      sender_phone,
+      recipient_email,
+      recipient_first_name,
+      recipient_last_name,
+      recipient_house_number,
+      recipient_street,
+      recipient_city,
+      recipient_state,
+      recipient_zip_first3,
+      recipient_zip_last2,
+      recipient_apt_number,
+      recipient_country,
+      recipient_phone,
+      package_type,
+      weight,
+      zone,
+      excess_fee,
+      dim_x,
+      dim_y,
+      dim_z,
     } = b
 
     const pt = normalizePackageTypeName(package_type)
@@ -639,37 +753,53 @@ async function router(req, res) {
     if (!recipientEmail) {
       recipientEmail = `recipient.${Date.now()}.${Math.random().toString(36).slice(2, 8)}@pkg.internal`
     }
-    if (recipientEmail === senderEmail) return send(res, 400, { message: 'Sender and recipient must be different people (different emails)' })
+    if (recipientEmail === senderEmail) {
+      return send(res, 400, { message: 'Sender and recipient must be different people (different emails)' })
+    }
 
     const conn = await pool.getConnection()
     try {
       await conn.beginTransaction()
 
-      let senderInitialPassword = null
-      let recipientInitialPassword = null
-
       let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
       if (!senderId) {
         const created = await customerDB.createCustomerMinimal(conn, {
-          first_name: sender_first_name, last_name: sender_last_name, email: senderEmail,
-          house_number: sender_house_number, street: sender_street, city: sender_city, state: sender_state,
-          zip_first3: sender_zip_first3, zip_last2: sender_zip_last2, apt_number: sender_apt_number,
-          zip_plus4: b.sender_zip_plus4, country: sender_country, phone_number: sender_phone,
+          first_name: sender_first_name,
+          last_name: sender_last_name,
+          email: senderEmail,
+          house_number: sender_house_number,
+          street: sender_street,
+          city: sender_city,
+          state: sender_state,
+          zip_first3: sender_zip_first3,
+          zip_last2: sender_zip_last2,
+          apt_number: sender_apt_number,
+          zip_plus4: b.sender_zip_plus4,
+          country: sender_country,
+          phone_number: sender_phone,
         })
         senderId = created.customerId
-        senderInitialPassword = created.initialPassword
+        // created.initialPassword exists but unused in this server
       }
 
       let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
       if (!recipientId) {
         const created = await customerDB.createCustomerMinimal(conn, {
-          first_name: recipient_first_name, last_name: recipient_last_name, email: recipientEmail,
-          house_number: recipient_house_number, street: recipient_street, city: recipient_city, state: recipient_state,
-          zip_first3: recipient_zip_first3, zip_last2: recipient_zip_last2, apt_number: recipient_apt_number,
-          zip_plus4: b.recipient_zip_plus4, country: recipient_country, phone_number: recipient_phone,
+          first_name: recipient_first_name,
+          last_name: recipient_last_name,
+          email: recipientEmail,
+          house_number: recipient_house_number,
+          street: recipient_street,
+          city: recipient_city,
+          state: recipient_state,
+          zip_first3: recipient_zip_first3,
+          zip_last2: recipient_zip_last2,
+          apt_number: recipient_apt_number,
+          zip_plus4: b.recipient_zip_plus4,
+          country: recipient_country,
+          phone_number: recipient_phone,
         })
         recipientId = created.customerId
-        recipientInitialPassword = created.initialPassword
       }
 
       if (senderId === recipientId) {
@@ -679,6 +809,7 @@ async function router(req, res) {
 
       const tracking = await nextTrackingNumber(conn)
       const oversize = typeCode === 'OVR' ? 1 : 0
+
       const actingEmployeeId = Number(user.employee_id)
       if (!Number.isFinite(actingEmployeeId)) {
         await conn.rollback()
@@ -704,6 +835,7 @@ async function router(req, res) {
         [senderId, sid, 1, 1, priceAmount, actingEmployeeId]
       )
       const payId = payRes.insertId
+
       await conn.query(
         `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
           Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Price, Payment_ID)
@@ -728,249 +860,272 @@ async function router(req, res) {
           Departure_Time_Stamp, Arrival_Time_Stamp)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
         [
-          pendingCode, actingEmployeeId,
-          sender_apt_number || null, String(sender_house_number).slice(0, 10), String(sender_street).slice(0, 100),
-          String(sender_city).slice(0, 100), String(sender_state).slice(0, 50),
-          String(sender_zip_first3).replace(/\D/g, '').slice(0, 3), String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
+          pendingCode,
+          actingEmployeeId,
+          sender_apt_number || null,
+          String(sender_house_number).slice(0, 10),
+          String(sender_street).slice(0, 100),
+          String(sender_city).slice(0, 100),
+          String(sender_state).slice(0, 50),
+          String(sender_zip_first3).replace(/\D/g, '').slice(0, 3),
+          String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
           b.sender_zip_plus4 ? String(b.sender_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
           (sender_country || 'USA').toString().slice(0, 50),
-          recipient_apt_number || null, String(recipient_house_number).slice(0, 10), String(recipient_street).slice(0, 100),
-          String(recipient_city).slice(0, 100), String(recipient_state).slice(0, 50),
-          String(recipient_zip_first3).replace(/\D/g, '').slice(0, 3), String(recipient_zip_last2).replace(/\D/g, '').slice(0, 2),
+          recipient_apt_number || null,
+          String(recipient_house_number).slice(0, 10),
+          String(recipient_street).slice(0, 100),
+          String(recipient_city).slice(0, 100),
+          String(recipient_state).slice(0, 50),
+          String(recipient_zip_first3).replace(/\D/g, '').slice(0, 3),
+          String(recipient_zip_last2).replace(/\D/g, '').slice(0, 2),
           b.recipient_zip_plus4 ? String(b.recipient_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
           (recipient_country || 'USA').toString().slice(0, 50),
         ]
       )
+
       const shipmentId = shipRes.insertId
       await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [shipmentId, tracking])
 
-    await conn.commit()
-    res.status(201).json({
-      tracking_number: tracking,
-      price: priceAmount,
-      sender_id: senderId,
-      recipient_id: recipientId,
-    })
-  } catch (err) {
-    await conn.rollback()
-    console.error(err)
-    if (err.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ message: 'Duplicate email or tracking conflict; try again' })
-    }
-    res.status(500).json({ message: err.message || 'Could not createify package' })
-  } finally {
-    conn.release()
-  }
-})
-
-app.get('/api/status-codes', authenticate, requireEmployee, async (req, res) => {
-  try {
-    const [rows] = await pool.query(
-      `SELECT Status_Code, Status_Name, Is_Final_Status FROM status_code ORDER BY Status_Code ASC`
-    )
-    res.json(rows)
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Database error' })
-  }
-})
-
-app.patch('/api/employee/packages/:trackingNumber/status', authenticate, requireEmployee, async (req, res) => {
-  const trackingNumber = (req.params.trackingNumber || '').trim()
-  const { status_code } = req.body || {}
-  if (!trackingNumber) return res.status(400).json({ message: 'trackingNumber required' })
-  if (status_code === undefined || status_code === null) {
-    return res.status(400).json({ message: 'status_code is required' })
-  }
-  const code = Number(status_code)
-  if (Number.isNaN(code)) return res.status(400).json({ message: 'status_code must be a number' })
-
-  const conn = await pool.getConnection()
-  try {
-    await conn.beginTransaction()
-    const [[d]] = await conn.query(
-      `SELECT Delivery_ID FROM delivery WHERE Tracking_Number = ?`,
-      [trackingNumber]
-    )
-    if (!d) {
+      await conn.commit()
+      return send(res, 201, {
+        tracking_number: tracking,
+        price: priceAmount,
+        sender_id: senderId,
+        recipient_id: recipientId,
+      })
+    } catch (err) {
       await conn.rollback()
-      return res.status(404).json({ message: 'Delivery record not found for this package' })
+      console.error(err)
+      if (err.code === 'ER_DUP_ENTRY') {
+        return send(res, 400, { message: 'Duplicate email or tracking conflict; try again' })
+      }
+      return send(res, 500, { message: err.message || 'Could not create package' })
+    } finally {
+      conn.release()
+    }
+  }
+
+  // ── GET /api/status-codes ────────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/status-codes') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const [rows] = await pool.query(
+        `SELECT Status_Code, Status_Name, Is_Final_Status FROM status_code ORDER BY Status_Code ASC`
+      )
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Database error' })
+    }
+  }
+
+  // ── PATCH /api/employee/packages/:trackingNumber/status ──────────────────
+  {
+    const m = matchPath('/api/employee/packages/:trackingNumber/status', pathname)
+    if (method === 'PATCH' && m.matched) {
+      const user = authenticate(req, res)
+      if (!user) return
+      if (!requireEmployee(user, res)) return
+
+      const trackingNumber = (m.params.trackingNumber || '').trim()
+      const body = await getBody(req)
+      const { status_code } = body || {}
+
+      if (!trackingNumber) return send(res, 400, { message: 'trackingNumber required' })
+      if (status_code === undefined || status_code === null) {
+        return send(res, 400, { message: 'status_code is required' })
+      }
+
+      const code = Number(status_code)
+      if (Number.isNaN(code)) return send(res, 400, { message: 'status_code must be a number' })
+
+      const conn = await pool.getConnection()
+      try {
+        await conn.beginTransaction()
+
+        const [[d]] = await conn.query(`SELECT Delivery_ID FROM delivery WHERE Tracking_Number = ?`, [trackingNumber])
+        if (!d) {
+          await conn.rollback()
+          return send(res, 404, { message: 'Delivery record not found for this package' })
+        }
+
+        await conn.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [code, trackingNumber])
+
+        const [sp] = await conn.query(
+          `SELECT Shipment_ID FROM shipment_package WHERE Tracking_Number = ? LIMIT 1`,
+          [trackingNumber]
+        )
+        if (sp.length) {
+          await conn.query(`UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`, [code, sp[0].Shipment_ID])
+        }
+
+        await conn.commit()
+        return send(res, 200, { ok: true, tracking_number: trackingNumber, status_code: code })
+      } catch (err) {
+        await conn.rollback()
+        console.error(err)
+        return send(res, 500, { message: err.message || 'Update failed' })
+      } finally {
+        conn.release()
+      }
+    }
+  }
+
+  // ── GET /api/inventory ───────────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/inventory') {
+    inventoryDB.getAllInventory(pool, (err, results) => {
+      if (err) return send(res, 500, { error: 'Database error' })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── POST /api/tickets ────────────────────────────────────────────────────
+  if (method === 'POST' && pathname === '/api/tickets') {
+    const { name, email, transactionId, category, description, submittedAt } = await getBody(req)
+
+    if (!name || !email || !transactionId || !category || !description) {
+      return send(res, 400, { message: 'Missing required fields' })
     }
 
-    await conn.query(
-      `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
-      [code, trackingNumber]
-    )
+    console.log('New support ticket:', { name, email, transactionId, category, description, submittedAt })
+    return send(res, 201, { message: 'Ticket submitted successfully' })
+  }
 
-    const [sp] = await conn.query(
-      `SELECT Shipment_ID FROM shipment_package WHERE Tracking_Number = ? LIMIT 1`,
-      [trackingNumber]
-    )
-    if (sp.length) {
-      await conn.query(`UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`, [code, sp[0].Shipment_ID])
+  // ── GET /api/customers ───────────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/customers') {
+    customerDB.getAllCustomers(pool, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/customers/:id/packages ──────────────────────────────────────
+  {
+    const m = matchPath('/api/customers/:id/packages', pathname)
+    if (method === 'GET' && m.matched) {
+      customerDB.getCustomerPackages(pool, m.params.id, (err, results) => {
+        if (err) return send(res, 500, { error: err.message })
+        return send(res, 200, results)
+      })
+      return
     }
-
-    await conn.commit()
-    res.json({ ok: true, tracking_number: trackingNumber, status_code: code })
-  } catch (err) {
-    await conn.rollback()
-    console.error(err)
-    res.status(500).json({ message: err.message || 'Update failed' })
-  } finally {
-    conn.release()
-  }
-})
-
-// ════════════════════════════════════════════════════════════════════════════
-//  INVENTORY ROUTES
-// ════════════════════════════════════════════════════════════════════════════
-
-app.get('/api/inventory', async (req, res) => {
-  inventoryDB.getAllInventory(pool, (err, results) => {
-    if (err) return res.status(500).json({ error: 'Database error' })
-    res.json(results)
-  })
-})
-
-// Handle support ticket submission
-app.post('/api/tickets', (req, res) => {
-  const { name, email, transactionId, category, description, submittedAt } = req.body;
-
-  // Validate required fields
-  if (!name || !email || !transactionId || !category || !description) {
-    return res.status(400).json({ message: 'Missing required fields' });
   }
 
-  // TODO: Save to database here
-  console.log('New support ticket:', {
-    name,
-    email,
-    transactionId,
-    category,
-    description,
-    submittedAt
-  });
-
-  // Send success response
-  res.status(201).json({ message: 'Ticket submitted successfully' });
-});
-// ════════════════════════════════════════════════════════════════════════════
-//  CUSTOMERS ROUTES
-// ════════════════════════════════════════════════════════════════════════════
-app.get('/api/customers', (req, res) => {
-  customerDB.getAllCustomers(pool, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
-  });
-});
-
-app.get('/api/customers/:id/packages', (req, res) => {
-  customerDB.getCustomerPackages(pool, req.params.id, (err, results) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(results);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-//  PACKAGE TRACKING
-// ════════════════════════════════════════════════════════════════════════════
-app.get('/api/packages/:tracking_number/tracking', async (req, res) => {
-  const { tracking_number } = req.params
-  packageTrackDB.getPackageTracking(pool, tracking_number, (err, results) => {
-    if (err) return res.status(500).json({ error: 'Database error', details: err.message })
-    res.json(results)
-  })
-})
-
-
-app.get('/api/customer/lookup', authenticate, requireEmployee, async (req, res) => {
-  const email = (req.query.email || '').trim().toLowerCase()
-  if (!email) return res.status(400).json({ message: 'Email is required' })
-
-  try {
-    const [rows] = await pool.query(
-      `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
-              Phone_Number, House_Number, Street, Apt_Number,
-              City, State, Zip_First3, Zip_Last2
-       FROM customer WHERE Email_Address = ? LIMIT 1`,
-      [email]
-    )
-    if (!rows.length) return res.status(404).json({ message: 'Customer not found' })
-    res.json({ customer: rows[0] })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+  // ── GET /api/packages/:tracking_number/tracking ──────────────────────────
+  {
+    const m = matchPath('/api/packages/:tracking_number/tracking', pathname)
+    if (method === 'GET' && m.matched) {
+      packageTrackDB.getPackageTracking(pool, m.params.tracking_number, (err, results) => {
+        if (err) return send(res, 500, { error: 'Database error', details: err.message })
+        return send(res, 200, results)
+      })
+      return
+    }
   }
-})
 
-// ════════════════════════════════════════════════════════════════════════════
-//  employee Review
-// ════════════════════════════════════════════════════════════════════════════
-app.get('/api/employee/tickets_comp', async (req, res) => {
-  try {
-    const results = await employeeDB.getEmployeesRatios(pool);
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-app.get('/api/employee/:employee_id/tickets', async (req, res) => {
-  const { employee_id } = req.params;
-  try {
-    const results = await employeeDB.getTicketsByEmployee(pool, employee_id);
-    res.json(results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+  // ── GET /api/customer/lookup ─────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/customer/lookup') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
 
-// ════════════════════════════════════════════════════════════════════════════
-//  SUPPORT TICKETS ROUTES
-// ════════════════════════════════════════════════════════════════════════════
+    const email = (query.email || '').trim().toLowerCase()
+    if (!email) return send(res, 400, { message: 'Email is required' })
 
-app.get('/api/support-tickets', async (req, res) => {
-  try {
-    const [rows] = await pool.query(
-      `SELECT
-         Ticket_ID,
-         User_ID,
-         Package_ID,
-         Assigned_Employee_ID,
-         Issue_Type,
-         Description,
-         Resolution_Note,
-         Ticket_Status_Code
-       FROM support_ticket
-       ORDER BY Ticket_ID DESC`
-    )
-    res.json(rows)
-  } catch (err) {
-    console.error('GET /api/support-tickets error:', err)
-    res.status(500).json({ error: 'Failed to fetch tickets' })
+    try {
+      const [rows] = await pool.query(
+        `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
+                Phone_Number, House_Number, Street, Apt_Number,
+                City, State, Zip_First3, Zip_Last2
+         FROM customer WHERE Email_Address = ? LIMIT 1`,
+        [email]
+      )
+      if (!rows.length) return send(res, 404, { message: 'Customer not found' })
+      return send(res, 200, { customer: rows[0] })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
   }
-})
 
-app.put('/api/support-tickets/:id', async (req, res) => {
-  const { id } = req.params
-  const { Ticket_Status_Code, Resolution_Note } = req.body
-  try {
-    await pool.query(
-      `UPDATE Support_Ticket
-       SET Ticket_Status_Code = ?,
-           Resolution_Note    = ?
-       WHERE Ticket_ID = ?`,
-      [Ticket_Status_Code, Resolution_Note ?? null, id]
-    )
-    res.json({ success: true })
-  } catch (err) {
-    console.error('PUT /api/support-tickets/:id error:', err)
-    res.status(500).json({ error: 'Failed to update ticket' })
+  // ── GET /api/employee/tickets_comp ───────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/employee/tickets_comp') {
+    try {
+      const results = await employeeDB.getEmployeesRatios(pool)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
   }
-})
+
+  // ── GET /api/employee/:employee_id/tickets ───────────────────────────────
+  {
+    const m = matchPath('/api/employee/:employee_id/tickets', pathname)
+    if (method === 'GET' && m.matched) {
+      try {
+        const results = await employeeDB.getTicketsByEmployee(pool, m.params.employee_id)
+        return send(res, 200, results)
+      } catch (err) {
+        return send(res, 500, { error: err.message })
+      }
+    }
+  }
+
+  // ── GET /api/support-tickets ─────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/support-tickets') {
+    try {
+      const [rows] = await pool.query(
+        `SELECT
+           Ticket_ID,
+           User_ID,
+           Package_ID,
+           Assigned_Employee_ID,
+           Issue_Type,
+           Description,
+           Resolution_Note,
+           Ticket_Status_Code
+         FROM support_ticket
+         ORDER BY Ticket_ID DESC`
+      )
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error('GET /api/support-tickets error:', err)
+      return send(res, 500, { error: 'Failed to fetch tickets' })
+    }
+  }
+
+  // ── PUT /api/support-tickets/:id ─────────────────────────────────────────
+  {
+    const m = matchPath('/api/support-tickets/:id', pathname)
+    if (method === 'PUT' && m.matched) {
+      const body = await getBody(req)
+      const { Ticket_Status_Code, Resolution_Note } = body || {}
+      try {
+        await pool.query(
+          `UPDATE Support_Ticket
+           SET Ticket_Status_Code = ?,
+               Resolution_Note    = ?
+           WHERE Ticket_ID = ?`,
+          [Ticket_Status_Code, Resolution_Note ?? null, m.params.id]
+        )
+        return send(res, 200, { success: true })
+      } catch (err) {
+        console.error('PUT /api/support-tickets/:id error:', err)
+        return send(res, 500, { error: 'Failed to update ticket' })
+      }
+    }
+  }
+
+  // Default
+  return send(res, 404, { message: 'Not found' })
+}
 
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
 console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
 http.createServer(router).listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
-console.log("Connecting to Database:", process.env.MYSQL_DATABASE)
-
+console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
