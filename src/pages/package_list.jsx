@@ -1,96 +1,217 @@
 import { useState, useEffect, Fragment } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './css/home.css'
-import './css/customer_home.css'
 import './css/inventory.css'
 import './css/package_list.css'
 import skyline from '../assets/houston-skyline.jpeg'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
-function getStatusBadgeClass(status) {
+const ZONES = [
+  { value: '1', label: 'Zone 1 — 1-50 mi' },
+  { value: '2', label: 'Zone 2 — 51-150 mi' },
+  { value: '3', label: 'Zone 3 — 151-300 mi' },
+  { value: '4', label: 'Zone 4 — 301-600 mi' },
+  { value: '5', label: 'Zone 5 — 601-1,000 mi' },
+  { value: '6', label: 'Zone 6 — 1,001-1,400 mi' },
+  { value: '7', label: 'Zone 7 — 1,401-1,800 mi' },
+  { value: '8', label: 'Zone 8 — 1,801+ mi' },
+  { value: '9', label: 'Zone 9 — Territories' },
+]
+
+function statusBadgeStyle(status) {
   const s = (status || '').toLowerCase()
-  if (s.includes('deliver')) return 'status-delivered'
-  if (s.includes('picked up')) return 'status-delivered'
-  if (s.includes('disposed')) return 'status-delivered'
-  if (s.includes('at office')) return 'status-pending'
-  if (s.includes('transit') || s.includes('shipping')) return 'status-transit'
-  if (s.includes('pending') || s.includes('processing')) return 'status-pending'
-  if (s.includes('delay') || s.includes('exception')) return 'status-delayed'
-  return 'status-default'
+  if (s.includes('deliver') || s.includes('picked up'))
+    return { background: '#dcfce7', color: '#15803d', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  if (s.includes('transit') || s.includes('out for'))
+    return { background: '#dbeafe', color: '#1d4ed8', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  if (s.includes('pending'))
+    return { background: '#fef9c3', color: '#854d0e', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  if (s.includes('delay'))
+    return { background: '#ffedd5', color: '#c2410c', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  if (s.includes('lost'))
+    return { background: '#fee2e2', color: '#991b1b', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  if (s.includes('return'))
+    return { background: '#f3e8ff', color: '#7e22ce', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  return { background: '#f1f5f9', color: '#475569', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+}
+
+function PackageTable({ title, packages, expanded, onToggle, statusCodes, onStatusChange, statusUpdating, color = '#1d4ed8', collapsible = false }) {
+  const [open, setOpen] = useState(!collapsible)
+
+  return (
+    <div style={{ background: '#fff', border: '1px solid #dbe4ef', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 16px rgba(15,23,42,0.05)', marginBottom: 28 }}>
+      {/* Section header */}
+      <div
+        onClick={() => collapsible && setOpen(o => !o)}
+        style={{ padding: '16px 24px', background: '#f8fafc', borderBottom: open ? '1px solid #dbe4ef' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: collapsible ? 'pointer' : 'default' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{title}</h3>
+          <span style={{ background: color, color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: '0.8rem', fontWeight: 700 }}>
+            {packages.length}
+          </span>
+        </div>
+        {collapsible && (
+          <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{open ? '▲ Collapse' : '▼ Expand'}</span>
+        )}
+      </div>
+
+      {open && (
+        packages.length === 0 ? (
+          <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>No packages in this category.</div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #dbe4ef' }}>
+                  {['Tracking #', 'Type', 'Sender', 'Recipient', 'Weight', 'Zone', 'Price', 'Status', 'Created', ''].map(h => (
+                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {packages.map((p, i) => (
+                  <Fragment key={p.Tracking_Number}>
+                    <tr style={{ background: i % 2 === 0 ? '#fff' : '#fafbfc', borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '10px 14px' }}>
+                        <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4, fontSize: '0.82rem', fontWeight: 700 }}>
+                          {p.Tracking_Number}
+                        </code>
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#374151' }}>{p.Package_Type_Code}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{p.Sender_Name || '—'}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.Sender_Email || ''}</div>
+                      </td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{p.Recipient_Name || '—'}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.Recipient_Email || ''}</div>
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#374151' }}>{p.Weight} lbs</td>
+                      <td style={{ padding: '10px 14px', color: '#374151' }}>Zone {p.Zone}</td>
+                      <td style={{ padding: '10px 14px', fontWeight: 700, color: '#1e40af' }}>${parseFloat(p.Price || 0).toFixed(2)}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        {statusCodes.length > 0 && p.Delivery_Status_Code != null && !p.Is_Final_Status ? (
+                          <select
+                            value={String(p.Delivery_Status_Code)}
+                            onChange={e => onStatusChange(p.Tracking_Number, e.target.value)}
+                            disabled={statusUpdating === p.Tracking_Number}
+                            style={{ padding: '4px 8px', border: '1px solid #dbe4ef', borderRadius: 6, fontSize: '0.82rem' }}
+                          >
+                            {statusCodes.map(s => (
+                              <option key={s.Status_Code} value={String(s.Status_Code)}>{s.Status_Name}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span style={statusBadgeStyle(p.Status_Name)}>{p.Status_Name || '—'}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#64748b', fontSize: '0.82rem' }}>
+                        {p.Date_Created ? new Date(p.Date_Created).toLocaleDateString() : '—'}
+                      </td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <button
+                          onClick={() => onToggle(p.Tracking_Number)}
+                          style={{ background: 'none', border: '1px solid #dbe4ef', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: '0.78rem', color: '#374151' }}
+                        >
+                          {expanded === p.Tracking_Number ? '▲ Less' : '▼ More'}
+                        </button>
+                      </td>
+                    </tr>
+
+                    {/* Expanded detail row */}
+                    {expanded === p.Tracking_Number && (
+                      <tr style={{ background: '#f8fafc' }}>
+                        <td colSpan={10} style={{ padding: '16px 24px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px 24px' }}>
+                            {[
+                              { label: 'Dimensions',     value: `${p.Dim_X}" × ${p.Dim_Y}" × ${p.Dim_Z}"` },
+                              { label: 'Oversize',       value: p.Oversize ? 'Yes' : 'No' },
+                              { label: 'Sig. Required',  value: p.Requires_Signature ? 'Yes' : 'No' },
+                              { label: 'From',           value: p.From_City ? `${p.From_City}, ${p.From_State}` : '—' },
+                              { label: 'To',             value: p.To_City   ? `${p.To_City}, ${p.To_State}`   : '—' },
+                              { label: 'Post Office',    value: p.Office_City || '—' },
+                              { label: 'Handled By',     value: p.Handled_By || '—' },
+                              { label: 'Delivered Date', value: p.Delivered_Date ? new Date(p.Delivered_Date).toLocaleDateString() : '—' },
+                              { label: 'Last Updated',   value: p.Date_Updated   ? new Date(p.Date_Updated).toLocaleDateString()   : '—' },
+                            ].map(item => (
+                              <div key={item.label}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 2 }}>{item.label}</div>
+                                <div style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 500 }}>{item.value}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
+    </div>
+  )
 }
 
 export default function AllPackages() {
-  const navigate = useNavigate()
-  const userType = localStorage.getItem('userType')
+  const navigate   = useNavigate()
+  const token      = localStorage.getItem('token')
+  const userType   = localStorage.getItem('userType')
 
-  const [packages, setPackages] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [search, setSearch] = useState('')
-  const [filterValue, setFilterValue] = useState('')
-  const [sortValue, setSortValue] = useState('')
-  const [expanded, setExpanded] = useState(null)
-  const [statusCodes, setStatusCodes] = useState([])
+  const [packages,       setPackages]       = useState([])
+  const [statusCodes,    setStatusCodes]    = useState([])
+  const [postOffices,    setPostOffices]    = useState([])
+  const [loading,        setLoading]        = useState(true)
+  const [error,          setError]          = useState(null)
+  const [expanded,       setExpanded]       = useState(null)
   const [statusUpdating, setStatusUpdating] = useState(null)
 
+  // Filters
+  const [search,        setSearch]        = useState('')
+  const [zoneFilter,    setZoneFilter]    = useState('')
+  const [typeFilter,    setTypeFilter]    = useState('')
+  const [officeFilter,  setOfficeFilter]  = useState('')
+  const [showFilters,   setShowFilters]   = useState(false)
+
   useEffect(() => {
-    fetch(`${API_BASE}/api/packages`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load packages')
-        return res.json()
-      })
-      .then((data) => {
-        setPackages(data)
-        setLoading(false)
-      })
-      .catch((err) => {
-        setError(err.message)
-        setLoading(false)
-      })
+    if (userType !== 'employee') { navigate('/login'); return }
+
+    // Load packages, status codes, post offices in parallel
+    Promise.all([
+      fetch(`${API_BASE}/api/packages/full`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`${API_BASE}/api/status-codes`,  { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+      fetch(`${API_BASE}/api/reports/post-offices`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+    ])
+    .then(([pkgs, codes, offices]) => {
+      setPackages(Array.isArray(pkgs) ? pkgs : [])
+      setStatusCodes(Array.isArray(codes) ? codes : [])
+      setPostOffices(Array.isArray(offices) ? offices : [])
+      setLoading(false)
+    })
+    .catch(err => { setError(err.message); setLoading(false) })
   }, [])
 
-  useEffect(() => {
-    if (userType !== 'employee') return
-    const token = localStorage.getItem('token')
-    fetch(`${API_BASE}/api/status-codes`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error('status codes')
-        return r.json()
-      })
-      .then(setStatusCodes)
-      .catch(() => setStatusCodes([]))
-  }, [userType])
-
   async function handleStatusChange(trackingNumber, statusCodeStr) {
-    const token = localStorage.getItem('token')
-    setStatusUpdating(trackingNumber)
-    setError(null)
+    setStatusUpdating(trackingNumber); setError(null)
     try {
-      const res = await fetch(
-        `${API_BASE}/api/employee/packages/${encodeURIComponent(trackingNumber)}/status`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status_code: Number(statusCodeStr) }),
-        }
-      )
+      const res = await fetch(`${API_BASE}/api/employee/packages/${encodeURIComponent(trackingNumber)}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status_code: Number(statusCodeStr) }),
+      })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.message || 'Could not update status')
       const code = Number(statusCodeStr)
-      setPackages((prev) => {
-        const name = statusCodes.find((s) => s.Status_Code === code)?.Status_Name
-        return prev.map((row) =>
-          row.Tracking_Number === trackingNumber
-            ? { ...row, Delivery_Status_Code: code, Status_Name: name ?? row.Status_Name }
-            : row
-        )
-      })
+      const name = statusCodes.find(s => s.Status_Code === code)?.Status_Name
+      const isFinal = statusCodes.find(s => s.Status_Code === code)?.Is_Final_Status
+      setPackages(prev => prev.map(row =>
+        row.Tracking_Number === trackingNumber
+          ? { ...row, Delivery_Status_Code: code, Status_Name: name ?? row.Status_Name, Is_Final_Status: isFinal }
+          : row
+      ))
     } catch (err) {
       setError(err.message || 'Status update failed')
     } finally {
@@ -98,70 +219,54 @@ export default function AllPackages() {
     }
   }
 
-  let filtered = packages.filter((p) => {
-    const q = search.toLowerCase()
-    const matchSearch =
-      (p.Tracking_Number || '').toLowerCase().includes(q) ||
-      (p.Package_Type_Code || '').toLowerCase().includes(q) ||
-      String(p.Zone || '').includes(q)
-    const matchFilter =
-      !filterValue ||
-      (filterValue === 'oversize' && p.Oversize === 1) ||
-      (filterValue === 'signature' && p.Requires_Signature === 1)
-    return matchSearch && matchFilter
-  })
-
-  if (sortValue === 'weight_asc') filtered = [...filtered].sort((a, b) => a.Weight - b.Weight)
-  if (sortValue === 'weight_desc') filtered = [...filtered].sort((a, b) => b.Weight - a.Weight)
-  if (sortValue === 'price_asc') filtered = [...filtered].sort((a, b) => a.Price - b.Price)
-  if (sortValue === 'price_desc') filtered = [...filtered].sort((a, b) => b.Price - a.Price)
-
-  function toggleExpand(trackingNumber) {
-    setExpanded(expanded === trackingNumber ? null : trackingNumber)
-  }
+  function toggleExpand(tn) { setExpanded(e => e === tn ? null : tn) }
 
   function handleLogout(e) {
     e.preventDefault()
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    localStorage.removeItem('userType')
+    localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('userType')
     navigate('/')
   }
 
+  // Apply filters
+  const filtered = packages.filter(p => {
+    const q = search.toLowerCase()
+    const matchSearch = !q ||
+      (p.Tracking_Number || '').toLowerCase().includes(q) ||
+      (p.Sender_Name    || '').toLowerCase().includes(q) ||
+      (p.Recipient_Name || '').toLowerCase().includes(q) ||
+      (p.Sender_Email   || '').toLowerCase().includes(q)
+    const matchZone   = !zoneFilter   || String(p.Zone) === zoneFilter
+    const matchType   = !typeFilter   || p.Package_Type_Code === typeFilter
+    const matchOffice = !officeFilter || String(p.Post_Office_ID) === officeFilter
+    return matchSearch && matchZone && matchType && matchOffice
+  })
+
+  // Split into 3 groups
+  const active = filtered.filter(p => {
+    const s = (p.Status_Name || '').toLowerCase()
+    return !s.includes('deliver') && !s.includes('picked up') && !s.includes('lost') && !s.includes('return') && !s.includes('disposed')
+  })
+  const completed = filtered.filter(p => {
+    const s = (p.Status_Name || '').toLowerCase()
+    return s.includes('deliver') || s.includes('picked up') || s.includes('disposed')
+  })
+  const lostReturned = filtered.filter(p => {
+    const s = (p.Status_Name || '').toLowerCase()
+    return s.includes('lost') || s.includes('return')
+  })
+
+  const commonProps = { expanded, onToggle: toggleExpand, statusCodes, onStatusChange: handleStatusChange, statusUpdating }
+
   return (
-    <div className={`inventory-page package-list-page ${userType === 'customer' ? 'customer-home' : ''}`}>
+    <div className="inventory-page package-list-page">
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/">
-            National Postal Service
-          </Link>
+          <Link className="logo" to="/">National Postal Service</Link>
           <nav className="top-nav">
-            {userType !== 'employee' && (
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/') }}>Home</a>
-            )}
-
-            {userType === 'employee' ? (
-              <>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
-                <span className="nav-current" aria-current="page">Packages</span>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
-              </>
-            ) : (
-              <>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>Dashboard</a>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_packages') }}>My packages</a>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Store</a>
-                <span className="nav-current" aria-current="page">Packages</span>
-              </>
-            )}
-
-            {userType === 'customer' ? (
-              <button type="button" className="customer-nav-logout" onClick={handleLogout}>
-                Logout
-              </button>
-            ) : (
-              <a href="#" onClick={handleLogout}>Logout</a>
-            )}
+            <a href="#" onClick={e => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
+            <span className="nav-current" aria-current="page">Packages</span>
+            <a href="#" onClick={e => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
+            <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
         </div>
       </header>
@@ -172,174 +277,95 @@ export default function AllPackages() {
         </div>
 
         <div className="inventory-inner">
-          <h2>All packages</h2>
-          <p className="inventory-subtitle">
-            Search, filter, and inspect package records across the network.
-          </p>
+          <h2>All Packages</h2>
+          <p className="inventory-subtitle">Search, filter, and manage package records across the network.</p>
 
           {error && (
-            <div className="inventory-error">
-              <span>{error}</span>
-              <button type="button" onClick={() => setError(null)} aria-label="Dismiss">
-                ×
-              </button>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', color: '#991b1b', marginBottom: 20, display: 'flex', justifyContent: 'space-between' }}>
+              {error}
+              <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#991b1b', fontWeight: 700 }}>×</button>
             </div>
           )}
 
+          {/* Summary stats */}
           {!loading && (
-            <div className="inventory-stats">
-              <div className="inventory-stat">
-                <span className="stat-num">{packages.length}</span>
-                <span className="stat-label">Total</span>
-              </div>
-              <div className="inventory-stat">
-                <span className="stat-num delivered">
-                  {packages.filter((p) => (p.Status_Name || '').toLowerCase().includes('deliver')).length}
-                </span>
-                <span className="stat-label">Delivered</span>
-              </div>
-              <div className="inventory-stat">
-                <span className="stat-num transit">
-                  {packages.filter((p) => (p.Status_Name || '').toLowerCase().includes('transit')).length}
-                </span>
-                <span className="stat-label">In transit</span>
-              </div>
-              <div className="inventory-stat">
-                <span className="stat-num pending">
-                  {packages.filter((p) => (p.Status_Name || '').toLowerCase().includes('pending')).length}
-                </span>
-                <span className="stat-label">Pending</span>
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
+              {[
+                { label: 'Total',       value: packages.length,      color: '#374151' },
+                { label: 'Active',      value: active.length,        color: '#1d4ed8' },
+                { label: 'Completed',   value: completed.length,     color: '#059669' },
+                { label: 'Lost/Return', value: lostReturned.length,  color: '#dc2626' },
+                { label: 'In Transit',  value: packages.filter(p => (p.Status_Name||'').toLowerCase().includes('transit')).length, color: '#0891b2' },
+                { label: 'Pending',     value: packages.filter(p => (p.Status_Name||'').toLowerCase().includes('pending')).length, color: '#d97706' },
+              ].map(s => (
+                <div key={s.label} style={{ background: '#fff', border: '1px solid #dbe4ef', borderRadius: 12, padding: '14px 16px', boxShadow: '0 2px 6px rgba(15,23,42,0.04)' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: s.color }}>{s.value}</div>
+                </div>
+              ))}
             </div>
           )}
 
-          <div className="inventory-controls">
+          {/* Search + filter toolbar */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20, alignItems: 'center' }}>
             <input
-              type="text"
-              className="search-input"
-              placeholder="Search tracking #, type, zone…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              type="text" placeholder="Search tracking #, sender, recipient…"
+              value={search} onChange={e => setSearch(e.target.value)}
+              style={{ flex: 1, minWidth: 220, padding: '9px 14px', border: '1px solid #dbe4ef', borderRadius: 10, fontSize: '0.9rem' }}
             />
-            <select className="filter-select" value={filterValue} onChange={(e) => setFilterValue(e.target.value)}>
-              <option value="">All packages</option>
-              <option value="oversize">Oversize only</option>
-              <option value="signature">Requires signature</option>
-            </select>
-            <select className="filter-select" value={sortValue} onChange={(e) => setSortValue(e.target.value)}>
-              <option value="">Sort: default</option>
-              <option value="weight_asc">Weight (low → high)</option>
-              <option value="weight_desc">Weight (high → low)</option>
-              <option value="price_asc">Price (low → high)</option>
-              <option value="price_desc">Price (high → low)</option>
-            </select>
-            <span className="inventory-result-count">
-              {filtered.length} of {packages.length} packages
-            </span>
+            <button onClick={() => setShowFilters(f => !f)}
+              style={{ padding: '9px 16px', background: showFilters ? '#eff6ff' : '#fff', border: '1px solid #dbe4ef', borderRadius: 10, cursor: 'pointer', fontWeight: 600, color: '#374151' }}>
+              🔽 {showFilters ? 'Hide Filters' : 'Filters'}
+            </button>
+            <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{filtered.length} of {packages.length} packages</span>
           </div>
 
-          {loading ? (
-            <p className="inventory-state-msg">Loading packages…</p>
-          ) : filtered.length === 0 ? (
-            <p className="inventory-state-msg">No packages match your search.</p>
-          ) : (
-            <div className="table-wrapper">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Tracking #</th>
-                    <th>Type</th>
-                    <th>Weight</th>
-                    <th>Zone</th>
-                    <th>Price</th>
-                    <th>Oversize</th>
-                    <th>Sig. required</th>
-                    <th>Created</th>
-                    <th>Status</th>
-                    <th aria-label="Expand" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((p) => (
-                    <Fragment key={p.Tracking_Number}>
-                      <tr>
-                        <td><code>{p.Tracking_Number}</code></td>
-                        <td>{p.Package_Type_Code}</td>
-                        <td>{p.Weight} lbs</td>
-                        <td>{p.Zone}</td>
-                        <td>${parseFloat(p.Price || 0).toFixed(2)}</td>
-                        <td>{p.Oversize ? 'Yes' : 'No'}</td>
-                        <td>{p.Requires_Signature ? 'Yes' : 'No'}</td>
-                        <td>{p.Date_Created ? new Date(p.Date_Created).toLocaleDateString() : '—'}</td>
-                        <td>
-                          {userType === 'employee' && statusCodes.length > 0 && p.Delivery_Status_Code != null ? (
-                            <select
-                              className="pkg-status-select"
-                              aria-label={`Status for ${p.Tracking_Number}`}
-                              value={String(p.Delivery_Status_Code)}
-                              onChange={(e) => handleStatusChange(p.Tracking_Number, e.target.value)}
-                              disabled={statusUpdating === p.Tracking_Number || !!p.Is_Final_Status}
-                            >
-                              {statusCodes.map((s) => (
-                                <option key={s.Status_Code} value={String(s.Status_Code)}>
-                                  {s.Status_Name}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className={`status-badge ${getStatusBadgeClass(p.Status_Name)}`}>
-                              {p.Status_Name || '—'}
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="pkg-expand-btn"
-                            onClick={() => toggleExpand(p.Tracking_Number)}
-                          >
-                            {expanded === p.Tracking_Number ? '▲ Hide' : '▼ More'}
-                          </button>
-                        </td>
-                      </tr>
-
-                      {expanded === p.Tracking_Number && (
-                        <tr className="detail-row">
-                          <td colSpan={10}>
-                            <div className="detail-grid">
-                              <div className="detail-item">
-                                <label>Dimensions</label>
-                                <p>{p.Dim_X}&quot; × {p.Dim_Y}&quot; × {p.Dim_Z}&quot;</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Sender ID</label>
-                                <p>{p.Sender_ID ?? '—'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Recipient ID</label>
-                                <p>{p.Recipient_ID ?? '—'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Date updated</label>
-                                <p>{p.Date_Updated ? new Date(p.Date_Updated).toLocaleDateString() : '—'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Final status</label>
-                                <p>{p.Is_Final_Status ? 'Final' : 'In progress'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Delivered date</label>
-                                <p>{p.Delivered_Date ? new Date(p.Delivered_Date).toLocaleDateString() : '—'}</p>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
+          {/* Filter panel */}
+          {showFilters && (
+            <div style={{ background: '#fff', border: '1px solid #dbe4ef', borderRadius: 14, padding: '18px 20px', marginBottom: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 5, color: '#374151' }}>Zone</label>
+                <select value={zoneFilter} onChange={e => setZoneFilter(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #dbe4ef', borderRadius: 8, fontSize: '0.88rem' }}>
+                  <option value="">All zones</option>
+                  {ZONES.map(z => <option key={z.value} value={z.value}>{z.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 5, color: '#374151' }}>Package Type</label>
+                <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #dbe4ef', borderRadius: 8, fontSize: '0.88rem' }}>
+                  <option value="">All types</option>
+                  <option value="GEN">General Shipping</option>
+                  <option value="EXP">Express</option>
+                  <option value="OVR">Oversize</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 5, color: '#374151' }}>Post Office</label>
+                <select value={officeFilter} onChange={e => setOfficeFilter(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #dbe4ef', borderRadius: 8, fontSize: '0.88rem' }}>
+                  <option value="">All offices</option>
+                  {postOffices.map(o => <option key={o.Post_Office_ID} value={o.Post_Office_ID}>{o.City}, {o.State}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                <button onClick={() => { setZoneFilter(''); setTypeFilter(''); setOfficeFilter(''); setSearch('') }}
+                  style={{ padding: '8px 16px', background: '#f8fafc', border: '1px solid #dbe4ef', borderRadius: 8, cursor: 'pointer', color: '#64748b' }}>
+                  Clear all
+                </button>
+              </div>
             </div>
+          )}
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 48, color: '#64748b' }}>Loading packages…</div>
+          ) : (
+            <>
+              <PackageTable title="🚚 Active Packages"    packages={active}       color="#1d4ed8" {...commonProps} />
+              <PackageTable title="✅ Completed"          packages={completed}    color="#059669" collapsible {...commonProps} />
+              <PackageTable title="⚠️ Lost & Returned"   packages={lostReturned} color="#dc2626" collapsible {...commonProps} />
+            </>
           )}
         </div>
       </main>

@@ -1139,6 +1139,81 @@ if (method === 'GET' && pathname === '/api/reports/post-offices') {
   }
 }
 
+// ── GET /api/packages/full ────────────────────────────────────────────────
+
+if (method === 'GET' && pathname === '/api/packages/full') {
+  const user = authenticate(req, res)
+  if (!user) return
+  if (!requireEmployee(user, res)) return
+
+  const { zone, post_office_id, package_type, status } = query
+
+  try {
+    const conditions = []
+    const params = []
+
+    if (zone)           { conditions.push('pkg.Zone = ?');                params.push(Number(zone)) }
+    if (package_type)   { conditions.push('pkg.Package_Type_Code = ?');   params.push(package_type) }
+    if (status)         { conditions.push('d.Delivery_Status_Code = ?');  params.push(Number(status)) }
+    if (post_office_id) { conditions.push('po.Post_Office_ID = ?');       params.push(Number(post_office_id)) }
+
+    const whereClause = conditions.length ? `AND ${conditions.join(' AND ')}` : ''
+
+    const [rows] = await pool.query(
+      `SELECT
+        pkg.Tracking_Number,
+        pkg.Package_Type_Code,
+        pkg.Weight,
+        pkg.Zone,
+        pkg.Price,
+        pkg.Oversize,
+        pkg.Requires_Signature,
+        pkg.Date_Created,
+        pkg.Date_Updated,
+        pkg.Dim_X, pkg.Dim_Y, pkg.Dim_Z,
+        -- Sender info
+        pkg.Sender_ID,
+        CONCAT(s.First_Name, ' ', s.Last_Name) AS Sender_Name,
+        s.Email_Address AS Sender_Email,
+        -- Recipient info
+        pkg.Recipient_ID,
+        CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
+        r.Email_Address AS Recipient_Email,
+        -- Delivery info
+        d.Delivery_Status_Code,
+        d.Delivered_Date,
+        d.Signature_Required,
+        sc.Status_Name,
+        sc.Is_Final_Status,
+        -- Shipment / post office info
+        sh.From_City,
+        sh.From_State,
+        sh.To_City,
+        sh.To_State,
+        po.City AS Office_City,
+        po.Post_Office_ID,
+        -- Employee who handled it
+        CONCAT(e.First_Name, ' ', e.Last_Name) AS Handled_By
+      FROM package pkg
+      LEFT JOIN customer s  ON s.Customer_ID  = pkg.Sender_ID
+      LEFT JOIN customer r  ON r.Customer_ID  = pkg.Recipient_ID
+      LEFT JOIN delivery d  ON d.Tracking_Number = pkg.Tracking_Number
+      LEFT JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
+      LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
+      LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
+      LEFT JOIN employee e  ON e.Employee_ID  = sh.Employee_ID
+      LEFT JOIN post_office po ON po.Post_Office_ID = e.Post_Office_ID
+      WHERE 1=1 ${whereClause}
+      ORDER BY pkg.Tracking_Number ASC`,
+      params
+    )
+    return send(res, 200, rows)
+  } catch (err) {
+    console.error(err)
+    return send(res, 500, { message: err.message || 'Server error' })
+  }
+}
+
   // ── GET /api/status-codes ────────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/status-codes') {
     const user = authenticate(req, res)
