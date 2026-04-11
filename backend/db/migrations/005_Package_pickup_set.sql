@@ -97,8 +97,7 @@ DELIMITER ;
 
 SET GLOBAL event_scheduler = ON;
 
--- Ensure the pickup event is active (skip if you have not run 006 yet).
-ALTER EVENT evt_daily_package_pickup_storage ENABLE;
+
 
 
 -- Nightly procedure + event: late fees + 30-day disposal (delivery + shipment).
@@ -198,3 +197,7 @@ ENABLE
 DO CALL sp_daily_package_pickup_storage() $$
 
 DELIMITER ;
+
+-- erin- moved from before delimiter for easier copy and pasting
+-- Ensure the pickup event is active (skip if you have not run 006 yet).
+ALTER EVENT evt_daily_package_pickup_storage ENABLE;
