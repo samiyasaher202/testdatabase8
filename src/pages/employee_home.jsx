@@ -143,6 +143,14 @@ export default function EmployeeHome() {
             </div>
 
             <div className="card">
+              <h3>Package for pickup</h3>
+              <p>See packages at the office and record when the customer picks them up.</p>
+              <button type="button" className="btn primary" onClick={() => navigate('/employee/package-pickup')}>
+                Package for pickup
+              </button>
+            </div>
+
+            <div className="card">
               <h3>Add package</h3>
               <p>Register a customer shipment, calculate price, and issue a tracking number.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/employee/add-package')}>

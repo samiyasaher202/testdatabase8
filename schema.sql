@@ -197,6 +197,19 @@ CREATE TABLE Delivery (
   FOREIGN KEY (Delivered_By) REFERENCES Employee(Employee_ID)
 );
 
+-- ── 14b. PACKAGE PICKUP (held at post office for recipient) ─────────────
+CREATE TABLE Package_Pickup (
+  Tracking_Number VARCHAR(20) NOT NULL PRIMARY KEY,
+  Recipient_ID INT NOT NULL,
+  Post_Office_ID INT NOT NULL,
+  Arrival_Time DATETIME NULL,
+  Pickup_Time DATETIME NULL,
+  Is_picked_Up ENUM('1','0') NOT NULL DEFAULT '0',
+  FOREIGN KEY (Tracking_Number) REFERENCES Package(Tracking_Number),
+  FOREIGN KEY (Recipient_ID) REFERENCES Customer(Customer_ID),
+  FOREIGN KEY (Post_Office_ID) REFERENCES Post_Office(Post_Office_ID)
+);
+
 -- ── 15. SUPPORT TICKETS ──────────────────────────────────────────────────
 CREATE TABLE Support_Ticket (
   Ticket_ID INT AUTO_INCREMENT PRIMARY KEY,

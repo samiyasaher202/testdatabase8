@@ -119,7 +119,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
         {/* Nav */}
         <nav className="es-nav">
           <span className="es-nav-brand">National Postal Service</span>
-          <a href="/" className="es-nav-link">← Back to Home</a>
+          <Link to="/employee_home" className="es-nav-link">← Back to Home</Link>
         </nav>
 
         {/* Header */}
@@ -138,13 +138,13 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
               {filterStatus !== "all" ? ` · ${STATUS_MAP[Number(filterStatus)]?.label}` : ""}
             </span>
             <div className="es-filters">
-              <a href="/submit_ticket"className="es-add-btn">
+              <Link to="/employee/submit-ticket" className="es-add-btn">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
                 Add Ticket
                 
-              </a>
+              </Link>
               <button
                 className={`es-filter-btn ${filterStatus === "all" ? "active" : ""}`}
                 onClick={() => setFilterStatus("all")}

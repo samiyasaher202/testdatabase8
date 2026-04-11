@@ -100,7 +100,30 @@ function getPackagesForCustomer(pool, customerID, callback) {
       CASE
         WHEN p.Sender_ID = ? THEN 'Sending'
         WHEN p.Recipient_ID = ? THEN 'Receiving'
-      END AS role
+      END AS role,
+
+      pp.Arrival_Time AS Pickup_Arrival_Time,
+      CASE
+        WHEN pp.Tracking_Number IS NULL THEN NULL
+        WHEN pp.Is_picked_Up IS NOT NULL AND pp.Is_picked_Up <> '0' THEN COALESCE(pp.Late_Fee_Amount, 0)
+        WHEN pp.Arrival_Time IS NULL THEN NULL
+        WHEN NOT (
+          LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(sc.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
+          OR REPLACE(LOWER(TRIM(IFNULL(sc.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
+        ) THEN NULL
+        WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 20 THEN 20.00
+        WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 10 THEN 10.00
+        ELSE 0.00
+      END AS Late_Fee_Due,
+      CASE
+        WHEN pp.Tracking_Number IS NULL OR pp.Arrival_Time IS NULL THEN NULL
+        WHEN pp.Is_picked_Up IS NOT NULL AND pp.Is_picked_Up <> '0' THEN NULL
+        WHEN NOT (
+          LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(sc.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
+          OR REPLACE(LOWER(TRIM(IFNULL(sc.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
+        ) THEN NULL
+        ELSE DATEDIFF(CURDATE(), DATE(pp.Arrival_Time))
+      END AS Days_At_Post_Office
 
     FROM package p
     JOIN package_type pt  ON p.Package_Type_Code = pt.Package_Type_Code
@@ -108,9 +131,10 @@ function getPackagesForCustomer(pool, customerID, callback) {
     LEFT JOIN customer cr ON p.Recipient_ID       = cr.Customer_ID
     LEFT JOIN delivery d  ON p.Tracking_Number    = d.Tracking_Number
     LEFT JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
+    LEFT JOIN package_pickup pp ON pp.Tracking_Number = p.Tracking_Number AND pp.Recipient_ID = ?
     WHERE p.Sender_ID = ? OR p.Recipient_ID = ?
     ORDER BY p.Date_Created DESC
-  `, [customerID, customerID, customerID, customerID])
+  `, [customerID, customerID, customerID, customerID, customerID])
   .then(([results]) => callback(null, results))
   .catch(err => callback(err, null))
 }

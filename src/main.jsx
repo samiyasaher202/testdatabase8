@@ -28,12 +28,14 @@ import SubmitTicket from './pages/SubmitTicket'
 
 import PriceCalculator from './pages/price_calculator'
 import AddPackage from './pages/add_package'
+import PackageForPickup from './pages/package_for_pickup'
 import CustomerPackages from './pages/customer_packages'
 
 import EmployeeSupport from './pages/Employeesupport.jsx'
 import Employee_SubmitTicket from './pages/Employee_SubmitTicket.jsx'
 
-import TicketsEmployees from './pages/tickets_employees.jsx'
+import TicketsReport from './pages/tickets_report.jsx'
+import RevenueReport from './pages/Revenue_Report.jsx'
 import EmployeesPage from './pages/employees.jsx'
 
 // global styles
@@ -48,9 +50,11 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        
+        {/* Data report testing*/}
 
-        <Route path="/tickets_employees" element={<TicketsEmployees />} />
+
+        <Route path="/tickets_employees" element={<TicketsReport />} />
+        <Route path="revenue-report" element={<RevenueReport />} />
 
         {/* Customer Routes */}
         <Route path="/customer_home" element={<RequireCustomer><CustomerHome /></RequireCustomer>} />
@@ -61,6 +65,7 @@ function App() {
         {/* Employee Routes */}
         <Route path="/employee_home" element={<RequireEmployee><EmployeeHome /></RequireEmployee>} />
         <Route path="/employee/add-package" element={<RequireEmployee><AddPackage /></RequireEmployee>} />
+        <Route path="/employee/package-pickup" element={<RequireEmployee><PackageForPickup /></RequireEmployee>} />
         <Route path="/employee-support" element={<RequireEmployee><EmployeeSupport /></RequireEmployee>} />
         <Route path="/employee/submit-ticket" element={<RequireEmployee><Employee_SubmitTicket/></RequireEmployee>} />
         {/* <Route path="/employee/support" element={<RequireEmployee><EmployeeSupport /></RequireEmployee>} /> */}

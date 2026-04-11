@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import './css/home.css'
 import '../components/Auth.css'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -110,15 +111,30 @@ const Register = () => {
   }
 
   return (
-    <div className="register-container">
-      <div className="register-card">
-        <h2>Create a Post Office 8 account</h2>
-        <p className="subtitle">Customer registration</p>
+    <div className="login-page">
+      <header className="site-header">
+        <div className="header-inner">
+          <Link className="logo" to="/">
+            National Postal Service
+          </Link>
+          <nav className="top-nav">
+            <button type="button" className="nav-back-btn" onClick={() => navigate('/')}>
+              ← Back
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <div className="login-page-body">
+        <div className="register-card register-card-wide login-card--branded">
+        <h2>Create an account</h2>
+        <p className="subtitle">Customer registration — all fields marked * are required.</p>
 
         <form onSubmit={handleSubmit}>
           {error && <div className="error-message">{error}</div>}
 
-          <div className="form-row">
+          <h3 className="register-section-heading">Your name</h3>
+          <div className="form-row form-row--3">
             <div className="form-group">
               <label>First name *</label>
               <input
@@ -153,6 +169,7 @@ const Register = () => {
             </div>
           </div>
 
+          <h3 className="register-section-heading">Contact</h3>
           <div className="form-row">
             <div className="form-group">
               <label>Email *</label>
@@ -177,7 +194,8 @@ const Register = () => {
             </div>
           </div>
 
-          <div className="form-row">
+          <h3 className="register-section-heading">Address</h3>
+          <div className="form-row form-row--3">
             <div className="form-group">
               <label>Apt / unit</label>
               <input
@@ -238,7 +256,7 @@ const Register = () => {
             </div>
           </div>
 
-          <div className="form-row">
+          <div className="form-row form-row--3">
             <div className="form-group">
               <label>ZIP (first 3) *</label>
               <input
@@ -279,19 +297,17 @@ const Register = () => {
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Country *</label>
-              <input
-                type="text"
-                name="country"
-                value={formData.country}
-                onChange={handleChange}
-                required
-                placeholder="USA"
-                maxLength={50}
-              />
-            </div>
+          <div className="form-group">
+            <label>Country *</label>
+            <input
+              type="text"
+              name="country"
+              value={formData.country}
+              onChange={handleChange}
+              required
+              placeholder="USA"
+              maxLength={50}
+            />
           </div>
 
           {/* <div className="form-row"> */}
@@ -336,18 +352,17 @@ const Register = () => {
             </div>
           </div> */}
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Sex *</label>
-              <select name="sex" value={formData.sex} onChange={handleChange} required>
-                <option value="M">Male</option>
-                <option value="F">Female</option>
-                <option value="O">Other</option>
-                <option value="U">Prefer not to say</option>
-              </select>
-            </div>
+          <div className="form-group">
+            <label>Sex *</label>
+            <select name="sex" value={formData.sex} onChange={handleChange} required>
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+              <option value="O">Other</option>
+              <option value="U">Prefer not to say</option>
+            </select>
           </div>
 
+          <h3 className="register-section-heading">Password</h3>
           <div className="form-row">
             <div className="form-group">
               <label>Password *</label>
@@ -379,9 +394,10 @@ const Register = () => {
           </button>
         </form>
 
-        <p className="login-link">
-          Already have an account? <Link to="/login">Login</Link>
+        <p className="register-footer-link">
+          Already have an account? <Link to="/login">Sign in</Link>
         </p>
+        </div>
       </div>
     </div>
   )

@@ -482,8 +482,32 @@ export default function AddPackage() {
               </button>
             </div>
             {submitResult && (
-              <div className="add-package-result">
-                ✅ Created <code>{submitResult.tracking_number}</code> — charged ${parseFloat(submitResult.price).toFixed(2)} to sender account.
+              <div className="add-package-result-wrap">
+                <div className="add-package-result">
+                  ✅ Created <code>{submitResult.tracking_number}</code> — charged ${parseFloat(submitResult.price).toFixed(2)} to sender account.
+                </div>
+                {submitResult.new_customer_credentials && (
+                  <div className="add-package-credentials" role="status">
+                    <strong>New customer login</strong>
+                    <p className="add-package-credentials-note">
+                      Auto-created accounts use the default password below (same for every account created this way). Ask customers to change it after they sign in.
+                    </p>
+                    {submitResult.new_customer_credentials.sender && (
+                      <div className="add-package-credential-block">
+                        <span className="add-package-credential-label">Sender</span>
+                        <div><code>{submitResult.new_customer_credentials.sender.email}</code></div>
+                        <div><code>{submitResult.new_customer_credentials.sender.initial_password}</code></div>
+                      </div>
+                    )}
+                    {submitResult.new_customer_credentials.recipient && (
+                      <div className="add-package-credential-block">
+                        <span className="add-package-credential-label">Recipient</span>
+                        <div><code>{submitResult.new_customer_credentials.recipient.email}</code></div>
+                        <div><code>{submitResult.new_customer_credentials.recipient.initial_password}</code></div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -99,6 +99,15 @@
   transform: scaleX(1);
 }
 
+.customer-package-fee-note {
+  margin-top: -0.35rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-soft, #475569);
+  max-width: 52rem;
+  line-height: 1.45;
+}
+
 @media (max-width: 760px) {
   .customer-home .header-inner {
     flex-direction: column;

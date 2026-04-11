@@ -471,3 +471,58 @@ button:disabled {
 .login-page .register-card-wide label {
   color: #334155;
 }
+
+.login-page .register-card-wide.login-card--branded {
+  max-height: min(90vh, calc(100dvh - 140px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.login-page .form-row--3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+}
+
+@media (max-width: 768px) {
+  .login-page .form-row--3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.login-page .register-section-heading {
+  margin: 1.35rem 0 0.65rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e40af;
+  letter-spacing: -0.01em;
+}
+
+.login-page .register-section-heading:first-of-type {
+  margin-top: 0.25rem;
+}
+
+.login-page .register-card-wide.login-card--branded .form-group {
+  margin-bottom: 0;
+}
+
+.login-page .register-card-wide.login-card--branded .form-row + .form-row,
+.login-page .register-card-wide.login-card--branded .form-row + .form-group,
+.login-page .register-card-wide.login-card--branded .form-group + .form-group,
+.login-page .register-card-wide.login-card--branded .form-group + .form-row,
+.login-page .register-card-wide.login-card--branded .form-row + .register-section-heading {
+  margin-top: 0;
+}
+
+.login-page .register-card-wide.login-card--branded form > .form-row,
+.login-page .register-card-wide.login-card--branded form > .form-group {
+  margin-bottom: 1rem;
+}
+
+.login-page .register-card-wide.login-card--branded form > .register-section-heading {
+  margin-top: 1.5rem;
+}
+
+.login-page .register-card-wide.login-card--branded form > .register-section-heading:first-of-type {
+  margin-top: 0.35rem;
+}

@@ -1,32 +1,22 @@
 const path = require('path')
-const express = require('express')
-const cors    = require('cors')
-const mysql   = require('mysql2/promise')
-const bcrypt  = require('bcryptjs')
-const jwt     = require('jsonwebtoken')
+const http = require('http')
+const mysql = require('mysql2/promise')
+const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 require('dotenv').config({ path: path.join(__dirname, '.env') })
 
-const packagesDB  = require('./db/packages')
-const inventoryDB = require('./db/inventory')
-const customerDB = require('./db/customers')
-
-const packageTrackDB = require('./db/package_track') 
-
-const employeeDB = require('./db/employees')
-
-//const packageTypesDB = require('./db/package_type')
-
-
-const priceDB = require('./db/package_type')
-
-const app = express()
-app.use(cors())
-app.use(express.json())
+const packagesDB    = require('./db/packages')
+const inventoryDB   = require('./db/inventory')
+const customerDB    = require('./db/customers')
+const packageTrackDB = require('./db/package_track')
+const employeeDB    = require('./db/employees')
+const priceDB       = require('./db/package_type')
+const packagePickupStorageJob = require('./db/package_pickup_storage_job')
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
   host:               process.env.MYSQLHOST,
-  port:               process.env.MYSQLPORT ,
+  port:               process.env.MYSQLPORT,
   user:               process.env.MYSQLUSER,
   password:           process.env.MYSQLPASSWORD,
   database:           process.env.MYSQL_DATABASE,
@@ -38,27 +28,114 @@ pool.getConnection()
   .then(c => { console.log('✅ MySQL connected'); c.release() })
   .catch(e => console.error('❌ MySQL connection failed:', e))
 
-app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, service: 'postoffice-api', has_price: true })
-})
-
-// ── Auth middleware ───────────────────────────────────────────────────────
-const authenticate = (req, res, next) => {
-  const token = (req.headers['authorization'] || '').split(' ')[1]
-  if (!token) return res.status(401).json({ message: 'No token provided' })
-  jwt.verify(token, process.env.JWT_SECRET || 'secret', (err, decoded) => {
-    if (err) return res.status(403).json({ message: 'Invalid or expired token' })
-    req.user = decoded
-    next()
+if (process.env.DISABLE_PACKAGE_PICKUP_JOB !== '1' && process.env.DISABLE_PACKAGE_PICKUP_JOB !== 'true') {
+  const jobMs = Number(process.env.PACKAGE_PICKUP_JOB_MS)
+  const runOnStartEnv = process.env.PACKAGE_PICKUP_JOB_RUN_ON_START
+  packagePickupStorageJob.startPackagePickupStorageJob(pool, {
+    intervalMs: Number.isFinite(jobMs) && jobMs > 0 ? jobMs : undefined,
+    // Default: run once at startup so 30-day disposal applies without waiting for the first 24h tick.
+    runOnStart: runOnStartEnv !== '0' && runOnStartEnv !== 'false',
   })
 }
 
-const requireEmployee = (req, res, next) => {
-  if (req.user?.type !== 'employee' || req.user?.employee_id == null) {
-    return res.status(403).json({ message: 'Employee access required' })
-  }
-  next()
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function parseCookies(req) {
+  const list = {}
+  const rc = req.headers.cookie
+  if (rc) rc.split(';').forEach(cookie => {
+    const parts = cookie.split('=')
+    list[parts[0].trim()] = decodeURIComponent((parts[1] || '').trim())
+  })
+  return list
 }
+
+function getBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = ''
+    req.on('data', chunk => { data += chunk })
+    req.on('end', () => {
+      if (!data) return resolve({})
+      try { resolve(JSON.parse(data)) } catch { resolve({}) }
+    })
+    req.on('error', reject)
+  })
+}
+
+function send(res, status, body) {
+  const json = JSON.stringify(body)
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(json),
+  })
+  res.end(json)
+}
+
+function setCORSHeaders(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+}
+
+// Match a URL path against a pattern like '/api/packages/:id/tracking'
+// Returns { matched: true, params: { id: '...' } } or { matched: false }
+function matchPath(pattern, urlPath) {
+  const patternParts = pattern.split('/')
+  const urlParts = urlPath.split('/')
+  if (patternParts.length !== urlParts.length) return { matched: false }
+  const params = {}
+  for (let i = 0; i < patternParts.length; i++) {
+    if (patternParts[i].startsWith(':')) {
+      params[patternParts[i].slice(1)] = decodeURIComponent(urlParts[i])
+    } else if (patternParts[i] !== urlParts[i]) {
+      return { matched: false }
+    }
+  }
+  return { matched: true, params }
+}
+
+function getQueryParams(urlString) {
+  const u = new URL(urlString, 'http://localhost')
+  const params = {}
+  u.searchParams.forEach((v, k) => { params[k] = v })
+  return params
+}
+
+// ── Auth helpers ──────────────────────────────────────────────────────────
+
+function authenticate(req, res) {
+  const token = (req.headers['authorization'] || '').split(' ')[1]
+  if (!token) { send(res, 401, { message: 'No token provided' }); return null }
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET || 'secret')
+  } catch {
+    send(res, 403, { message: 'Invalid or expired token' }); return null
+  }
+}
+
+function requireEmployee(user, res) {
+  if (user?.type !== 'employee' || user?.employee_id == null) {
+    send(res, 403, { message: 'Employee access required' }); return false
+  }
+  return true
+}
+
+function requireAdmin(user, res) {
+  if (![4, 5].includes(user?.role_id)) {
+    send(res, 403, { message: 'Access denied. Manager/Admin role required.' }); return false
+  }
+  return true
+}
+
+function requireRole5Admin(user, res) {
+  const roleId = Number(user?.role_id)
+  if (user?.type !== 'employee' || !Number.isFinite(roleId) || roleId !== 5) {
+    send(res, 403, { message: 'Access denied. Admin role required.' }); return false
+  }
+  return true
+}
+
+// ── Business logic helpers ────────────────────────────────────────────────
 
 function normalizePackageTypeName(raw) {
   const t = String(raw || '').toLowerCase().trim()
@@ -73,6 +150,35 @@ const TYPE_NAME_TO_CODE = {
   express: 'EXP',
   'general shipping': 'GEN',
   oversize: 'OVR',
+}
+
+function toMysqlDateTime(value) {
+  if (value == null || value === '') return null
+  const s = String(value).trim().replace('T', ' ')
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) return `${s}:00`
+  return s
+}
+
+/** mysql2 Date or string → 'YYYY-MM-DD HH:MM:SS' for SQL parameters. */
+function dateToMysqlDateTime(value) {
+  if (value == null) return null
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())} ${pad(value.getHours())}:${pad(value.getMinutes())}:${pad(value.getSeconds())}`
+  }
+  return toMysqlDateTime(value)
+}
+
+/** Form value wins if present; otherwise use shipment.Arrival_Time_Stamp (set when status → At Office). */
+function resolveArrivalForPickup(shipmentArrivalStamp, bodyArrivalTime) {
+  return toMysqlDateTime(bodyArrivalTime) || dateToMysqlDateTime(shipmentArrivalStamp) || null
+}
+
+function isAtOfficeStatusName(name) {
+  const raw = String(name || '').trim().toLowerCase()
+  const spaced = raw.replace(/_/g, ' ').replace(/-/g, ' ').replace(/\s+/g, ' ').trim()
+  const underscored = spaced.replace(/\s+/g, '_')
+  return spaced === 'at office' || underscored === 'at_office'
 }
 
 function getPricePromise(pool, excessFeeTypeName, packageTypeName, weight, zone) {
@@ -103,500 +209,344 @@ async function nextTrackingNumber(conn) {
   return `TRK${String(n).padStart(7, '0')}`.slice(0, 10)
 }
 
-// ── Admin/Manager authorization middleware ─────────────────────────────────
-const requireAdmin = (req, res, next) => {
-  // Check if user role is Manager or Admin (role_id 4 or 5)
-  // Adjust role_ids based on your database
-  if (![4, 5].includes(req.user.role_id)) {
-    return res.status(403).json({ message: 'Access denied. Manager/Admin role required.' })
+// ── Router ────────────────────────────────────────────────────────────────
+
+async function router(req, res) {
+  setCORSHeaders(req, res)
+
+  // Preflight
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204)
+    res.end()
+    return
   }
-  next()
-}
 
-const requireRole5Admin = (req, res, next) => {
-  const roleId = Number(req.user?.role_id)
-  if (req.user?.type !== 'employee' || !Number.isFinite(roleId) || roleId !== 5) {
-    return res.status(403).json({ message: 'Access denied. Admin role required.' })
+  const urlObj = new URL(req.url, 'http://localhost')
+  const pathname = urlObj.pathname
+  const method = req.method
+  const query = getQueryParams(req.url)
+
+  // ── GET /api/health ──────────────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/health') {
+    return send(res, 200, { ok: true, service: 'postoffice-api', has_price: true })
   }
-  next()
-}
 
-// ════════════════════════════════════════════════════════════════════════════
-//  AUTH ROUTES
-// ════════════════════════════════════════════════════════════════════════════
-
-// Employee Login (EXISTING)
-app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body
-  if (!email || !password)
-    return res.status(400).json({ message: 'Email and password required' })
-
-  try {
-    const [rows] = await pool.query(
-      `SELECT e.*, r.Role_Name, d.Department_Name
-       FROM employee e
-       JOIN role r       ON e.Role_ID       = r.Role_ID
-       JOIN department d ON e.Department_ID = d.Department_ID
-       WHERE e.Email_Address = ?`,
-      [email]
-    )
-    if (!rows.length)
-      return res.status(401).json({ message: 'Invalid credentials' })
-
-    const emp = rows[0]
-    const valid = await bcrypt.compare(password, emp.Password_Hash)
-    if (!valid)
-      return res.status(401).json({ message: 'Invalid credentials' })
-
-    const token = jwt.sign(
-      {
-        employee_id: Number(emp.Employee_ID),
-        email: emp.Email_Address,
-        role_id: Number(emp.Role_ID),
-        type: 'employee',
-      },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: '24h' }
-    )
-
-    const { Password_Hash, ...safe } = emp
-    res.json({ message: 'Login successful', token, user: safe })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+  // ── POST /api/auth/login ─────────────────────────────────────────────────
+  if (method === 'POST' && pathname === '/api/auth/login') {
+    const { email, password } = await getBody(req)
+    if (!email || !password) return send(res, 400, { message: 'Email and password required' })
+    try {
+      const [rows] = await pool.query(
+        `SELECT e.*, r.Role_Name, d.Department_Name
+         FROM employee e
+         JOIN role r       ON e.Role_ID       = r.Role_ID
+         JOIN department d ON e.Department_ID = d.Department_ID
+         WHERE e.Email_Address = ?`,
+        [email]
+      )
+      if (!rows.length) return send(res, 401, { message: 'Invalid credentials' })
+      const emp = rows[0]
+      const valid = await bcrypt.compare(password, emp.Password_Hash)
+      if (!valid) return send(res, 401, { message: 'Invalid credentials' })
+      const token = jwt.sign(
+        { employee_id: Number(emp.Employee_ID), email: emp.Email_Address, role_id: Number(emp.Role_ID), type: 'employee' },
+        process.env.JWT_SECRET || 'secret',
+        { expiresIn: '24h' }
+      )
+      const { Password_Hash, ...safe } = emp
+      return send(res, 200, { message: 'Login successful', token, user: safe })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
   }
-})
 
-// Customer Login
-app.post('/api/auth/customer-login', async (req, res) => {
-  console.log('got to api/auth/customer-login')
-  const { email, password } = req.body
-  if (!email || !password)
-    return res.status(400).json({ message: 'Email and password required' })
-
-  try {
-    const [rows] = await pool.query(
-      'SELECT * FROM customer WHERE Email_Address = ?',
-      [email]
-    )
-    if (!rows.length)
-      return res.status(401).json({ message: 'Invalid credentials' })
-
-    const customer = rows[0]
-    const valid = await bcrypt.compare(password, customer.Password_Hash)
-    if (!valid)
-      return res.status(401).json({ message: 'Invalid credentials' })
-
-    const token = jwt.sign(
-      { customer_id: customer.Customer_ID, email: customer.Email_Address, type: 'customer' },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: '24h' }
-    )
-
-    const { Password_Hash, ...safe } = customer
-    res.json({ message: 'Login successful', token, user: safe })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
+  // ── POST /api/auth/customer-login ────────────────────────────────────────
+  if (method === 'POST' && pathname === '/api/auth/customer-login') {
+    console.log('got to api/auth/customer-login')
+    const { email, password } = await getBody(req)
+    if (!email || !password) return send(res, 400, { message: 'Email and password required' })
+    try {
+      const [rows] = await pool.query('SELECT * FROM customer WHERE Email_Address = ?', [email])
+      if (!rows.length) return send(res, 401, { message: 'Invalid credentials' })
+      const customer = rows[0]
+      const valid = await bcrypt.compare(password, customer.Password_Hash)
+      if (!valid) return send(res, 401, { message: 'Invalid credentials' })
+      const token = jwt.sign(
+        { customer_id: customer.Customer_ID, email: customer.Email_Address, type: 'customer' },
+        process.env.JWT_SECRET || 'secret',
+        { expiresIn: '24h' }
+      )
+      const { Password_Hash, ...safe } = customer
+      return send(res, 200, { message: 'Login successful', token, user: safe })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
   }
-})
 
-// Customer registration (full profile; see customers.registerCustomer)
-app.post('/api/customer/register', async (req, res) => {
-  console.log('Register request payload', {
-    email: req.body?.email,
-    first_name: req.body?.first_name,
-    last_name: req.body?.last_name,
-    phone_number: req.body?.phone_number,
-    city: req.body?.city,
-    state: req.body?.state,
-    zip_first3: req.body?.zip_first3,
-    zip_last2: req.body?.zip_last2,
-    // birth_day: req.body?.birth_day,
-    // birth_month: req.body?.birth_month,
-    // birth_year: req.body?.birth_year,
-    sex: req.body?.sex,
-  })
+  // ── POST /api/customer/register ──────────────────────────────────────────
+  if (method === 'POST' && pathname === '/api/customer/register') {
+    const body = await getBody(req)
+    try {
+      const { customer_id, user } = await customerDB.registerCustomer(pool, body)
+      const token = jwt.sign(
+        { customer_id, email: user.Email_Address, type: 'customer' },
+        process.env.JWT_SECRET || 'secret',
+        { expiresIn: '24h' }
+      )
+      return send(res, 201, { message: 'Customer registered successfully', token, user })
+    } catch (err) {
+      if (err.status === 400 || err.code === 'VALIDATION' || err.code === 'DUPLICATE_EMAIL') {
+        return send(res, err.status || 400, { message: err.message })
+      }
+      if (err.code === 'ER_DUP_ENTRY') return send(res, 400, { message: 'Email already registered' })
+      console.error(err)
+      return send(res, 500, { message: err.message || 'Server error' })
+    }
+  }
 
-  try {
-    const { customer_id, user } = await customerDB.registerCustomer(pool, req.body)
+  // ── POST /api/auth/admin-register ────────────────────────────────────────
+  if (method === 'POST' && pathname === '/api/auth/admin-register') {
+    const user = authenticate(req, res); if (!user) return
+    if (!requireAdmin(user, res)) return
+    const { name, email, department, position, phoneNumber, workAddress, hireDate } = await getBody(req)
+    if (!name || !email || !department || !position || !phoneNumber || !workAddress || !hireDate) {
+      return send(res, 400, { message: 'Missing required fields' })
+    }
+    try {
+      const [exists] = await pool.query('SELECT Employee_ID FROM employee WHERE Email_Address = ?', [email])
+      if (exists.length) return send(res, 400, { message: 'Email already registered' })
+      const tempPassword = Math.random().toString(36).slice(-10) + 'Temp1!'
+      const hash = await bcrypt.hash(tempPassword, 10)
+      const departmentMap = { 'Mail Sorting': 1, 'Customer Service': 2, 'Delivery': 3, 'Management': 4, 'Finance': 5, 'IT Support': 6 }
+      const positionMap = { 'Clerk': 1, 'Supervisor': 2, 'Manager': 3, 'Director': 4, 'Staff': 5 }
+      const department_id = departmentMap[department] || 1
+      const role_id = positionMap[position] || 1
+      const [firstName, ...lastNameParts] = name.split(' ')
+      const lastName = lastNameParts.join(' ') || 'Employee'
+      const [result] = await pool.query(
+        `INSERT INTO employee (Post_Office_ID, Role_ID, Department_ID, First_Name, Last_Name, Password_Hash, Email_Address, Phone_Number, Sex, Salary, Hours_Worked)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+        [1, role_id, department_id, firstName, lastName, hash, email, phoneNumber, 'M', 0, 0]
+      )
+      console.log(`[TODO] Send email to ${email} with temporary password: ${tempPassword}`)
+      return send(res, 201, { message: 'Employee registered successfully', employee_id: result.insertId, email, note: 'Temporary password sent to employee email' })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error', error: err.message })
+    }
+  }
 
-    const token = jwt.sign(
-      { customer_id, email: user.Email_Address, type: 'customer' },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: '24h' }
-    )
+  // ── GET /api/admin/employees ─────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/admin/employees') {
+    const user = authenticate(req, res); if (!user) return
+    if (!requireRole5Admin(user, res)) return
+    try {
+      const [rows] = await pool.query(
+        `SELECT e.Employee_ID, po.Street AS Post_Office_Street, d.Department_Name, r.Role_Name,
+                e.First_Name, e.Last_Name, e.Email_Address, e.Sex, e.Phone_Number, e.Is_Active
+         FROM employee e
+         JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+         JOIN department d   ON e.Department_ID  = d.Department_ID
+         JOIN role r         ON e.Role_ID        = r.Role_ID
+         WHERE e.Is_Active IN ('1', 1)
+         ORDER BY e.Last_Name, e.First_Name, e.Employee_ID`
+      )
+      return send(res, 200, { employees: rows })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: err.sqlMessage || err.message || 'Server error' })
+    }
+  }
 
-    res.status(201).json({
-      message: 'Customer registered successfully',
-      token,
-      user,
+  // ── PATCH /api/admin/employees/:employeeId/deactivate ────────────────────
+  {
+    const m = matchPath('/api/admin/employees/:employeeId/deactivate', pathname)
+    if (method === 'PATCH' && m.matched) {
+      const user = authenticate(req, res); if (!user) return
+      if (!requireRole5Admin(user, res)) return
+      const employeeId = Number(m.params.employeeId)
+      if (!Number.isFinite(employeeId)) return send(res, 400, { message: 'Invalid employee id' })
+      try {
+        const [result] = await pool.query("UPDATE employee SET Is_Active = '0' WHERE Employee_ID = ?", [employeeId])
+        if (!result.affectedRows) return send(res, 404, { message: 'Employee not found' })
+        return send(res, 200, { ok: true })
+      } catch (err) {
+        console.error(err)
+        return send(res, 500, { message: err.sqlMessage || err.message || 'Server error' })
+      }
+    }
+  }
+
+  // ── GET /api/auth/profile ────────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/auth/profile') {
+    const user = authenticate(req, res); if (!user) return
+    try {
+      const [rows] = await pool.query(
+        `SELECT e.Employee_ID, e.First_Name, e.Middle_Name, e.Last_Name,
+                e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked, e.Supervisor_ID,
+                CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
+                r.Role_Name, d.Department_Name,
+                po.City AS Office_City, po.State AS Office_State
+         FROM employee e
+         JOIN role r         ON e.Role_ID        = r.Role_ID
+         JOIN department d   ON e.Department_ID  = d.Department_ID
+         JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+         LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
+         WHERE e.Employee_ID = ?`,
+        [user.employee_id]
+      )
+      if (!rows.length) return send(res, 404, { message: 'Employee not found' })
+      return send(res, 200, { user: rows[0] })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
+  }
+
+  // ── PUT /api/auth/profile ────────────────────────────────────────────────
+  if (method === 'PUT' && pathname === '/api/auth/profile') {
+    const user = authenticate(req, res); if (!user) return
+    const { Email_Address, Phone_Number } = await getBody(req)
+    try {
+      await pool.query(
+        'UPDATE employee SET Phone_Number = ?, Email_Address = ? WHERE Employee_ID = ?',
+        [Phone_Number, Email_Address, user.employee_id]
+      )
+      const [rows] = await pool.query(
+        `SELECT e.Employee_ID, e.First_Name, e.Middle_Name, e.Last_Name,
+                e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked, e.Supervisor_ID,
+                CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
+                r.Role_Name, d.Department_Name,
+                po.City AS Office_City, po.State AS Office_State
+         FROM employee e
+         JOIN role r         ON e.Role_ID        = r.Role_ID
+         JOIN department d   ON e.Department_ID  = d.Department_ID
+         JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+         LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
+         WHERE e.Employee_ID = ?`,
+        [user.employee_id]
+      )
+      return send(res, 200, { message: 'Profile updated successfully', user: rows[0] })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
+  }
+
+  // ── POST /api/auth/change-password ───────────────────────────────────────
+  if (method === 'POST' && pathname === '/api/auth/change-password') {
+    const user = authenticate(req, res); if (!user) return
+    const { currentPassword, newPassword } = await getBody(req)
+    if (!currentPassword || !newPassword) return send(res, 400, { message: 'Both passwords are required' })
+    if (newPassword.length < 6) return send(res, 400, { message: 'New password must be at least 6 characters' })
+    try {
+      const [rows] = await pool.query('SELECT Password_Hash FROM employee WHERE Employee_ID = ?', [user.employee_id])
+      if (!rows.length) return send(res, 404, { message: 'Employee not found' })
+      const valid = await bcrypt.compare(currentPassword, rows[0].Password_Hash)
+      if (!valid) return send(res, 401, { message: 'Current password is incorrect' })
+      const newHash = await bcrypt.hash(newPassword, 10)
+      await pool.query('UPDATE employee SET Password_Hash = ? WHERE Employee_ID = ?', [newHash, user.employee_id])
+      return send(res, 200, { message: 'Password changed successfully' })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
+  }
+
+  // ── GET /api/customer/profile ────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/customer/profile') {
+    const user = authenticate(req, res); if (!user) return
+    try {
+      const [rows] = await pool.query(
+        `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
+                Phone_Number, House_Number, Street, City, State,
+                Zip_First3, Zip_Last2
+         FROM customer WHERE Customer_ID = ?`,
+        [user.customer_id]
+      )
+      if (!rows.length) return send(res, 404, { message: 'Customer not found' })
+      return send(res, 200, { user: rows[0] })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
+  }
+
+  // ── PUT /api/customer/profile ────────────────────────────────────────────
+  if (method === 'PUT' && pathname === '/api/customer/profile') {
+    const user = authenticate(req, res); if (!user) return
+    const { Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2 } = await getBody(req)
+    try {
+      await pool.query(
+        `UPDATE customer SET Email_Address=?, Phone_Number=?, House_Number=?, Street=?, City=?, State=?, Zip_First3=?, Zip_Last2=? WHERE Customer_ID=?`,
+        [Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2, user.customer_id]
+      )
+      const [rows] = await pool.query(
+        `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
+                Phone_Number, House_Number, Street, City, State,
+                Zip_First3, Zip_Last2
+         FROM customer WHERE Customer_ID = ?`,
+        [user.customer_id]
+      )
+      return send(res, 200, { message: 'Profile updated successfully', user: rows[0] })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
+  }
+
+  // ── GET /api/packages ────────────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/packages') {
+    packagesDB.getAllPackages(pool, (err, results) => {
+      if (err) return send(res, 500, { error: 'Database error' })
+      send(res, 200, results)
     })
-  } catch (err) {
-    if (err.status === 400 || err.code === 'VALIDATION' || err.code === 'DUPLICATE_EMAIL') {
-      return res.status(err.status || 400).json({ message: err.message })
-    }
-    if (err.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ message: 'Email already registered' })
-    }
-    // if (err.code === 'ER_BAD_FIELD_ERROR' || /Unknown column/i.test(String(err.message))) {
-    //   console.error(err)
-    //   return res.status(500).json({
-    //     message:
-    //       'Database schema is missing Customer columns (Birth_Day, Birth_Month, Birth_Year, Sex). Run backend/db/migrations/001_add_customer_demographics.sql',
-    //   })
-    // }
-    console.error(err)
-    res.status(500).json({ message: err.message || 'Server error' })
-  }
-})
-
-// Admin/Manager Register New Employee (NEW ENDPOINT)
-app.post('/api/auth/admin-register', authenticate, requireAdmin, async (req, res) => {
-  const { name, email, department, position, phoneNumber, workAddress, hireDate } = req.body
-
-  // Validation
-  if (!name || !email || !department || !position || !phoneNumber || !workAddress || !hireDate) {
-    return res.status(400).json({ message: 'Missing required fields' })
+    return
   }
 
-  try {
-    // Check if email already exists
-    const [exists] = await pool.query(
-      'SELECT Employee_ID FROM employee WHERE Email_Address = ?',
-      [email]
-    )
-    if (exists.length) {
-      return res.status(400).json({ message: 'Email already registered' })
+  // ── GET /api/packages/track/:trackingNumber ──────────────────────────────
+  {
+    const m = matchPath('/api/packages/track/:trackingNumber', pathname)
+    if (method === 'GET' && m.matched) {
+      const trackingNumber = m.params.trackingNumber.trim()
+      if (!trackingNumber) return send(res, 400, { error: 'trackingNumber is required' })
+      packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
+        if (err) return send(res, 500, { error: 'Database error' })
+        if (!result) return send(res, 404, { error: 'Package not found' })
+        send(res, 200, result)
+      })
+      return
     }
+  }
 
-    // Generate temporary password
-    const tempPassword = Math.random().toString(36).slice(-10) + 'Temp1!'
-    const hash = await bcrypt.hash(tempPassword, 10)
-
-    // Map department and position to IDs (adjust based on your database)
-    const departmentMap = {
-      'Mail Sorting': 1,
-      'Customer Service': 2,
-      'Delivery': 3,
-      'Management': 4,
-      'Finance': 5,
-      'IT Support': 6
-    }
-
-    const positionMap = {
-      'Clerk': 1,
-      'Supervisor': 2,
-      'Manager': 3,
-      'Director': 4,
-      'Staff': 5
-    }
-
-    const department_id = departmentMap[department] || 1
-    const role_id = positionMap[position] || 1
-
-    // Parse hire date and extract name
-    const [firstName, ...lastNameParts] = name.split(' ')
-    const lastName = lastNameParts.join(' ') || 'Employee'
-
-    // Insert new employee
-    const [result] = await pool.query(
-      `INSERT INTO employee
-         (Post_Office_ID, Role_ID, Department_ID, First_Name, Last_Name,
-          // Birth_Day, Birth_Month, Birth_Year, 
-          Password_Hash, Email_Address,
-          Phone_Number, Sex, Salary, Hours_Worked)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [1, role_id, department_id, firstName, lastName, 1, 1, 2000, hash, email, phoneNumber, 'M', 0]
-    )
-
-    // TODO: Send email to employee with temporary password
-    // You can integrate a service like SendGrid, Nodemailer, etc.
-    console.log(`[TODO] Send email to ${email} with temporary password: ${tempPassword}`)
-
-    const token = jwt.sign(
-      { employee_id: result.insertId, email, role_id, type: 'employee' },
-      process.env.JWT_SECRET || 'secret',
-      { expiresIn: '24h' }
-    )
-
-    res.status(201).json({
-      message: 'Employee registered successfully',
-      employee_id: result.insertId,
-      email,
-      note: 'Temporary password sent to employee email'
+  // ── GET /qry_track_package ───────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/qry_track_package') {
+    const trackingNumber = (query.tracking_number || query.trackingNumber || '').trim()
+    if (!trackingNumber) return send(res, 400, { error: 'tracking_number query parameter is required' })
+    packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
+      if (err) return send(res, 500, { error: 'Database error' })
+      if (!result) return send(res, 404, { error: 'Package not found' })
+      send(res, 200, result)
     })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error', error: err.message })
+    return
   }
-})
 
-// ── Admin-only employee directory (Role_ID = 5) ────────────────────────────
-app.get('/api/admin/employees', authenticate, requireRole5Admin, async (_req, res) => {
-  try {
-    const [rows] = await pool.query(
-      `SELECT
-         e.Employee_ID,
-         po.Street AS Post_Office_Street,
-         d.Department_Name,
-         r.Role_Name,
-         e.First_Name,
-         e.Last_Name,
-         e.Email_Address,
-         e.Sex,
-         e.Phone_Number,
-         e.Is_Active
-       FROM employee e
-       JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
-       JOIN department d   ON e.Department_ID  = d.Department_ID
-       JOIN role r         ON e.Role_ID        = r.Role_ID
-       WHERE e.Is_Active IN ('1', 1)
-       ORDER BY e.Last_Name, e.First_Name, e.Employee_ID`
-    )
-    res.json({ employees: rows })
-  } catch (err) {
-    console.error(err)
-    if (err.code === 'ER_BAD_FIELD_ERROR') {
-      return res.status(500).json({
-        message:
-          'Database is missing Employee.Is_Active. Run backend/db/migrations/002_add_employee_is_active.sql (and 003 if converting from TINYINT).',
-      })
+  // ── GET /api/price ───────────────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/price') {
+    const { package_type, weight, zone, excess_fee, dim_x, dim_y, dim_z } = query
+    const pt = normalizePackageTypeName(package_type)
+    if (!pt || weight === undefined || weight === '' || zone === undefined || zone === '') {
+      return send(res, 400, { error: 'package_type, weight, and zone are required' })
     }
-    res.status(500).json({ message: err.sqlMessage || err.message || 'Server error' })
-  }
-})
-
-app.patch('/api/admin/employees/:employeeId/deactivate', authenticate, requireRole5Admin, async (req, res) => {
-  const employeeId = Number(req.params.employeeId)
-  if (!Number.isFinite(employeeId)) {
-    return res.status(400).json({ message: 'Invalid employee id' })
-  }
-
-  try {
-    const [result] = await pool.query(
-      "UPDATE employee SET Is_Active = '0' WHERE Employee_ID = ?",
-      [employeeId]
-    )
-    if (!result.affectedRows) return res.status(404).json({ message: 'Employee not found' })
-    res.json({ ok: true })
-  } catch (err) {
-    console.error(err)
-    if (err.code === 'ER_BAD_FIELD_ERROR') {
-      return res.status(500).json({
-        message:
-          'Database is missing Employee.Is_Active. Run backend/db/migrations/002_add_employee_is_active.sql (and 003 if converting from TINYINT).',
-      })
-    }
-    res.status(500).json({ message: err.sqlMessage || err.message || 'Server error' })
-  }
-})
-
-// Get employee profile
-app.get('/api/auth/profile', authenticate, async (req, res) => {
-  try {
-    const [rows] = await pool.query(
-      `SELECT e.Employee_ID, e.First_Name, e.Middle_Name, e.Last_Name,
-              e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked,
-              e.Supervisor_ID,
-              CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
-              r.Role_Name, d.Department_Name,
-              po.City AS Office_City, po.State AS Office_State
-       FROM employee e
-       JOIN role r         ON e.Role_ID        = r.Role_ID
-       JOIN department d   ON e.Department_ID  = d.Department_ID
-       JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
-       LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
-       WHERE e.Employee_ID = ?`,
-      [req.user.employee_id]
-    )
-    if (!rows.length)
-      return res.status(404).json({ message: 'Employee not found' })
-    res.json({ user: rows[0] })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
-  }
-})
-
-// Update employee profile
-app.put('/api/auth/profile', authenticate, async (req, res) => {
-  const { Email_Address, Phone_Number } = req.body
-  try {
-    await pool.query(
-      'UPDATE employee SET Phone_Number = ?, Email_Address = ? WHERE Employee_ID = ?',
-      [Phone_Number, Email_Address, req.user.employee_id]
-    )
-    const [rows] = await pool.query(
-      `SELECT e.Employee_ID, e.First_Name, e.Middle_Name, e.Last_Name,
-              e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked,
-              e.Supervisor_ID,
-              CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
-              r.Role_Name, d.Department_Name,
-              po.City AS Office_City, po.State AS Office_State
-       FROM employee e
-       JOIN role r         ON e.Role_ID        = r.Role_ID
-       JOIN department d   ON e.Department_ID  = d.Department_ID
-       JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
-       LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
-       WHERE e.Employee_ID = ?`,
-      [req.user.employee_id]
-    )
-    res.json({ message: 'Profile updated successfully', user: rows[0] })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
-  }
-})
-
-// Change employee password
-app.post('/api/auth/change-password', authenticate, async (req, res) => {
-  const { currentPassword, newPassword } = req.body
-  if (!currentPassword || !newPassword)
-    return res.status(400).json({ message: 'Both passwords are required' })
-  if (newPassword.length < 6)
-    return res.status(400).json({ message: 'New password must be at least 6 characters' })
-  try {
-    const [rows] = await pool.query(
-      'SELECT Password_Hash FROM employee WHERE Employee_ID = ?',
-      [req.user.employee_id]
-    )
-    if (!rows.length) return res.status(404).json({ message: 'Employee not found' })
-    const valid = await bcrypt.compare(currentPassword, rows[0].Password_Hash)
-    if (!valid) return res.status(401).json({ message: 'Current password is incorrect' })
-    const newHash = await bcrypt.hash(newPassword, 10)
-    await pool.query(
-      'UPDATE employee SET Password_Hash = ? WHERE Employee_ID = ?',
-      [newHash, req.user.employee_id]
-    )
-    res.json({ message: 'Password changed successfully' })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
-  }
-})
-
-// Customer profile
-app.get('/api/customer/profile', authenticate, async (req, res) => {
-  try {
-    const [rows] = await pool.query(
-      `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
-              Phone_Number, House_Number, Street, City, State,
-              Zip_First3, Zip_Last2
-       FROM customer WHERE Customer_ID = ?`,
-      [req.user.customer_id]
-    )
-    if (!rows.length)
-      return res.status(404).json({ message: 'Customer not found' })
-    res.json({ user: rows[0] })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
-  }
-})
-
-// Update customer profile
-app.put('/api/customer/profile', authenticate, async (req, res) => {
-  const { Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2 } = req.body
-  try {
-    await pool.query(
-      `UPDATE customer 
-       SET Email_Address = ?, Phone_Number = ?,
-           House_Number = ?, Street = ?, City = ?, State = ?,
-           Zip_First3 = ?, Zip_Last2 = ?
-       WHERE Customer_ID = ?`,
-      [Email_Address, Phone_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2, req.user.customer_id]
-    )
-    const [rows] = await pool.query(
-      `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
-              Phone_Number, House_Number, Street, City, State,
-              Zip_First3, Zip_Last2
-       FROM customer WHERE Customer_ID = ?`,
-      [req.user.customer_id]
-    )
-    res.json({ message: 'Profile updated successfully', user: rows[0] })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Server error' })
-  }
-})
-
-// ════════════════════════════════════════════════════════════════════════════
-//  PACKAGES ROUTES
-// ════════════════════════════════════════════════════════════════════════════
-
-app.get('/api/packages', async (req, res) => {
-  packagesDB.getAllPackages(pool, (err, results) => {
-    if (err) return res.status(500).json({ error: 'Database error' })
-    res.json(results)
-  })
-})
-
-// Track package by tracking number
-app.get('/api/packages/track/:trackingNumber', async (req, res) => {
-  console.log('Received tracking request for:', req.params.trackingNumber)
-  const trackingNumber = (req.params.trackingNumber || '').trim()
-  if (!trackingNumber) {
-    return res.status(400).json({ error: 'trackingNumber is required' })
-  }
-
-  packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
-    if (err) {
-      console.error('Database error:', err)
-      return res.status(500).json({ error: 'Database error' })
-    }
-    if (!result) return res.status(404).json({ error: 'Package not found' })
-    res.json(result)
-  })
-})
-
-// Compatibility endpoint for existing query-style frontend calls
-app.get('/qry_track_package', async (req, res) => {
-  const trackingNumber = (req.query.tracking_number || req.query.trackingNumber || '').trim()
-  if (!trackingNumber) {
-    return res.status(400).json({ error: 'tracking_number query parameter is required' })
-  }
-
-  packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
-    if (err) return res.status(500).json({ error: 'Database error' })
-    if (!result) return res.status(404).json({ error: 'Package not found' })
-    res.json(result)
-  })
-})
-// ════════════════════════════════════════════════════════════════════════════
-//  Price Calculator
-// ════════════════════════════════════════════════════════════════════════════
-
-// Shipping price (package_pricing + optional excess_fee); matches price_calculator.jsx
-// Replace your existing GET /api/price route in server.js with this:
-
-app.get('/api/price', async (req, res) => {
-  const { package_type, weight, zone, excess_fee, dim_x, dim_y, dim_z } = req.query
-  const pt = normalizePackageTypeName(package_type)
-
-  if (!pt || weight === undefined || weight === '' || zone === undefined || zone === '') {
-    return res.status(400).json({ error: 'package_type, weight, and zone are required' })
-  }
-
-  const w = Number(weight)
-  const z = Number(zone)
-
-  if (!Number.isFinite(w) || w <= 0 || w > 70) {
-    return res.status(400).json({ error: 'Weight must be greater than 0 and at most 70 lbs' })
-  }
-  if (!Number.isInteger(z) || z < 1 || z > 9) {
-    return res.status(400).json({ error: 'Zone must be a whole number from 1 to 9' })
-  }
-
-  try {
-    const tot = await new Promise((resolve, reject) => {
-      priceDB.getPrice(
-        pool,
-        excess_fee || null,
-        pt,
-        weight,
-        zone,
-        (err, results) => {
+    const w = Number(weight)
+    const z = Number(zone)
+    if (!Number.isFinite(w) || w <= 0 || w > 70) return send(res, 400, { error: 'Weight must be greater than 0 and at most 70 lbs' })
+    if (!Number.isInteger(z) || z < 1 || z > 9) return send(res, 400, { error: 'Zone must be a whole number from 1 to 9' })
+    try {
+      const tot = await new Promise((resolve, reject) => {
+        priceDB.getPrice(pool, excess_fee || null, pt, weight, zone, (err, results) => {
           if (err) return reject(err)
           if (!results?.length) {
             const e = new Error('No matching price for this weight, zone, and package type combination')
@@ -604,276 +554,195 @@ app.get('/api/price', async (req, res) => {
             return reject(e)
           }
           resolve(Number(results[0].Tot_Price))
-        },
-        dim_x,   
-        dim_y,  
-        dim_z    
-      )
-    })
-    res.json({ Tot_Price: tot })
-  } catch (err) {
-    if (err.status === 400) return res.status(400).json({ error: err.message })
-    console.error(err)
-    res.status(500).json({ error: err.message || 'Could not calculate price' })
-  }
-})
-
-// Customer: packages where they are sender or recipient (for "My packages")
-app.get('/api/customer/my-packages', authenticate, async (req, res) => {
-  if (req.user?.type !== 'customer' || req.user.customer_id == null) {
-    return res.status(403).json({ message: 'Customer access required' })
-  }
-  packagesDB.getPackagesForCustomer(pool, req.user.customer_id, (err, results) => {
-    if (err) {
+        }, dim_x, dim_y, dim_z)
+      })
+      return send(res, 200, { Tot_Price: tot })
+    } catch (err) {
+      if (err.status === 400) return send(res, 400, { error: err.message })
       console.error(err)
-      return res.status(500).json({ error: 'Database error' })
+      return send(res, 500, { error: err.message || 'Could not calculate price' })
     }
-    res.json(results)
-  })
-})
-
-// Employee: create paid package (Package, Shipment, Shipment_Package, Delivery, Payment)
-app.post('/api/employee/packages', authenticate, requireEmployee, async (req, res) => {
-  console.log('in api/employee/packages');
-  const b = req.body || {}
-  const {
-    sender_email,
-    sender_first_name,
-    sender_last_name,
-    sender_house_number,
-    sender_street,
-    sender_city,
-    sender_state,
-    sender_zip_first3,
-    sender_zip_last2,
-    sender_apt_number,
-    sender_country,
-    sender_phone,
-    recipient_email,
-    recipient_first_name,
-    recipient_last_name,
-    recipient_house_number,
-    recipient_street,
-    recipient_city,
-    recipient_state,
-    recipient_zip_first3,
-    recipient_zip_last2,
-    recipient_apt_number,
-    recipient_country,
-    recipient_phone,
-    package_type,
-    weight,
-    zone,
-    excess_fee,
-    dim_x,
-    dim_y,
-    dim_z,
-    //store_id = null
-  } = b
-
-
-  const pt = normalizePackageTypeName(package_type)
-  const typeCode = TYPE_NAME_TO_CODE[pt]
-  if (!typeCode) {
-    return res.status(400).json({ message: 'Invalid package_type' })
   }
 
-  const w = Number(weight)
-  const z = Number(zone)
-  if (Number.isNaN(w) || Number.isNaN(z)) {
-    return res.status(400).json({ message: 'weight and zone must be numbers' })
+  // ── GET /api/customer/my-packages ────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/customer/my-packages') {
+    const user = authenticate(req, res); if (!user) return
+    if (user?.type !== 'customer' || user.customer_id == null) {
+      return send(res, 403, { message: 'Customer access required' })
+    }
+    try {
+      await packagePickupStorageJob.runNodeDisposalSweep(pool)
+    } catch (e) {
+      console.error('[my-packages] disposal sweep:', e.message || e)
+    }
+    packagesDB.getPackagesForCustomer(pool, user.customer_id, (err, results) => {
+      if (err) { console.error(err); return send(res, 500, { error: 'Database error' }) }
+      send(res, 200, results)
+    })
+    return
   }
 
-  const dx = dim_x != null && dim_x !== '' ? Number(dim_x) : 12
-  const dy = dim_y != null && dim_y !== '' ? Number(dim_y) : 10
-  const dz = dim_z != null && dim_z !== '' ? Number(dim_z) : 8
-  if (!(dx > 0 && dy > 0 && dz > 0)) {
-    return res.status(400).json({ message: 'Dimensions must be positive numbers' })
-  }
+  // ── POST /api/employee/packages ──────────────────────────────────────────
+  if (method === 'POST' && pathname === '/api/employee/packages') {
+    console.log('in api/employee/packages')
+    const user = authenticate(req, res); if (!user) return
+    if (!requireEmployee(user, res)) return
+    const b = await getBody(req)
+    const {
+      sender_email, sender_first_name, sender_last_name,
+      sender_house_number, sender_street, sender_city, sender_state, sender_zip_first3, sender_zip_last2,
+      sender_apt_number, sender_country, sender_phone,
+      recipient_email, recipient_first_name, recipient_last_name,
+      recipient_house_number, recipient_street, recipient_city, recipient_state, recipient_zip_first3, recipient_zip_last2,
+      recipient_apt_number, recipient_country, recipient_phone,
+      package_type, weight, zone, excess_fee, dim_x, dim_y, dim_z,
+    } = b
 
-  const excessName = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
-  const sigRequired = excessName === 'Signature Required'
+    const pt = normalizePackageTypeName(package_type)
+    const typeCode = TYPE_NAME_TO_CODE[pt]
+    if (!typeCode) return send(res, 400, { message: 'Invalid package_type' })
 
-  let priceAmount
-  try {
-    priceAmount = await getPricePromise(pool, excessName, pt, w, z)
-  } catch (err) {
-    const code = err.status === 400 ? 400 : 500
-    return res.status(code).json({ message: err.message || 'Pricing failed' })
-  }
+    const w = Number(weight)
+    const z = Number(zone)
+    if (Number.isNaN(w) || Number.isNaN(z)) return send(res, 400, { message: 'weight and zone must be numbers' })
 
-  const senderEmail = (sender_email || '').trim().toLowerCase()
-  if (!senderEmail || !sender_first_name?.trim() || !sender_last_name?.trim()) {
-    return res.status(400).json({ message: 'Sender email, first name, and last name are required' })
-  }
-  if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_first3 || !sender_zip_last2) {
-    return res.status(400).json({ message: 'Sender address fields are required' })
-  }
+    const dx = dim_x != null && dim_x !== '' ? Number(dim_x) : 12
+    const dy = dim_y != null && dim_y !== '' ? Number(dim_y) : 10
+    const dz = dim_z != null && dim_z !== '' ? Number(dim_z) : 8
+    if (!(dx > 0 && dy > 0 && dz > 0)) return send(res, 400, { message: 'Dimensions must be positive numbers' })
 
-  let recipientEmail = (recipient_email || '').trim().toLowerCase()
-  if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
-    return res.status(400).json({ message: 'Recipient first and last name are required' })
-  }
-  if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || !recipient_zip_first3 || !recipient_zip_last2) {
-    return res.status(400).json({ message: 'Recipient address fields are required' })
-  }
-  if (!recipientEmail) {
-    recipientEmail = `recipient.${Date.now()}.${Math.random().toString(36).slice(2, 8)}@pkg.internal`
-  }
-  if (recipientEmail === senderEmail) {
-    return res.status(400).json({ message: 'Sender and recipient must be different people (different emails)' })
-  }
+    const excessName = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
+    const sigRequired = excessName === 'Signature Required'
 
-  const conn = await pool.getConnection()
-  try {
-    await conn.beginTransaction()
-
-    let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
-    if (!senderId) {
-      senderId = await customerDB.createCustomerMinimal(conn, {
-        first_name: sender_first_name,
-        last_name: sender_last_name,
-        email: senderEmail,
-        house_number: sender_house_number,
-        street: sender_street,
-        city: sender_city,
-        state: sender_state,
-        zip_first3: sender_zip_first3,
-        zip_last2: sender_zip_last2,
-        apt_number: sender_apt_number,
-        zip_plus4: b.sender_zip_plus4,
-        country: sender_country,
-        phone_number: sender_phone,
-      })
+    let priceAmount
+    try {
+      priceAmount = await getPricePromise(pool, excessName, pt, w, z)
+    } catch (err) {
+      return send(res, err.status === 400 ? 400 : 500, { message: err.message || 'Pricing failed' })
     }
 
-    let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
-    if (!recipientId) {
-      recipientId = await customerDB.createCustomerMinimal(conn, {
-        first_name: recipient_first_name,
-        last_name: recipient_last_name,
-        email: recipientEmail,
-        house_number: recipient_house_number,
-        street: recipient_street,
-        city: recipient_city,
-        state: recipient_state,
-        zip_first3: recipient_zip_first3,
-        zip_last2: recipient_zip_last2,
-        apt_number: recipient_apt_number,
-        zip_plus4: b.recipient_zip_plus4,
-        country: recipient_country,
-        phone_number: recipient_phone,
-      })
+    const senderEmail = (sender_email || '').trim().toLowerCase()
+    if (!senderEmail || !sender_first_name?.trim() || !sender_last_name?.trim()) {
+      return send(res, 400, { message: 'Sender email, first name, and last name are required' })
+    }
+    if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_first3 || !sender_zip_last2) {
+      return send(res, 400, { message: 'Sender address fields are required' })
     }
 
-    if (senderId === recipientId) {
-      await conn.rollback()
-      return res.status(400).json({ message: 'Sender and recipient must be different customers' })
+    let recipientEmail = (recipient_email || '').trim().toLowerCase()
+    if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
+      return send(res, 400, { message: 'Recipient first and last name are required' })
     }
-
-    const tracking = await nextTrackingNumber(conn)
-    const oversize = typeCode === 'OVR' ? 1 : 0
-    const actingEmployeeId = Number(req.user.employee_id)
-    if (!Number.isFinite(actingEmployeeId)) {
-      await conn.rollback()
-      return res.status(401).json({ message: 'Invalid employee session' })
+    if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || !recipient_zip_first3 || !recipient_zip_last2) {
+      return send(res, 400, { message: 'Recipient address fields are required' })
     }
-
-    const [empRows] = await conn.query(
-      `SELECT s.Store_ID
-       FROM employee e
-       JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
-       JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
-       WHERE e.Employee_ID = ?`,
-      [actingEmployeeId]
-    )
-    if (!empRows.length) {
-      await conn.rollback()
-      return res.status(404).json({ error: 'Employee or store not found' })
+    if (!recipientEmail) {
+      recipientEmail = `recipient.${Date.now()}.${Math.random().toString(36).slice(2, 8)}@pkg.internal`
     }
-    const sid = empRows[0].Store_ID
+    if (recipientEmail === senderEmail) return send(res, 400, { message: 'Sender and recipient must be different people (different emails)' })
 
-    const [payRes] = await conn.query(
-      `INSERT INTO payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status, Employee_ID)
-       VALUES (?,?,?,?,?, 'completed', ?)`,
-      [senderId, sid, 1, 1, priceAmount, actingEmployeeId]
-    )
-    const payId = payRes.insertId
-    await conn.query(
-      `INSERT INTO package (
-        Tracking_Number, Sender_ID, Recipient_ID,
-        Dim_X, Dim_Y, Dim_Z,
-        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Price, Payment_ID
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [
-        tracking,
-        senderId,
-        recipientId,
-        dx,
-        dy,
-        dz,
-        typeCode,
-        w,
-        z,
-        oversize,
-        sigRequired ? 1 : 0,
-        priceAmount,
-        payId,
-      ]
-    )
+    const conn = await pool.getConnection()
+    try {
+      await conn.beginTransaction()
 
-    const [[pending]] = await conn.query(
-      `SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`
-    )
-    if (!pending) {
-      throw new Error('Missing Pending status in status_code')
-    }
-    const pendingCode = pending.Status_Code
+      let senderInitialPassword = null
+      let recipientInitialPassword = null
 
-    await conn.query(
-      `INSERT INTO delivery (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivery_Status_Code, Delivered_By)
-       VALUES (?, NULL, ?, NULL, ?, NULL)`,
-      [tracking, sigRequired ? 1 : 0, pendingCode]
-    )
+      let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
+      if (!senderId) {
+        const created = await customerDB.createCustomerMinimal(conn, {
+          first_name: sender_first_name, last_name: sender_last_name, email: senderEmail,
+          house_number: sender_house_number, street: sender_street, city: sender_city, state: sender_state,
+          zip_first3: sender_zip_first3, zip_last2: sender_zip_last2, apt_number: sender_apt_number,
+          zip_plus4: b.sender_zip_plus4, country: sender_country, phone_number: sender_phone,
+        })
+        senderId = created.customerId
+        senderInitialPassword = created.initialPassword
+      }
 
-    const [shipRes] = await conn.query(
-      `INSERT INTO shipment (
-        Status_Code, Employee_ID,
-        From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
-        To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_First3, To_Zip_Last2, To_Zip_Plus4, To_Country,
-        Departure_Time_Stamp, Arrival_Time_Stamp
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
-      [
-        pendingCode,
-        actingEmployeeId,
-        sender_apt_number || null,
-        String(sender_house_number).slice(0, 10),
-        String(sender_street).slice(0, 100),
-        String(sender_city).slice(0, 100),
-        String(sender_state).slice(0, 50),
-        String(sender_zip_first3).replace(/\D/g, '').slice(0, 3),
-        String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
-        b.sender_zip_plus4 ? String(b.sender_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-        (sender_country || 'USA').toString().slice(0, 50),
-        recipient_apt_number || null,
-        String(recipient_house_number).slice(0, 10),
-        String(recipient_street).slice(0, 100),
-        String(recipient_city).slice(0, 100),
-        String(recipient_state).slice(0, 50),
-        String(recipient_zip_first3).replace(/\D/g, '').slice(0, 3),
-        String(recipient_zip_last2).replace(/\D/g, '').slice(0, 2),
-        b.recipient_zip_plus4 ? String(b.recipient_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-        (recipient_country || 'USA').toString().slice(0, 50),
-      ]
-    )
-    
-    const shipmentId = shipRes.insertId
-    await conn.query(
-      `INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`,
-      [shipmentId, tracking]
-    )
+      let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
+      if (!recipientId) {
+        const created = await customerDB.createCustomerMinimal(conn, {
+          first_name: recipient_first_name, last_name: recipient_last_name, email: recipientEmail,
+          house_number: recipient_house_number, street: recipient_street, city: recipient_city, state: recipient_state,
+          zip_first3: recipient_zip_first3, zip_last2: recipient_zip_last2, apt_number: recipient_apt_number,
+          zip_plus4: b.recipient_zip_plus4, country: recipient_country, phone_number: recipient_phone,
+        })
+        recipientId = created.customerId
+        recipientInitialPassword = created.initialPassword
+      }
 
-    
+      if (senderId === recipientId) {
+        await conn.rollback()
+        return send(res, 400, { message: 'Sender and recipient must be different customers' })
+      }
+
+      const tracking = await nextTrackingNumber(conn)
+      const oversize = typeCode === 'OVR' ? 1 : 0
+      const actingEmployeeId = Number(user.employee_id)
+      if (!Number.isFinite(actingEmployeeId)) {
+        await conn.rollback()
+        return send(res, 401, { message: 'Invalid employee session' })
+      }
+
+      const [empRows] = await conn.query(
+        `SELECT s.Store_ID FROM employee e
+         JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
+         JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
+         WHERE e.Employee_ID = ?`,
+        [actingEmployeeId]
+      )
+      if (!empRows.length) {
+        await conn.rollback()
+        return send(res, 404, { error: 'Employee or store not found' })
+      }
+      const sid = empRows[0].Store_ID
+
+      const [payRes] = await conn.query(
+        `INSERT INTO payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status, Employee_ID)
+         VALUES (?,?,?,?,?,'completed',?)`,
+        [senderId, sid, 1, 1, priceAmount, actingEmployeeId]
+      )
+      const payId = payRes.insertId
+      await conn.query(
+        `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
+          Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Price, Payment_ID)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [tracking, senderId, recipientId, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0, priceAmount, payId]
+      )
+
+      const [[pending]] = await conn.query(`SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`)
+      if (!pending) throw new Error('Missing Pending status in status_code')
+      const pendingCode = pending.Status_Code
+
+      await conn.query(
+        `INSERT INTO delivery (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivery_Status_Code, Delivered_By)
+         VALUES (?,NULL,?,NULL,?,NULL)`,
+        [tracking, sigRequired ? 1 : 0, pendingCode]
+      )
+
+      const [shipRes] = await conn.query(
+        `INSERT INTO shipment (Status_Code, Employee_ID,
+          From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
+          To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_First3, To_Zip_Last2, To_Zip_Plus4, To_Country,
+          Departure_Time_Stamp, Arrival_Time_Stamp)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
+        [
+          pendingCode, actingEmployeeId,
+          sender_apt_number || null, String(sender_house_number).slice(0, 10), String(sender_street).slice(0, 100),
+          String(sender_city).slice(0, 100), String(sender_state).slice(0, 50),
+          String(sender_zip_first3).replace(/\D/g, '').slice(0, 3), String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
+          b.sender_zip_plus4 ? String(b.sender_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
+          (sender_country || 'USA').toString().slice(0, 50),
+          recipient_apt_number || null, String(recipient_house_number).slice(0, 10), String(recipient_street).slice(0, 100),
+          String(recipient_city).slice(0, 100), String(recipient_state).slice(0, 50),
+          String(recipient_zip_first3).replace(/\D/g, '').slice(0, 3), String(recipient_zip_last2).replace(/\D/g, '').slice(0, 2),
+          b.recipient_zip_plus4 ? String(b.recipient_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
+          (recipient_country || 'USA').toString().slice(0, 50),
+        ]
+      )
+      const shipmentId = shipRes.insertId
+      await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [shipmentId, tracking])
 
     await conn.commit()
     res.status(201).json({
@@ -951,36 +820,15 @@ app.patch('/api/employee/packages/:trackingNumber/status', authenticate, require
     conn.release()
   }
 })
+
 // ════════════════════════════════════════════════════════════════════════════
 //  INVENTORY ROUTES
 // ════════════════════════════════════════════════════════════════════════════
 
-// Public (or you can also protect it if you want)
 app.get('/api/inventory', async (req, res) => {
   inventoryDB.getAllInventory(pool, (err, results) => {
     if (err) return res.status(500).json({ error: 'Database error' })
     res.json(results)
-  })
-})
-
-// Employee-only: update quantity for a product at a given store
-app.patch('/api/inventory/:storeId/:upc', authenticate, requireEmployee, async (req, res) => {
-  const storeId = Number(req.params.storeId)
-  const upc = String(req.params.upc || '').trim()
-  const quantity = Number(req.body?.quantity)
-
-  if (!Number.isFinite(storeId)) return res.status(400).json({ message: 'Invalid storeId' })
-  if (!upc) return res.status(400).json({ message: 'Invalid upc' })
-  if (!Number.isInteger(quantity) || quantity < 0) {
-    return res.status(400).json({ message: 'quantity must be an integer >= 0' })
-  }
-
-  inventoryDB.updateInventoryQuantity(pool, { upc, store_id: storeId, quantity }, (err, result) => {
-    if (err) return res.status(500).json({ message: err.message || 'Database error' })
-    if (!result?.affectedRows) {
-      return res.status(404).json({ message: 'Product not found for that store/upc' })
-    }
-    res.json({ ok: true, store_id: storeId, upc, quantity })
   })
 })
 
@@ -1123,8 +971,6 @@ app.put('/api/support-tickets/:id', async (req, res) => {
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
 console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
-console.log("Connecting to Database:", process.env.MYSQL_DATABASE);
-
-
+http.createServer(router).listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
+console.log("Connecting to Database:", process.env.MYSQL_DATABASE)
 

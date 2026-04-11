@@ -229,8 +229,12 @@ async function getCustomerByEmail(pool, email) {
   return rows[0] || null
 }
 
+/** Default login for customers created when an employee adds a package (same for all such accounts). */
+const EMPLOYEE_CREATED_CUSTOMER_PASSWORD = 'customer123'
+
 /**
- * Minimal customer row for employee-created shipments (placeholder password; customer can reset later).
+ * Minimal customer row for employee-created shipments (fixed default password).
+ * @returns {{ customerId: number, initialPassword: string }}
  */
 async function createCustomerMinimal(pool, body) {
   const {
@@ -249,7 +253,8 @@ async function createCustomerMinimal(pool, body) {
     phone_number,
   } = body
 
-  const hash = await bcrypt.hash(`emp_pkg_${Date.now()}_${Math.random().toString(36)}`, 10)
+  const initialPassword = EMPLOYEE_CREATED_CUSTOMER_PASSWORD
+  const hash = await bcrypt.hash(initialPassword, 10)
   const zip3 = String(zip_first3).replace(/\D/g, '').slice(0, 3)
   const zip2 = String(zip_last2).replace(/\D/g, '').slice(0, 2)
   const z4digits = zip_plus4 != null && zip_plus4 !== ''
@@ -283,7 +288,7 @@ async function createCustomerMinimal(pool, body) {
       phone_number ? String(phone_number).trim().slice(0, 20) : null,
     ]
   )
-  return result.insertId
+  return { customerId: result.insertId, initialPassword }
 }
 
 module.exports = {
