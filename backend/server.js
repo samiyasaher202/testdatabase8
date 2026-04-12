@@ -1574,6 +1574,9 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
   // ── GET /api/report/packages ──────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/report/packages') {
+      const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
     try {
       const { search, dateFrom, dateTo } = query
       let sql = `
@@ -1606,6 +1609,9 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
   // ── GET /api/report/payments ──────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/report/payments') {
+      const user = authenticate(req, res)
+      if (!user) return
+      if (!requireEmployee(user, res)) return
     try {
       const { dateFrom, dateTo } = query
       let sql = `
@@ -1633,8 +1639,11 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
   // ── GET /api/report/excess-fees ───────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/report/excess-fees') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
     
-  console.log('HIT excess-fees')
+    console.log('HIT excess-fees')
     try {
       const { search, dateFrom, dateTo, feeType } = query
       let sql = `
@@ -1665,7 +1674,10 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   // ── GET /api/report/revenue-by-month ─────────────────────────────────────
   if (method === 'GET' && pathname === '/api/report/revenue-by-month') {
      console.log('HIT rev-by-month')
-    try {
+      const user = authenticate(req, res)
+      if (!user) return
+      if (!requireEmployee(user, res)) return
+     try {
       const [rows] = await pool.query(`
         SELECT 
           DATE_FORMAT(p.Date_Created, '%b %Y') AS month,
