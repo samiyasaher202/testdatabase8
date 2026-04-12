@@ -15,11 +15,11 @@ const packagePickupStorageJob = require('./db/package_pickup_storage_job')
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
-  host:               process.env.MYSQLHOST,
-  port:               process.env.MYSQLPORT,
-  user:               process.env.MYSQLUSER,
-  password:           process.env.MYSQLPASSWORD,
-  database:           process.env.MYSQL_DATABASE,
+  host:               process.env.MYSQLHOST||'localhost',
+  port:               process.env.MYSQLPORT||'3306',
+  user:               process.env.MYSQLUSER||'root',
+  password:           process.env.MYSQLPASSWORD||'MBobanza#2205',
+  database:           process.env.MYSQL_DATABASE||'post_officedb',
   waitForConnections: true,
   connectionLimit:    10,
 })
