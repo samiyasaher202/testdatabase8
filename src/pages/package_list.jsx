@@ -4,7 +4,8 @@ import './css/home.css'
 import './css/inventory.css'
 import './css/package_list.css'
 import skyline from '../assets/houston-skyline.jpeg'
-import { authFetch } from '../authFetch'
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 const ZONES = [
   { value: '1', label: 'Zone 1 — 1-50 mi' },
@@ -176,51 +177,31 @@ export default function AllPackages() {
   const [showFilters,   setShowFilters]   = useState(false)
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/packages`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load packages')
-        return res.json()
-      })
-      .then((data) => {
-        setPackages(data)
-        setLoading(false)
-      })
-      .catch((err) => {
-        setError(err.message)
-        setLoading(false)
-      })
+    if (userType !== 'employee') { navigate('/login'); return }
+
+    // Load packages, status codes, post offices in parallel
+    Promise.all([
+      fetch(`${API_BASE}/api/packages/full`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      fetch(`${API_BASE}/api/status-codes`,  { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+      fetch(`${API_BASE}/api/reports/post-offices`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+    ])
+    .then(([pkgs, codes, offices]) => {
+      setPackages(Array.isArray(pkgs) ? pkgs : [])
+      setStatusCodes(Array.isArray(codes) ? codes : [])
+      setPostOffices(Array.isArray(offices) ? offices : [])
+      setLoading(false)
+    })
+    .catch(err => { setError(err.message); setLoading(false) })
   }, [])
 
-  useEffect(() => {
-    if (userType !== 'employee') return
-    const token = localStorage.getItem('token')
-    fetch(`${API_BASE}/api/status-codes`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => {
-        if (!r.ok) throw new Error('status codes')
-        return r.json()
-      })
-      .then(setStatusCodes)
-      .catch(() => setStatusCodes([]))
-  }, [userType])
-
   async function handleStatusChange(trackingNumber, statusCodeStr) {
-    const token = localStorage.getItem('token')
-    setStatusUpdating(trackingNumber)
-    setError(null)
+    setStatusUpdating(trackingNumber); setError(null)
     try {
-      const res = await fetch(
-        `${API_BASE}/api/employee/packages/${encodeURIComponent(trackingNumber)}/status`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status_code: Number(statusCodeStr) }),
-        }
-      )
+      const res = await fetch(`${API_BASE}/api/employee/packages/${encodeURIComponent(trackingNumber)}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status_code: Number(statusCodeStr) }),
+      })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.message || 'Could not update status')
       const code = Number(statusCodeStr)
@@ -282,32 +263,10 @@ export default function AllPackages() {
         <div className="header-inner">
           <Link className="logo" to="/">National Postal Service</Link>
           <nav className="top-nav">
-            {userType !== 'employee' && (
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/') }}>Home</a>
-            )}
-
-            {userType === 'employee' ? (
-              <>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
-                <span className="nav-current" aria-current="page">Packages</span>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
-              </>
-            ) : (
-              <>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>Dashboard</a>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_packages') }}>My packages</a>
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Store</a>
-                <span className="nav-current" aria-current="page">Packages</span>
-              </>
-            )}
-
-            {userType === 'customer' ? (
-              <button type="button" className="customer-nav-logout" onClick={handleLogout}>
-                Logout
-              </button>
-            ) : (
-              <a href="#" onClick={handleLogout}>Logout</a>
-            )}
+            <a href="#" onClick={e => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
+            <span className="nav-current" aria-current="page">Packages</span>
+            <a href="#" onClick={e => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
+            <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
         </div>
       </header>
@@ -318,10 +277,8 @@ export default function AllPackages() {
         </div>
 
         <div className="inventory-inner">
-          <h2>All packages</h2>
-          <p className="inventory-subtitle">
-            Search, filter, and inspect package records across the network.
-          </p>
+          <h2>All Packages</h2>
+          <p className="inventory-subtitle">Search, filter, and manage package records across the network.</p>
 
           {error && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', color: '#991b1b', marginBottom: 20, display: 'flex', justifyContent: 'space-between' }}>
@@ -402,107 +359,13 @@ export default function AllPackages() {
           )}
 
           {loading ? (
-            <p className="inventory-state-msg">Loading packages…</p>
-          ) : filtered.length === 0 ? (
-            <p className="inventory-state-msg">No packages match your search.</p>
+            <div style={{ textAlign: 'center', padding: 48, color: '#64748b' }}>Loading packages…</div>
           ) : (
-            <div className="table-wrapper">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Tracking #</th>
-                    <th>Type</th>
-                    <th>Weight</th>
-                    <th>Zone</th>
-                    <th>Price</th>
-                    <th>Oversize</th>
-                    <th>Sig. required</th>
-                    <th>Created</th>
-                    <th>Status</th>
-                    <th aria-label="Expand" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((p) => (
-                    <Fragment key={p.Tracking_Number}>
-                      <tr>
-                        <td><code>{p.Tracking_Number}</code></td>
-                        <td>{p.Package_Type_Code}</td>
-                        <td>{p.Weight} lbs</td>
-                        <td>{p.Zone}</td>
-                        <td>${parseFloat(p.Price || 0).toFixed(2)}</td>
-                        <td>{p.Oversize ? 'Yes' : 'No'}</td>
-                        <td>{p.Requires_Signature ? 'Yes' : 'No'}</td>
-                        <td>{p.Date_Created ? new Date(p.Date_Created).toLocaleDateString() : '—'}</td>
-                        <td>
-                          {userType === 'employee' && statusCodes.length > 0 && p.Delivery_Status_Code != null ? (
-                            <select
-                              className="pkg-status-select"
-                              aria-label={`Status for ${p.Tracking_Number}`}
-                              value={String(p.Delivery_Status_Code)}
-                              onChange={(e) => handleStatusChange(p.Tracking_Number, e.target.value)}
-                              disabled={statusUpdating === p.Tracking_Number || !!p.Is_Final_Status}
-                            >
-                              {statusCodes.map((s) => (
-                                <option key={s.Status_Code} value={String(s.Status_Code)}>
-                                  {s.Status_Name}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className={`status-badge ${getStatusBadgeClass(p.Status_Name)}`}>
-                              {p.Status_Name || '—'}
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="pkg-expand-btn"
-                            onClick={() => toggleExpand(p.Tracking_Number)}
-                          >
-                            {expanded === p.Tracking_Number ? '▲ Hide' : '▼ More'}
-                          </button>
-                        </td>
-                      </tr>
-
-                      {expanded === p.Tracking_Number && (
-                        <tr className="detail-row">
-                          <td colSpan={10}>
-                            <div className="detail-grid">
-                              <div className="detail-item">
-                                <label>Dimensions</label>
-                                <p>{p.Dim_X}&quot; × {p.Dim_Y}&quot; × {p.Dim_Z}&quot;</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Sender ID</label>
-                                <p>{p.Sender_ID ?? '—'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Recipient ID</label>
-                                <p>{p.Recipient_ID ?? '—'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Date updated</label>
-                                <p>{p.Date_Updated ? new Date(p.Date_Updated).toLocaleDateString() : '—'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Final status</label>
-                                <p>{p.Is_Final_Status ? 'Final' : 'In progress'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Delivered date</label>
-                                <p>{p.Delivered_Date ? new Date(p.Delivered_Date).toLocaleDateString() : '—'}</p>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <>
+              <PackageTable title="🚚 Active Packages"    packages={active}       color="#1d4ed8" {...commonProps} />
+              <PackageTable title="✅ Completed"          packages={completed}    color="#059669" collapsible {...commonProps} />
+              <PackageTable title="⚠️ Lost & Returned"   packages={lostReturned} color="#dc2626" collapsible {...commonProps} />
+            </>
           )}
         </div>
       </main>
