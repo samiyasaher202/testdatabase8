@@ -1544,7 +1544,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
     // ── GET /api/report/fee-breakdown ────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/report/fee-breakdown') {
-     console.log('HIT fee-breakdown')
+    // console.log('HIT fee-breakdown')
     try {
       const { search, dateFrom, dateTo, feeType } = query
       let sql = `
@@ -1574,9 +1574,9 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
   // ── GET /api/report/packages ──────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/report/packages') {
-      const user = authenticate(req, res)
-    if (!user) return
-    if (!requireEmployee(user, res)) return
+    //   const user = authenticate(req, res)
+    // if (!user) return
+    // if (!requireEmployee(user, res)) return
     try {
       const { search, dateFrom, dateTo } = query
       let sql = `
@@ -1609,10 +1609,11 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
   // ── GET /api/report/payments ──────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/report/payments') {
-      const user = authenticate(req, res)
-      if (!user) return
-      if (!requireEmployee(user, res)) return
+      // const user = authenticate(req, res)
+      // if (!user) return
+      // if (!requireEmployee(user, res)) return
     try {
+      //console.log("here");
       const { dateFrom, dateTo } = query
       let sql = `
         SELECT
@@ -1630,6 +1631,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       if (dateTo) { sql += ` AND Date_Created <= ?`; params.push(dateTo) }
       sql += ` ORDER BY Date_Created DESC`
       const [rows] = await pool.query(sql, params)
+      //console.log(rows)
       return send(res, 200, rows)
     } catch (err) {
       console.error(err)
@@ -1639,9 +1641,9 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
   // ── GET /api/report/excess-fees ───────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/report/excess-fees') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireEmployee(user, res)) return
+    // const user = authenticate(req, res)
+    // if (!user) return
+    // if (!requireEmployee(user, res)) return
     
     console.log('HIT excess-fees')
     try {
@@ -1673,10 +1675,10 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
   // ── GET /api/report/revenue-by-month ─────────────────────────────────────
   if (method === 'GET' && pathname === '/api/report/revenue-by-month') {
-     console.log('HIT rev-by-month')
-      const user = authenticate(req, res)
-      if (!user) return
-      if (!requireEmployee(user, res)) return
+    //  console.log('HIT rev-by-month')
+    //   const user = authenticate(req, res)
+    //   if (!user) return
+    //   if (!requireEmployee(user, res)) return
      try {
       const [rows] = await pool.query(`
         SELECT 
