@@ -49,6 +49,13 @@ const Login = () => {
       setError('Please choose Employee or Customer.')
       return
     }
+
+    const loginError = validateAll([
+      [email,    validateEmail],
+      [password, validatePassword],
+    ])
+    if (loginError) { setError(loginError); return }
+      
     setError('')
     setLoading(true)
 
