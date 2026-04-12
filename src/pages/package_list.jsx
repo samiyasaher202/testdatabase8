@@ -20,294 +20,294 @@ const ZONES = [
   { value: '9', label: 'Zone 9 — Territories' },
 ]
 
-function getStatusBadgeClass(status) {
-  const s = (status || '').toLowerCase()
-  if (s.includes('deliver')) return 'status-delivered'
-  if (s.includes('picked up')) return 'status-delivered'
-  if (s.includes('disposed')) return 'status-delivered'
-  if (s.includes('at office')) return 'status-pending'
-  if (s.includes('transit') || s.includes('shipping')) return 'status-transit'
-  if (s.includes('pending') || s.includes('processing')) return 'status-pending'
-  if (s.includes('delay') || s.includes('exception')) return 'status-delayed'
-  if (s.includes('lost')) return 'status-lost'
-  if (s.includes('return')) return 'status-return'
-   return 'status-default'
-}
-
-// function statusBadgeStyle(status) {
+// function getStatusBadgeClass(status) {
 //   const s = (status || '').toLowerCase()
-//   if (s.includes('deliver') || s.includes('picked up'))
-//     return { background: '#dcfce7', color: '#15803d', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
-//   if (s.includes('transit') || s.includes('out for'))
-//     return { background: '#dbeafe', color: '#1d4ed8', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
-//   if (s.includes('pending'))
-//     return { background: '#fef9c3', color: '#854d0e', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
-//   if (s.includes('delay'))
-//     return { background: '#ffedd5', color: '#c2410c', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
-//   if (s.includes('lost'))
-//     return { background: '#fee2e2', color: '#991b1b', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
-//   if (s.includes('return'))
-//     return { background: '#f3e8ff', color: '#7e22ce', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
-//   return { background: '#f1f5f9', color: '#475569', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
-// }
+//   if (s.includes('deliver')) return 'status-delivered'
+//   if (s.includes('picked up')) return 'status-delivered'
+//   if (s.includes('disposed')) return 'status-delivered'
+//   if (s.includes('at office')) return 'status-pending'
+//   if (s.includes('transit') || s.includes('shipping')) return 'status-transit'
+//   if (s.includes('pending') || s.includes('processing')) return 'status-pending'
+//   if (s.includes('delay') || s.includes('exception')) return 'status-delayed'
+//   if (s.includes('lost')) return 'status-lost'
+//   if (s.includes('return')) return 'status-return'
+//    return 'status-default'
+//}
 
-// function PackageTable({ title, packages, expanded, onToggle, statusCodes, onStatusChange, statusUpdating, color = '#1d4ed8', collapsible = false }) {
-//   const [open, setOpen] = useState(!collapsible)
-
-//   return (
-//     <div style={{ background: '#fff', border: '1px solid #dbe4ef', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 16px rgba(15,23,42,0.05)', marginBottom: 28 }}>
-//       {/* Section header */}
-//       <div
-//         onClick={() => collapsible && setOpen(o => !o)}
-//         style={{ padding: '16px 24px', background: '#f8fafc', borderBottom: open ? '1px solid #dbe4ef' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: collapsible ? 'pointer' : 'default' }}
-//       >
-//         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-//           <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{title}</h3>
-//           <span style={{ background: color, color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: '0.8rem', fontWeight: 700 }}>
-//             {packages.length}
-//           </span>
-//         </div>
-//         {collapsible && (
-//           <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{open ? '▲ Collapse' : '▼ Expand'}</span>
-//         )}
-//       </div>
-
-//       {open && (
-//         packages.length === 0 ? (
-//           <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>No packages in this category.</div>
-//         ) : (
-//           <div style={{ overflowX: 'auto' }}>
-//             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-//               <thead>
-//                 <tr style={{ background: '#f8fafc', borderBottom: '2px solid #dbe4ef' }}>
-//                   {['Tracking #', 'Type', 'Sender', 'Recipient', 'Weight', 'Zone', 'Price', 'Status', 'Created', ''].map(h => (
-//                     <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap' }}>{h}</th>
-//                   ))}
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {packages.map((p, i) => (
-//                   <Fragment key={p.Tracking_Number}>
-//                     <tr style={{ background: i % 2 === 0 ? '#fff' : '#fafbfc', borderBottom: '1px solid #f1f5f9' }}>
-//                       <td style={{ padding: '10px 14px' }}>
-//                         <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4, fontSize: '0.82rem', fontWeight: 700 }}>
-//                           {p.Tracking_Number}
-//                         </code>
-//                       </td>
-//                       <td style={{ padding: '10px 14px', color: '#374151' }}>{p.Package_Type_Code}</td>
-//                       <td style={{ padding: '10px 14px' }}>
-//                         <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{p.Sender_Name || '—'}</div>
-//                         <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.Sender_Email || ''}</div>
-//                       </td>
-//                       <td style={{ padding: '10px 14px' }}>
-//                         <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{p.Recipient_Name || '—'}</div>
-//                         <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.Recipient_Email || ''}</div>
-//                       </td>
-//                       <td style={{ padding: '10px 14px', color: '#374151' }}>{p.Weight} lbs</td>
-//                       <td style={{ padding: '10px 14px', color: '#374151' }}>Zone {p.Zone}</td>
-//                       <td style={{ padding: '10px 14px', fontWeight: 700, color: '#1e40af' }}>${parseFloat(p.Price || 0).toFixed(2)}</td>
-//                       <td style={{ padding: '10px 14px' }}>
-//                         {statusCodes.length > 0 && p.Delivery_Status_Code != null && !p.Is_Final_Status ? (
-//                           <select
-//                             value={String(p.Delivery_Status_Code)}
-//                             onChange={e => onStatusChange(p.Tracking_Number, e.target.value)}
-//                             disabled={statusUpdating === p.Tracking_Number}
-//                             style={{ padding: '4px 8px', border: '1px solid #dbe4ef', borderRadius: 6, fontSize: '0.82rem' }}
-//                           >
-//                             {statusCodes.map(s => (
-//                               <option key={s.Status_Code} value={String(s.Status_Code)}>{s.Status_Name}</option>
-//                             ))}
-//                           </select>
-//                         ) : (
-//                           <span style={statusBadgeStyle(p.Status_Name)}>{p.Status_Name || '—'}</span>
-//                         )}
-//                       </td>
-//                       <td style={{ padding: '10px 14px', color: '#64748b', fontSize: '0.82rem' }}>
-//                         {p.Date_Created ? new Date(p.Date_Created).toLocaleDateString() : '—'}
-//                       </td>
-//                       <td style={{ padding: '10px 14px' }}>
-//                         <button
-//                           onClick={() => onToggle(p.Tracking_Number)}
-//                           style={{ background: 'none', border: '1px solid #dbe4ef', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: '0.78rem', color: '#374151' }}
-//                         >
-//                           {expanded === p.Tracking_Number ? '▲ Less' : '▼ More'}
-//                         </button>
-//                       </td>
-//                     </tr>
-
-//                     {/* Expanded detail row */}
-//                     {expanded === p.Tracking_Number && (
-//                       <tr style={{ background: '#f8fafc' }}>
-//                         <td colSpan={10} style={{ padding: '16px 24px' }}>
-//                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px 24px' }}>
-//                             {[
-//                               { label: 'Dimensions',     value: `${p.Dim_X}" × ${p.Dim_Y}" × ${p.Dim_Z}"` },
-//                               { label: 'Oversize',       value: p.Oversize ? 'Yes' : 'No' },
-//                               { label: 'Sig. Required',  value: p.Requires_Signature ? 'Yes' : 'No' },
-//                               { label: 'From',           value: p.From_City ? `${p.From_City}, ${p.From_State}` : '—' },
-//                               { label: 'To',             value: p.To_City   ? `${p.To_City}, ${p.To_State}`   : '—' },
-//                               { label: 'Post Office',    value: p.Office_City || '—' },
-//                               { label: 'Handled By',     value: p.Handled_By || '—' },
-//                               { label: 'Delivered Date', value: p.Delivered_Date ? new Date(p.Delivered_Date).toLocaleDateString() : '—' },
-//                               { label: 'Last Updated',   value: p.Date_Updated   ? new Date(p.Date_Updated).toLocaleDateString()   : '—' },
-//                             ].map(item => (
-//                               <div key={item.label}>
-//                                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 2 }}>{item.label}</div>
-//                                 <div style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 500 }}>{item.value}</div>
-//                               </div>
-//                             ))}
-//                           </div>
-//                         </td>
-//                       </tr>
-//                     )}
-//                   </Fragment>
-//                 ))}
-//               </tbody>
-//             </table>
-//           </div>
-//         )
-//       )}
-//     </div>
-//   )
-// }
-
+function statusBadgeStyle(status) {
+  const s = (status || '').toLowerCase()
+  if (s.includes('deliver') || s.includes('picked up'))
+    return { background: '#dcfce7', color: '#15803d', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  if (s.includes('transit') || s.includes('out for'))
+    return { background: '#dbeafe', color: '#1d4ed8', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  if (s.includes('pending'))
+    return { background: '#fef9c3', color: '#854d0e', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  if (s.includes('delay'))
+    return { background: '#ffedd5', color: '#c2410c', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  if (s.includes('lost'))
+    return { background: '#fee2e2', color: '#991b1b', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  if (s.includes('return'))
+    return { background: '#f3e8ff', color: '#7e22ce', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  return { background: '#f1f5f9', color: '#475569', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+}
 
 function PackageTable({ title, packages, expanded, onToggle, statusCodes, onStatusChange, statusUpdating, color = '#1d4ed8', collapsible = false }) {
   const [open, setOpen] = useState(!collapsible)
 
   return (
-    <div className="package-list-page"> 
-      <div style={{ background: '#fff', border: '1px solid #dbe4ef', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 16px rgba(15,23,42,0.05)', marginBottom: 28 }}>
-
-        {/* Section header */}
-        <div
-          onClick={() => collapsible && setOpen(o => !o)}
-          style={{ padding: '16px 24px', background: '#f8fafc', borderBottom: open ? '1px solid #dbe4ef' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: collapsible ? 'pointer' : 'default' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{title}</h3>
-            <span style={{ background: color, color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: '0.8rem', fontWeight: 700 }}>
-              {packages.length}
-            </span>
-          </div>
-          {collapsible && (
-            <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{open ? '▲ Collapse' : '▼ Expand'}</span>
-          )}
+    <div style={{ background: '#fff', border: '1px solid #dbe4ef', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 16px rgba(15,23,42,0.05)', marginBottom: 28 }}>
+      {/* Section header */}
+      <div
+        onClick={() => collapsible && setOpen(o => !o)}
+        style={{ padding: '16px 24px', background: '#f8fafc', borderBottom: open ? '1px solid #dbe4ef' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: collapsible ? 'pointer' : 'default' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{title}</h3>
+          <span style={{ background: color, color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: '0.8rem', fontWeight: 700 }}>
+            {packages.length}
+          </span>
         </div>
-
-        {open && (
-          packages.length === 0 ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>No packages in this category.</div>
-          ) : (
-            <div className="table-wrapper-sqr">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Tracking #</th>
-                    <th>Type</th>
-                    <th>Weight</th>
-                    <th>Zone</th>
-                    <th>Price</th>
-                    <th>Oversize</th>
-                    <th>Sig. Required</th>
-                    <th>Created</th>
-                    <th>Status</th>
-                    <th aria-label="Expand" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {packages.map((p) => (
-                    <Fragment key={p.Tracking_Number}>
-                      <tr>
-                        <td><code>{p.Tracking_Number}</code></td>
-                        <td>{p.Package_Type_Code}</td>
-                        <td>{p.Weight} lbs</td>
-                        <td>Zone {p.Zone}</td>
-                        <td>${parseFloat(p.Price || 0).toFixed(2)}</td>
-                        <td>{p.Oversize ? 'Yes' : 'No'}</td>
-                        <td>{p.Requires_Signature ? 'Yes' : 'No'}</td>
-                        <td>{p.Date_Created ? new Date(p.Date_Created).toLocaleDateString() : '—'}</td>
-                        <td>
-                          {statusCodes.length > 0 && p.Delivery_Status_Code != null && !p.Is_Final_Status ? (
-                            <select
-                              className="pkg-status-select"
-                              aria-label={`Status for ${p.Tracking_Number}`}
-                              value={String(p.Delivery_Status_Code)}
-                              onChange={e => onStatusChange(p.Tracking_Number, e.target.value)}
-                              disabled={statusUpdating === p.Tracking_Number}
-                            >
-                              {statusCodes.map(s => (
-                                <option key={s.Status_Code} value={String(s.Status_Code)}>{s.Status_Name}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className={`status-badge ${getStatusBadgeClass(p.Status_Name)}`}>
-                              {p.Status_Name || '—'}
-                            </span>
-                          )}
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="pkg-expand-btn"
-                            onClick={() => onToggle(p.Tracking_Number)}
-                          >
-                            {expanded === p.Tracking_Number ? '▲ Hide' : '▼ More'}
-                          </button>
-                        </td>
-                      </tr>
-
-                      {expanded === p.Tracking_Number && (
-                        <tr className="detail-row">
-                          <td colSpan={10}>
-                            <div className="detail-grid">
-                              <div className="detail-item">
-                                <label>Dimensions</label>
-                                <p>{p.Dim_X}" × {p.Dim_Y}" × {p.Dim_Z}"</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>From</label>
-                                <p>{p.From_City ? `${p.From_City}, ${p.From_State}` : '—'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>To</label>
-                                <p>{p.To_City ? `${p.To_City}, ${p.To_State}` : '—'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Post Office</label>
-                                <p>{p.Office_City || '—'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Handled By</label>
-                                <p>{p.Handled_By || '—'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Final Status</label>
-                                <p>{p.Is_Final_Status ? 'Final' : 'In progress'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Delivered Date</label>
-                                <p>{p.Delivered_Date ? new Date(p.Delivered_Date).toLocaleDateString() : '—'}</p>
-                              </div>
-                              <div className="detail-item">
-                                <label>Last Updated</label>
-                                <p>{p.Date_Updated ? new Date(p.Date_Updated).toLocaleDateString() : '—'}</p>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
+        {collapsible && (
+          <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{open ? '▲ Collapse' : '▼ Expand'}</span>
         )}
       </div>
+
+      {open && (
+        packages.length === 0 ? (
+          <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>No packages in this category.</div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #dbe4ef' }}>
+                  {['Tracking #', 'Type', 'Sender', 'Recipient', 'Weight', 'Zone', 'Price', 'Status', 'Created', ''].map(h => (
+                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, color: '#374151', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {packages.map((p, i) => (
+                  <Fragment key={p.Tracking_Number}>
+                    <tr style={{ background: i % 2 === 0 ? '#fff' : '#fafbfc', borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '10px 14px' }}>
+                        <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4, fontSize: '0.82rem', fontWeight: 700 }}>
+                          {p.Tracking_Number}
+                        </code>
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#374151' }}>{p.Package_Type_Code}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{p.Sender_Name || '—'}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.Sender_Email || ''}</div>
+                      </td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{p.Recipient_Name || '—'}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{p.Recipient_Email || ''}</div>
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#374151' }}>{p.Weight} lbs</td>
+                      <td style={{ padding: '10px 14px', color: '#374151' }}>Zone {p.Zone}</td>
+                      <td style={{ padding: '10px 14px', fontWeight: 700, color: '#1e40af' }}>${parseFloat(p.Price || 0).toFixed(2)}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        {statusCodes.length > 0 && p.Delivery_Status_Code != null && !p.Is_Final_Status ? (
+                          <select
+                            value={String(p.Delivery_Status_Code)}
+                            onChange={e => onStatusChange(p.Tracking_Number, e.target.value)}
+                            disabled={statusUpdating === p.Tracking_Number}
+                            style={{ padding: '4px 8px', border: '1px solid #dbe4ef', borderRadius: 6, fontSize: '0.82rem' }}
+                          >
+                            {statusCodes.map(s => (
+                              <option key={s.Status_Code} value={String(s.Status_Code)}>{s.Status_Name}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span style={statusBadgeStyle(p.Status_Name)}>{p.Status_Name || '—'}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#64748b', fontSize: '0.82rem' }}>
+                        {p.Date_Created ? new Date(p.Date_Created).toLocaleDateString() : '—'}
+                      </td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <button
+                          onClick={() => onToggle(p.Tracking_Number)}
+                          style={{ background: 'none', border: '1px solid #dbe4ef', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: '0.78rem', color: '#374151' }}
+                        >
+                          {expanded === p.Tracking_Number ? '▲ Less' : '▼ More'}
+                        </button>
+                      </td>
+                    </tr>
+
+                    {/* Expanded detail row */}
+                    {expanded === p.Tracking_Number && (
+                      <tr style={{ background: '#f8fafc' }}>
+                        <td colSpan={10} style={{ padding: '16px 24px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px 24px' }}>
+                            {[
+                              { label: 'Dimensions',     value: `${p.Dim_X}" × ${p.Dim_Y}" × ${p.Dim_Z}"` },
+                              { label: 'Oversize',       value: p.Oversize ? 'Yes' : 'No' },
+                              { label: 'Sig. Required',  value: p.Requires_Signature ? 'Yes' : 'No' },
+                              { label: 'From',           value: p.From_City ? `${p.From_City}, ${p.From_State}` : '—' },
+                              { label: 'To',             value: p.To_City   ? `${p.To_City}, ${p.To_State}`   : '—' },
+                              { label: 'Post Office',    value: p.Office_City || '—' },
+                              { label: 'Handled By',     value: p.Handled_By || '—' },
+                              { label: 'Delivered Date', value: p.Delivered_Date ? new Date(p.Delivered_Date).toLocaleDateString() : '—' },
+                              { label: 'Last Updated',   value: p.Date_Updated   ? new Date(p.Date_Updated).toLocaleDateString()   : '—' },
+                            ].map(item => (
+                              <div key={item.label}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 2 }}>{item.label}</div>
+                                <div style={{ fontSize: '0.88rem', color: '#0f172a', fontWeight: 500 }}>{item.value}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
     </div>
   )
 }
+
+
+// function PackageTable({ title, packages, expanded, onToggle, statusCodes, onStatusChange, statusUpdating, color = '#1d4ed8', collapsible = false }) {
+//   const [open, setOpen] = useState(!collapsible)
+
+//   return (
+//     <div className="package-list-page"> 
+//       <div style={{ background: '#fff', border: '1px solid #dbe4ef', borderRadius: 20, overflow: 'hidden', boxShadow: '0 4px 16px rgba(15,23,42,0.05)', marginBottom: 28 }}>
+
+//         {/* Section header */}
+//         <div
+//           onClick={() => collapsible && setOpen(o => !o)}
+//           style={{ padding: '16px 24px', background: '#f8fafc', borderBottom: open ? '1px solid #dbe4ef' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: collapsible ? 'pointer' : 'default' }}
+//         >
+//           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+//             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{title}</h3>
+//             <span style={{ background: color, color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: '0.8rem', fontWeight: 700 }}>
+//               {packages.length}
+//             </span>
+//           </div>
+//           {collapsible && (
+//             <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{open ? '▲ Collapse' : '▼ Expand'}</span>
+//           )}
+//         </div>
+
+//         {open && (
+//           packages.length === 0 ? (
+//             <div style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>No packages in this category.</div>
+//           ) : (
+//             <div className="table-wrapper-sqr">
+//               <table className="data-table">
+//                 <thead>
+//                   <tr>
+//                     <th>Tracking #</th>
+//                     <th>Type</th>
+//                     <th>Weight</th>
+//                     <th>Zone</th>
+//                     <th>Price</th>
+//                     <th>Oversize</th>
+//                     <th>Sig. Required</th>
+//                     <th>Created</th>
+//                     <th>Status</th>
+//                     <th aria-label="Expand" />
+//                   </tr>
+//                 </thead>
+//                 <tbody>
+//                   {packages.map((p) => (
+//                     <Fragment key={p.Tracking_Number}>
+//                       <tr>
+//                         <td><code>{p.Tracking_Number}</code></td>
+//                         <td>{p.Package_Type_Code}</td>
+//                         <td>{p.Weight} lbs</td>
+//                         <td>Zone {p.Zone}</td>
+//                         <td>${parseFloat(p.Price || 0).toFixed(2)}</td>
+//                         <td>{p.Oversize ? 'Yes' : 'No'}</td>
+//                         <td>{p.Requires_Signature ? 'Yes' : 'No'}</td>
+//                         <td>{p.Date_Created ? new Date(p.Date_Created).toLocaleDateString() : '—'}</td>
+//                         <td>
+//                           {statusCodes.length > 0 && p.Delivery_Status_Code != null && !p.Is_Final_Status ? (
+//                             <select
+//                               className="pkg-status-select"
+//                               aria-label={`Status for ${p.Tracking_Number}`}
+//                               value={String(p.Delivery_Status_Code)}
+//                               onChange={e => onStatusChange(p.Tracking_Number, e.target.value)}
+//                               disabled={statusUpdating === p.Tracking_Number}
+//                             >
+//                               {statusCodes.map(s => (
+//                                 <option key={s.Status_Code} value={String(s.Status_Code)}>{s.Status_Name}</option>
+//                               ))}
+//                             </select>
+//                           ) : (
+//                             <span className={`status-badge ${getStatusBadgeClass(p.Status_Name)}`}>
+//                               {p.Status_Name || '—'}
+//                             </span>
+//                           )}
+//                         </td>
+//                         <td>
+//                           <button
+//                             type="button"
+//                             className="pkg-expand-btn"
+//                             onClick={() => onToggle(p.Tracking_Number)}
+//                           >
+//                             {expanded === p.Tracking_Number ? '▲ Hide' : '▼ More'}
+//                           </button>
+//                         </td>
+//                       </tr>
+
+//                       {expanded === p.Tracking_Number && (
+//                         <tr className="detail-row">
+//                           <td colSpan={10}>
+//                             <div className="detail-grid">
+//                               <div className="detail-item">
+//                                 <label>Dimensions</label>
+//                                 <p>{p.Dim_X}" × {p.Dim_Y}" × {p.Dim_Z}"</p>
+//                               </div>
+//                               <div className="detail-item">
+//                                 <label>From</label>
+//                                 <p>{p.From_City ? `${p.From_City}, ${p.From_State}` : '—'}</p>
+//                               </div>
+//                               <div className="detail-item">
+//                                 <label>To</label>
+//                                 <p>{p.To_City ? `${p.To_City}, ${p.To_State}` : '—'}</p>
+//                               </div>
+//                               <div className="detail-item">
+//                                 <label>Post Office</label>
+//                                 <p>{p.Office_City || '—'}</p>
+//                               </div>
+//                               <div className="detail-item">
+//                                 <label>Handled By</label>
+//                                 <p>{p.Handled_By || '—'}</p>
+//                               </div>
+//                               <div className="detail-item">
+//                                 <label>Final Status</label>
+//                                 <p>{p.Is_Final_Status ? 'Final' : 'In progress'}</p>
+//                               </div>
+//                               <div className="detail-item">
+//                                 <label>Delivered Date</label>
+//                                 <p>{p.Delivered_Date ? new Date(p.Delivered_Date).toLocaleDateString() : '—'}</p>
+//                               </div>
+//                               <div className="detail-item">
+//                                 <label>Last Updated</label>
+//                                 <p>{p.Date_Updated ? new Date(p.Date_Updated).toLocaleDateString() : '—'}</p>
+//                               </div>
+//                             </div>
+//                           </td>
+//                         </tr>
+//                       )}
+//                     </Fragment>
+//                   ))}
+//                 </tbody>
+//               </table>
+//             </div>
+//           )
+//         )}
+//       </div>
+//     </div>
+//   )
+// }
 
 //   const [filterValue, setFilterValue] = useState('')
 //   const [sortValue, setSortValue] = useState('')
@@ -423,7 +423,7 @@ export default function AllPackages() {
           <Link className="logo" to="/">National Postal Service</Link>
           <nav className="top-nav">
             <a href="#" onClick={e => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
-           {/* packages button was tweaking so i removed it */}
+           {/* packages button was t */}
             {/* <span className="nav-current" aria-current="page">Packages</span> */}
             <a href="#" onClick={e => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
             <a href="#" onClick={handleLogout}>Logout</a>
