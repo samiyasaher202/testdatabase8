@@ -50,7 +50,7 @@ async function getEmployeesRatios(pool){
 }
 
 async function getTicketsByEmployee(pool,employeeId){
-    console.log("get Tickets by employee called");
+    // console.log("get Tickets by employee called");
     const [results] = await pool.query(
         `SELECT
         s.Ticket_ID,

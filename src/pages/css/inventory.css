@@ -7,6 +7,13 @@
   background: radial-gradient(circle at top left, #eaf3ff 0%, transparent 40%), var(--bg, #f3f7fc);
 }
 
+.inventory-page-flat {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg, #f3f7fc);
+}
+
 .inventory-page main {
   flex: 1;
   padding: 0;
