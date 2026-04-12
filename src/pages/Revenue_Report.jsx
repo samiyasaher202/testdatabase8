@@ -46,6 +46,9 @@ export default function DataReport() {
         fetch(`${API_BASE}/api/report/excess-fees?${params}`),
         fetch(`${API_BASE}/api/report/revenue-by-month`),
       ]);
+      if (!feeRes.ok) console.error(await feeRes.text());
+      if (!paymentsRes.ok) console.error(await paymentsRes.text());
+      if (!excessRes.ok) console.error(await excessRes.text());
 
       const feeData      = feeRes.ok      ? await feeRes.json()      : [];
       const packagesData = packagesRes.ok  ? await packagesRes.json() : [];
@@ -102,6 +105,8 @@ export default function DataReport() {
     if (sortConfig.key !== colKey) return <span> ↕</span>;
     return <span>{sortConfig.dir === "asc" ? " ↑" : " ↓"}</span>;
   };
+
+  
 
   return (
     <div className="dr-root">
