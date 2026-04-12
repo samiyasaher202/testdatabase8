@@ -438,3 +438,17 @@ ALTER TABLE payment RENAME column payment_date TO date_created;
 
  -- correcting the fact that shipment_package will never be updated;
  ALTER TABLE shipment_package DROP COLUMN date_updated;
+
+ INSERT INTO package_excess_fee (Tracking_Number, Fee_Type_Code) VALUES
+('TRK0000001', 'FRAG'),
+('TRK0000001', 'FUEL'),
+('TRK0000002', 'HAZ'),
+('TRK0000002', 'FUEL'),
+('TRK0000003', 'FRAG'),
+('TRK0000011', 'SIG'),
+('TRK0000011', 'FUEL'),
+('TRK0000013', 'HAZ'); seed data  for package_excess_fees
+
+
+ALTER TABLE employee
+ADD COLUMN is_active ENUM('1','0') NOT NULL DEFAULT '1';

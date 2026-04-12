@@ -1,4 +1,5 @@
 --Drops current data so it completely refreshes it
+-- DONT USE THIS SEED DATA, OUT OF DATE
 TRUNCATE TABLE package_pricing;
 
 INSERT INTO package_pricing (Package_Type_Code, Min_Weight, Max_Weight, Zone, Price) VALUES
