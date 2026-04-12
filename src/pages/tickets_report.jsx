@@ -47,7 +47,7 @@ export default function TicketsReport() {
   const [openDropdowns, setOpenDropdowns] = useState({});
 
   const [employeeTickets, setEmployeeTickets] = useState({});
-  const [weeklyData, setWeeklyData] = useState([]);
+  const[weeklyData, setWeeklyData] = useState([]);
   const[netTickets, setNetTickets] = useState([]);
   const[weekNetTickets, setWeekNetTickets] = useState([]);
   const[byIssue, setByIssue] = useState([]);
@@ -58,7 +58,7 @@ export default function TicketsReport() {
 
 
 useEffect(() => {
-  console.log("Fetching from:", `${API_BASE}/api/employee/weeklyTickets`)
+  // console.log("Fetching from:", `${API_BASE}/api/employee/weeklyTickets`)
   fetch(`${API_BASE}/api/employee/weeklyTickets`, {
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -91,19 +91,19 @@ useEffect(() => {
 }, []);
 
 useEffect(() => {
-    console.log("Fetching from:", `${API_BASE}/api/employee/net-tickets`);
+    // console.log("Fetching from:", `${API_BASE}/api/employee/net-tickets`);
     fetch(`${API_BASE}/api/employee/net-tickets`,{
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     })
       .then((res) => {
-         console.log("Response status:", res.status, res.ok);
+        //  console.log("Response status:", res.status, res.ok);
         if (!res.ok) throw new Error("Failed to load employees");
         return res.json();
       })
       .then((data) => {
-        console.log("Data received:", data);
+        // console.log("Data received:", data);
         setNetTickets({
             resolved: data[0]?.complete ?? 'N/A',
             unresolved: data[0]?.incomplete ?? 'N/A'
@@ -118,19 +118,19 @@ useEffect(() => {
   }, []);
 
 useEffect(() => {
-    console.log("Fetching from:", `${API_BASE}/api/employee/week-net-tickets`);
+    // console.log("Fetching from:", `${API_BASE}/api/employee/week-net-tickets`);
     fetch(`${API_BASE}/api/employee/week-net-tickets`,{
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     })
       .then((res) => {
-         console.log("Response status:", res.status, res.ok);
+        //  console.log("Response status:", res.status, res.ok);
         if (!res.ok) throw new Error("Failed to load employees");
         return res.json();
       })
       .then((data) => {
-        console.log("Data received:", data);
+        // console.log("Data received:", data);
         setWeekNetTickets({
            resolved: data[0]?.complete ?? 'N/A',
           unresolved: data[0]?.incomplete ?? 'N/A'
@@ -138,31 +138,31 @@ useEffect(() => {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Fetch error:", err);
+        // console.error("Fetch error:", err);
         setError(err.message);
         setLoading(false);
       });
   }, []);
 
   useEffect(() => {
-    console.log("Fetching from:", `${API_BASE}/api/employee/tickets-by-issue`);
+    // console.log("Fetching from:", `${API_BASE}/api/employee/tickets-by-issue`);
     fetch(`${API_BASE}/api/employee/tickets-by-issue`,{
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     })
         .then((res) => {
-         console.log("Response status:", res.status, res.ok);
+        //  console.log("Response status:", res.status, res.ok);
         if (!res.ok) throw new Error("Failed to load employees");
         return res.json();
       })
       .then((data) => {
-        console.log("Data received:", data);
+        // console.log("Data received:", data);
         setByIssue(data);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Fetch error:", err);
+        // console.error("Fetch error:", err);
         setError(err.message);
         setLoading(false);
       });
@@ -170,24 +170,24 @@ useEffect(() => {
 
 
   useEffect(() => {
-    console.log("Fetching from:", `${API_BASE}/api/employee/tickets_comp`);
+    // console.log("Fetching from:", `${API_BASE}/api/employee/tickets_comp`);
     fetch(`${API_BASE}/api/employee/tickets_comp`,{
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
     })
       .then((res) => {
-         console.log("Response status:", res.status, res.ok);
+        //  console.log("Response status:", res.status, res.ok);
         if (!res.ok) throw new Error("Failed to load employees");
         return res.json();
       })
       .then((data) => {
-        console.log("Data received:", data);
+        // console.log("Data received:", data);
         setEmployees(data);
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Fetch error:", err);
+        // console.error("Fetch error:", err);
         setError(err.message);
         setLoading(false);
       });
@@ -197,7 +197,7 @@ useEffect(() => {
 
   
 
-  console.log("employees[0]:", JSON.stringify(employees[0]));
+  // console.log("employees[0]:", JSON.stringify(employees[0]));
   let filtered = employees.filter((e) => {
     const q = search.toLowerCase();
     return (
