@@ -216,10 +216,10 @@ export default function EmployeePerformanceReport() {
   const maxZonePkgs   = Math.max(...zones.map(z => z.Total_Packages), 1)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f3f7fc', fontFamily: 'inherit' }}>
+    <div style={{ minHeight: '100vh', background: '#eae6de', fontFamily: 'inherit' }}>
 
       {/* ── HEADER ── */}
-      <header style={{ background: 'linear-gradient(135deg, #1d4ed8, #1e40af)', color: '#fff', padding: '20px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 12px rgba(29,78,216,0.3)' }}>
+      <header style={{ background: '#1a1f4e', color: '#fff', padding: '20px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 4px 12px rgba(29,78,216,0.3)' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>📊 Operations Report</h1>
           <p style={{ margin: '4px 0 0', fontSize: '0.85rem', opacity: 0.8 }}>Employee performance, location stats, department breakdown & zone traffic</p>
