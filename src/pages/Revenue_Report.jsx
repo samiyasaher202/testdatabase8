@@ -38,7 +38,6 @@ export default function DataReport() {
       if (dateTo) params.append("dateTo", dateTo);
       if (feeTypeFilter) params.append("feeType", feeTypeFilter);
 
-      // ✅ 5 fetches, 5 destructured variables
       const [feeRes, packagesRes, paymentsRes, excessRes, monthRes] = await Promise.all([
         fetch(`${API_BASE}/api/report/fee-breakdown?${params}`),
         fetch(`${API_BASE}/api/report/packages?${params}`),
@@ -82,7 +81,7 @@ export default function DataReport() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const sortedFeeBreakdown = [...feeBreakdown].sort((a, b) => {
     const aVal = parseFloat(a[sortConfig.key]) || a[sortConfig.key] || 0;

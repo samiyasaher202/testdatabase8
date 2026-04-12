@@ -1544,7 +1544,6 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
     // ── GET /api/report/fee-breakdown ────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/report/fee-breakdown') {
-    console.log("PARAMS:", params.toString());
      console.log('HIT fee-breakdown')
     try {
       const { search, dateFrom, dateTo, feeType } = query
