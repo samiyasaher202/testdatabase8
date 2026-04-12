@@ -92,3 +92,12 @@
   background: #f1f5f9;
   color: #475569;
 }
+.package-list-page .status-badge.status-lost {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.package-list-page .status-badge.status-return {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
