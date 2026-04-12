@@ -1,38 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── PAGE BACKGROUND ── */
+body, #root {
+  min-height: 100vh;
+  background: #e8e4dc;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ── FORM CARD ── */
 .form-container {
   position: relative;
   max-width: 600px;
   margin: 50px auto;
-  padding: 30px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 2rem;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px rgba(10,15,44,0.08);
+}
+
+/* ── HEADER ── */
+.form-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
 }
 
 .form-container h1 {
-  color: #333;
+  font-family: 'Sora', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #0a0f2c;
   text-align: center;
 }
 
+/* ── BACK BUTTON ── */
+.back-btn {
+  position: absolute;
+  left: 0;
+  background: none;
+  border: none;
+  color: #555;
+  font-size: 0.875rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  width: auto;
+  font-family: 'DM Sans', sans-serif;
+  transition: background 0.18s, color 0.18s;
+}
+.back-btn:hover {
+  background: #f0ede8;
+  color: #0a0f2c;
+  width: auto;
+}
+
+/* ── FORM GROUPS ── */
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 1.1rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-  color: #333;
+  margin-bottom: 0.35rem;
+  font-family: 'Sora', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #888;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  font-family: Arial, sans-serif;
+  padding: 0.65rem 0.9rem;
+  border: 1.5px solid #e0ddd8;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-family: 'DM Sans', sans-serif;
+  color: #2a2f4a;
+  background: #fafaf8;
+  outline: none;
+  transition: border-color 0.18s, background 0.18s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #1a3bcc;
+  background: #fff;
 }
 
 .form-group textarea {
@@ -40,52 +101,48 @@
   resize: vertical;
 }
 
-button {
-  background-color: #4CAF50;
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
+/* ── SUBMIT BUTTON ── */
+button[type="submit"] {
   width: 100%;
-}
-
-button:hover {
-  background-color: #45a049;
-}
-
-.success-message {
-  background-color: #d4edda;
-  color: #155724;
-  padding: 15px;
-  border-radius: 4px;
-  margin-bottom: 20px;
-}
-
-.form-header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.back-btn {
-  position: absolute;
-  left: 0;
-  background: none;
+  padding: 0.8rem;
+  background: linear-gradient(135deg, #1a3bcc, #2244ff);
+  color: #fff;
   border: none;
-  color: #555;
+  border-radius: 10px;
+  font-family: 'Sora', sans-serif;
   font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  width: auto;
+  letter-spacing: 0.02em;
+  transition: opacity 0.18s, transform 0.18s;
+  margin-top: 0.5rem;
+}
+button[type="submit"]:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
-.back-btn:hover {
-  background: #f0f0f0;
-  color: #222;
-  width: auto;
+/* ── MESSAGES ── */
+.success-message {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #16a34a;
+  padding: 0.9rem 1.2rem;
+  border-radius: 10px;
+  margin-bottom: 1.2rem;
+  font-size: 0.875rem;
+  font-family: 'Sora', sans-serif;
+  font-weight: 500;
+}
+
+.error-message {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 0.9rem 1.2rem;
+  border-radius: 10px;
+  margin-bottom: 1.2rem;
+  font-size: 0.875rem;
+  font-family: 'Sora', sans-serif;
+  font-weight: 500;
 }
