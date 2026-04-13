@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './css/SubmitTicket.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 function SubmitTicket() {
+  const navigate = useNavigate()
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -56,7 +59,12 @@ function SubmitTicket() {
 
   return (
     <div className="form-container">
-      <h1>Support Ticket</h1>
+      <div className="form-header">
+        <button onClick={() => navigate('/customer_home')} className="back-btn">
+          ← Back
+        </button>
+        <h1>Support Ticket</h1>
+      </div>
 
       {successMessage && (
         <div className="success-message">

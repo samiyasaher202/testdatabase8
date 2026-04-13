@@ -23,7 +23,6 @@ function Employee_SubmitTicket() {
   const [employees, setEmployees] = useState([])
 
   useEffect(() => {
-    // These are now protected in your backend → must use authFetch
     authFetch('/api/customers')
       .then((r) => r.json())
       .then((data) => {
@@ -36,9 +35,7 @@ function Employee_SubmitTicket() {
       .then((data) => setPackages(Array.isArray(data) ? data : []))
       .catch(() => setPackages([]))
 
-    // If you have an employees endpoint and it is protected, use authFetch as well.
-    // NOTE: Your backend file you pasted earlier did NOT show GET /api/employees.
-    // If this endpoint doesn't exist, this will 404 (not 401).
+    
     authFetch('/api/employees')
       .then((r) => r.json())
       .then((data) => setEmployees(Array.isArray(data) ? data : []))
@@ -58,8 +55,6 @@ function Employee_SubmitTicket() {
     setErrorMessage('')
 
     try {
-      // Your backend currently shows GET/PUT for /api/support-tickets.
-      // This POST will only work if you also have a POST /api/support-tickets route implemented.
       const response = await authFetch('/api/support-tickets', {
         method: 'POST',
         headers: {
