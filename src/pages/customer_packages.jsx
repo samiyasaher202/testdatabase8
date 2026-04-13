@@ -52,29 +52,12 @@ export default function CustomerPackages() {
     <div className="customer-home inventory-page">
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/">
-            National Postal Service
-          </Link>
+           <Link className="logo" to="/"> National Postal Service</Link>
           <nav className="top-nav">
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/customer_home')
-              }}
-            >
-              Dashboard
-            </a>
-            <span className="nav-current" aria-current="page">
-              My packages
-            </span>
-            <button
-              type="button"
-              className="customer-nav-logout"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>Customer Home</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_profile') }}>Profile</a>
+            <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
         </div>
       </header>

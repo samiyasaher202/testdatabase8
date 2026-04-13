@@ -414,6 +414,8 @@ export default function AllPackages() {
     return s.includes('lost') || s.includes('return')
   })
 
+  
+
   const commonProps = { expanded, onToggle: toggleExpand, statusCodes, onStatusChange: handleStatusChange, statusUpdating }
 
   return (
@@ -422,10 +424,10 @@ export default function AllPackages() {
         <div className="header-inner">
           <Link className="logo" to="/">National Postal Service</Link>
           <nav className="top-nav">
-            <a href="#" onClick={e => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
-           {/* packages button was t */}
-            {/* <span className="nav-current" aria-current="page">Packages</span> */}
-            <a href="#" onClick={e => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
             <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
         </div>

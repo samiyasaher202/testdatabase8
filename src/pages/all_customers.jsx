@@ -89,47 +89,13 @@ export default function AllCustomers() {
     <div className={`packages-page ${userType === 'employee' ? 'employee-home' : ''}`}>
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/">
-            National Postal Service
-          </Link>
+          <Link className="logo" to="/"> National Postal Service</Link>
           <nav className="top-nav">
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/')
-              }}
-            >
-              Home
-            </a>
-            {loggedIn ? (
-              <>
-                {localStorage.getItem('userType') === 'employee' && (
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      navigate('/employee_home')
-                    }}
-                  >
-                    Employee Portal
-                  </a>
-                )}
-                <a href="#" onClick={handleLogout}>
-                  Logout
-                </a>
-              </>
-            ) : (
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  navigate('/login')
-                }}
-              >
-                Login
-              </a>
-            )}
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
+            <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
         </div>
       </header>

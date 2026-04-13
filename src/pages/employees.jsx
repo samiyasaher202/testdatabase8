@@ -29,6 +29,14 @@ function getStoredEmployeeRoleId() {
   }
 }
 
+function handleLogout(e) {
+    e.preventDefault()
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('userType')
+    navigate('/')
+  }
+
 export default function EmployeesPage() {
   const navigate = useNavigate()
   const roleId = getStoredEmployeeRoleId()
@@ -141,9 +149,11 @@ export default function EmployeesPage() {
           <div className="header-inner">
             <Link className="logo" to="/">National Postal Service</Link>
             <nav className="top-nav">
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/') }}>Home</a>
-            </nav>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_list') }}>Packages</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customers') }}>Customers</a>
+          </nav>
           </div>
         </header>
         <main style={{ padding: 24 }}>
@@ -157,13 +167,15 @@ export default function EmployeesPage() {
     <div>
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/">National Postal Service</Link>
+          <Link className="logo" to="/"> National Postal Service</Link>
           <nav className="top-nav">
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_list') }}>Packages</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customers') }}>Customers</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
+            <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
+            
         </div>
       </header>
 

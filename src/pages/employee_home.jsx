@@ -1,6 +1,9 @@
 import { useNavigate, Link } from 'react-router-dom'
 import './css/home.css'
 import './css/employee_home.css'
+// for the current button to look right
+import './css/employee_profile.css'
+
 import skyline from '../assets/houston-skyline.jpeg'
 
 /** Name from localStorage `user` (employee login API returns Employee row fields). */
@@ -46,52 +49,16 @@ export default function EmployeeHome() {
   }
 
   return (
-    <div className="employee-home">
+     <div className="employee-home">
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/">
-            National Postal Service
-          </Link>
+          <Link className="logo" to="/"> National Postal Service</Link>
           <nav className="top-nav">
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/')
-              }}
-            >
-              Home
-            </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/package_list')
-              }}
-            >
-              Packages
-            </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/inventory')
-              }}
-            >
-              Inventory
-            </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/employee_home')
-              }}
-            >
-              Dashboard
-            </a>
-            <a href="#" onClick={handleLogout}>
-              Logout
-            </a>
+            <span className="nav-current" aria-current="page">Employee Home</span>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
+            <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
         </div>
       </header>
@@ -110,13 +77,13 @@ export default function EmployeeHome() {
 
         <section className="employee-dashboard">
           <div className="cards">
-            <div className="card">
+            {/* <div className="card">
               <h3>Profile</h3>
               <p>View and update your employee profile.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/profile')}>
                 Open profile
               </button>
-            </div>
+            </div> */}
 
             <div className="card">
               <h3>Stock &amp; inventory</h3>
@@ -175,24 +142,43 @@ export default function EmployeeHome() {
                     Add employee
                   </button>
                 </div>
+
+                 <div className="card">
+                  <h3>Ticket Report</h3>
+                  <p>view ticket records and reports</p>
+                  <button type="button" className="btn primary" onClick={() => navigate('/tickets_employees')}>
+                    review
+                  </button>
+                </div>
+
+                 <div className="card">
+                  <h3>Revinue Report</h3>
+                  <p>Sort by type of pricing, and view popularity reports</p>
+                  <button type="button" className="btn primary" onClick={() => navigate('/revenue-report')}>
+                    review
+                  </button>
+                </div>
+
+                <div className="card">
+                  <h3>Employee Report</h3>
+                  <p>View rankings and employee ratios</p>
+                  <button type="button" className="btn primary" onClick={() => navigate('/reports/employee-performance')}>
+                    review
+                  </button>
+                </div>
               </>
+              
             )}
 
-            <div className="card">
-              <h3>Employee Review</h3>
-              <p>Tempory relocation for testing untill admin is set up.</p>
-              <button type="button" className="btn primary" onClick={() => navigate('/tickets_employees')}>
-                review
-              </button>
-            </div>
+           
 
-            <div className="card">
+            {/* <div className="card">
               <h3>Package lookup</h3>
               <p>Track a package by tracking number.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/package_tracking')}>
                 Track package
               </button>
-            </div>
+            </div> */}
 
             <div className="card">
               <h3>Customers</h3>
@@ -215,6 +201,6 @@ export default function EmployeeHome() {
           </div>
         </div>
       </footer>
-    </div>
+    </div> 
   )
 }

@@ -26,39 +26,32 @@ export default function Home() {
       <header className="site-header">
         <div className="header-inner">
           <a className="logo" href="/">National Postal Service</a>
-          <nav className="top-nav">
+          
+            <nav className="top-nav">
             {loggedIn ? (
               <>
                 {localStorage.getItem('userType') === 'customer' && (
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      navigate('/customer_home')
-                    }}
-                  >
-                    Customer Portal
-                  </a>
+                  <>
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>Customer Home</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_profile') }}>Profile</a>
+                  </>
                 )}
                 {localStorage.getItem('userType') === 'employee' && (
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      navigate('/employee_home')
-                    }}
-                  >
-                    Dashboard
-                  </a>
+                  <>
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
+                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
+                  </>
                 )}
-                <a href="#" onClick={handleLogout}>
-                  Logout
-                </a>
+                <a href="#" onClick={handleLogout}>Logout</a>
               </>
             ) : (
-              <a onClick={() => navigate('/login')}>Login</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login') }}>Login</a>
             )}
           </nav>
+          
         </div>
         <div className="hero">
           <div className="hero-left">

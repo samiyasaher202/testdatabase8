@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
+import { Link } from 'react-router-dom'
 import './css/Revenue_Report.css';
+import './css/EmployeeSupport.css'
 import ColumnChart from "../components/column_chart";
 import PieChart from "../components/pie_chart";
 
@@ -109,11 +111,19 @@ export default function DataReport() {
 
   return (
     <div className="dr-root">
+      <nav className="es-nav">
+                
+                <span className="es-nav-brand">National Postal Service</span>
+                <Link to="/employee_home" className="es-nav-link">
+                  Employee Home
+                </Link>
+              </nav>
 
       {/* Header */}
       <div className="dr-header">
         <h1>Revenue Report</h1>
         <p>Excess fee revenue, packages, and payment records</p>
+        
       </div>
 
       <div className="dr-body">

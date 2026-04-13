@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import './css/EmployeeSupport.css'
+// import './css/home.css'
 import { authFetch } from '../authFetch'
 
 const STATUS_MAP = {
@@ -117,19 +118,22 @@ export default function EmployeeSupport() {
   return (
     <>
       <div className="es-root">
-        {/* Nav */}
         <nav className="es-nav">
+          
           <span className="es-nav-brand">National Postal Service</span>
           <Link to="/employee_home" className="es-nav-link">
-            ← Back to Home
+            Employee Home
           </Link>
         </nav>
+
 
         {/* Header */}
         <div className="es-header">
           <h1>Support Ticket Management</h1>
           <p>Review and resolve customer support tickets</p>
+          
         </div>
+        
 
         {/* Body */}
         <div className="es-body">
