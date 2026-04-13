@@ -29,6 +29,7 @@ import SubmitTicket from './pages/SubmitTicket'
 import PriceCalculator from './pages/price_calculator'
 import AddPackage from './pages/add_package'
 import PackageForPickup from './pages/package_for_pickup'
+import ShipmentRouting from './pages/shipment_routing'
 import CustomerPackages from './pages/customer_packages'
 
 import EmployeeSupport from './pages/Employeesupport.jsx'
@@ -68,6 +69,7 @@ function App() {
         <Route path="/employee_home" element={<RequireEmployee><EmployeeHome /></RequireEmployee>} />
         <Route path="/employee/add-package" element={<RequireEmployee><AddPackage /></RequireEmployee>} />
         <Route path="/employee/package-pickup" element={<RequireEmployee><PackageForPickup /></RequireEmployee>} />
+        <Route path="/employee/shipment-routing" element={<RequireEmployee><ShipmentRouting /></RequireEmployee>} />
         <Route path="/employee-support" element={<RequireEmployee><EmployeeSupport /></RequireEmployee>} />
         <Route path="/employee/submit-ticket" element={<RequireEmployee><Employee_SubmitTicket/></RequireEmployee>} />
         {/* <Route path="/employee/support" element={<RequireEmployee><EmployeeSupport /></RequireEmployee>} /> */}
