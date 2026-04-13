@@ -169,52 +169,15 @@ export default function Profile() {
   const navHeader = (
     <header className="site-header">
       <div className="header-inner">
-        <Link className="logo" to="/">
-          National Postal Service
-        </Link>
-        <nav className="top-nav">
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/')
-            }}
-          >
-            Home
-          </a>
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/package_list')
-            }}
-          >
-            Packages
-          </a>
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/inventory')
-            }}
-          >
-            Inventory
-          </a>
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/employee_home')
-            }}
-          >
-            Dashboard
-          </a>
-          <span className="nav-current" aria-current="page">
-            Profile
-          </span>
-          <a href="#" onClick={handleLogout}>
-            Logout
-          </a>
+        <Link className="logo" to="/">National Postal Service</Link>
+          <nav className="top-nav">
+            {/* <Link className="logo" to="/"> National Postal Service</Link>
+          <nav className="top-nav"> */}
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
+            <span className="nav-current" aria-current="page"> Profile</span>
+            <a href="#" onClick={handleLogout}>Logout</a>       
         </nav>
       </div>
     </header>
@@ -382,7 +345,7 @@ export default function Profile() {
                     Change password
                   </button>
                   <button type="button" className="btn primary" onClick={() => navigate('/employee_home')}>
-                    Dashboard
+                    Employee Home
                   </button>
                 </div>
               </>

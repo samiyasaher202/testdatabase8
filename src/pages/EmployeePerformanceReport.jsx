@@ -226,7 +226,7 @@ export default function EmployeePerformanceReport() {
         </div>
         <button onClick={() => navigate('/employee_home')}
           style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', borderRadius: 10, padding: '9px 18px', cursor: 'pointer', fontWeight: 600 }}>
-          ← Dashboard
+          ← Employee Home
         </button>
       </header>
 

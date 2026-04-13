@@ -170,11 +170,11 @@
 }
 
 /* Current page label in header */
-.employee-profile-page .top-nav {
+/* .employee-profile-page .top-nav {
   align-items: center;
-}
+} */
 
-.employee-profile-page .top-nav .nav-current {
+/* .employee-profile-page .top-nav .nav-current {
   display: inline-block;
   color: rgba(255, 255, 255, 0.95);
   font-weight: 600;
@@ -184,7 +184,7 @@
   border-radius: 6px;
   white-space: nowrap;
   box-sizing: border-box;
-}
+} */
 
 .employee-profile-page h3.form-section-title {
   margin: 0 0 16px;

@@ -140,86 +140,15 @@ export default function Inventory() {
     >
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/">
-            National Postal Service
-          </Link>
+          <Link className="logo" to="/"> National Postal Service</Link>
           <nav className="top-nav">
-            {userType !== 'employee' && (
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  navigate('/')
-                }}
-              >
-                Home
-              </a>
-            )}
-
-            {userType === 'employee' ? (
-              <>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    navigate('/employee_home')
-                  }}
-                >
-                  Dashboard
-                </a>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    navigate('/package_list')
-                  }}
-                >
-                  Packages
-                </a>
-                <span className="nav-current" aria-current="page">
-                  Inventory
-                </span>
-              </>
-            ) : (
-              <>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    navigate('/customer_home')
-                  }}
-                >
-                  Dashboard
-                </a>
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    navigate('/customer_packages')
-                  }}
-                >
-                  My packages
-                </a>
-                <span className="nav-current" aria-current="page">
-                  Store
-                </span>
-              </>
-            )}
-
-            {userType === 'customer' ? (
-              <button
-                type="button"
-                className="customer-nav-logout"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            ) : (
-              <a href="#" onClick={handleLogout}>
-                Logout
-              </a>
-            )}
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
+            <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
+            
         </div>
       </header>
 

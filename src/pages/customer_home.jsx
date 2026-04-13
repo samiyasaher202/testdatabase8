@@ -34,31 +34,12 @@ export default function CustomerHome() {
     <div className="customer-home">
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/">
-            National Postal Service
-          </Link>
+          <Link className="logo" to="/"> National Postal Service</Link>
           <nav className="top-nav">
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/')
-              }}
-            >
-              Home
-            </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/customer_packages')
-              }}
-            >
-              My Packages
-            </a>
-            <button type="button" className="customer-nav-logout" onClick={handleLogout}>
-              Logout
-            </button>
+            <span className="nav-current" aria-current="page">Customer Home</span>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_profile') }}>Profile</a>
+            <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
         </div>
       </header>
@@ -90,14 +71,6 @@ export default function CustomerHome() {
             </div>
 
             {/* <div className="card">
-              <h3>Send a package</h3>
-              <p>Ship your packages quickly and safely.</p>
-              <button type="button" className="btn primary" onClick={() => navigate('/ship_package')}>
-                Send now
-              </button>
-            </div> */}
-
-            <div className="card">
               <h3>Account info</h3>
               <p>View your address, saved packages, and profile settings.</p>
               <button
@@ -107,7 +80,7 @@ export default function CustomerHome() {
               >
                 View account
               </button>
-            </div>
+            </div> */}
             <div className="card">
               <h3>Submit Support Ticket</h3>
               <p>Submit a Support ticket for issues with your package.</p>
@@ -121,12 +94,12 @@ export default function CustomerHome() {
             </div>
 
             <div className="card">
-              <h3>Package Pricing</h3>
-              <p>Submit your package's information and recieve an estemated shipping price.</p>
+              <h3>My packages</h3>
+              <p>View your current packages.</p>
               <button
                 type="button"
                 className="btn primary"
-                onClick={() => navigate('/price_calculator')}
+                onClick={() => navigate('/customer_packages')}
               >
                 Calculate
               </button>

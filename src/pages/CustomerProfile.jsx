@@ -115,54 +115,13 @@ export default function CustomerProfile() {
   const navHeader = (
     <header className="site-header">
       <div className="header-inner">
-        <Link className="logo" to="/">
-          National Postal Service
-        </Link>
+        <Link className="logo" to="/">National Postal Service</Link>
         <nav className="top-nav">
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/')
-            }}
-          >
-            Home
-          </a>
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/customer_home')
-            }}
-          >
-            Dashboard
-          </a>
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/customer_packages')
-            }}
-          >
-            My Packages
-          </a>
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              navigate('/inventory')
-            }}
-          >
-            Store
-          </a>
-          <button
-            type="button"
-            className="customer-nav-logout"
-            onClick={handleLogout}
-          >
-            Logout
-          </button>
-        </nav>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>Customer Home</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <span className="nav-current" aria-current="page">Profile</span>
+            <a href="#" onClick={handleLogout}>Logout</a>
+          </nav>
       </div>
     </header>
   )
@@ -308,7 +267,7 @@ export default function CustomerProfile() {
                     className="btn primary"
                     onClick={() => navigate('/customer_home')}
                   >
-                    Dashboard
+                    Customer Home
                   </button>
                 </div>
               </>

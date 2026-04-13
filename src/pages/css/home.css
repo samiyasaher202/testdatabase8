@@ -115,6 +115,18 @@ main,
   color: #fff;
 }
 
+ .top-nav .nav-current {
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  padding: 8px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible {

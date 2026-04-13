@@ -197,32 +197,25 @@ export default function PackageForPickup() {
     }
   }
 
+  function handleLogout(e) {
+    e.preventDefault()
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('userType')
+    navigate('/')
+  }
+
   return (
     <div className="pickup-page inventory-page">
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/">
-            National Postal Service
-          </Link>
+          <Link className="logo" to="/"> National Postal Service</Link>
           <nav className="top-nav">
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/employee_home')
-              }}
-            >
-              Dashboard
-            </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/package_list')
-              }}
-            >
-              Packages
-            </a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
+            <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
         </div>
       </header>
