@@ -35,7 +35,7 @@ function getCustomerPackages(pool, customerID, callback) {
       CASE 
         WHEN Sender_ID = ? THEN 'Sending'
         WHEN Recipient_ID = ? THEN 'Receiving'
-      END AS role
+      END AS Role
     FROM package
     WHERE Sender_ID = ? OR Recipient_ID = ?
   `, [customerID, customerID, customerID, customerID])

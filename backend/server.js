@@ -1293,16 +1293,31 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
   // ── POST /api/tickets (PUBLIC submit) ────────────────────────────────────
   if (method === 'POST' && pathname === '/api/tickets') {
-    const { name, email, transactionId, category, description, submittedAt } = await getBody(req)
+    const user = authenticate(req, res)
+    if (!user) return
+    if (user?.type !== 'customer' || user.customer_id == null) {
+      return send(res, 403, { message: 'Customer access required' })
+    }
 
-    if (!name || !email || !transactionId || !category || !description) {
+    const { Tracking_Number, Issue_Type, Description } = await getBody(req)
+    if (!Tracking_Number || Issue_Type === undefined || !Description) {
       return send(res, 400, { message: 'Missing required fields' })
     }
 
-    console.log('New support ticket:', { name, email, transactionId, category, description, submittedAt })
-    return send(res, 201, { message: 'Ticket submitted successfully' })
+    try {
+      await pool.query(
+        `INSERT INTO support_ticket (User_ID, Package_ID, Issue_Type, Description, Ticket_Status_Code)
+        VALUES (?, ?, ?, ?, 0)`,
+        [user.customer_id, Tracking_Number, Issue_Type, Description]
+      )
+      return send(res, 201, { message: 'Ticket submitted successfully' })
+    } catch (err) {
+      console.error('POST /api/tickets error:', err)
+      return send(res, 500, { error: err.message || 'Failed to create ticket' })
+    }
   }
 
+  
   // ── GET /api/customers (employee+admin) ──────────────────────────────────
   if (method === 'GET' && pathname === '/api/customers') {
     const user = authenticate(req, res)
@@ -1319,6 +1334,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   // ── GET /api/customers/:id/packages (employee+admin) ─────────────────────
   {
     const m = matchPath('/api/customers/:id/packages', pathname)
+    // console.log("at customer/packages")
     if (method === 'GET' && m.matched) {
       const user = authenticate(req, res)
       if (!user) return
@@ -1406,6 +1422,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       }
     }
   // }
+
 
   // ── GET /api/employee/weeklyTickets ─────────────────────────────────────
   if (method === 'GET' && pathname === '/api/employee/weeklyTickets') {
