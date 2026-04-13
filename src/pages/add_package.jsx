@@ -1,630 +1,9 @@
-// import { useState } from 'react'
-// import { Link, useNavigate } from 'react-router-dom'
-// import './css/home.css'
-// import './css/add_package.css'
-// import skyline from '../assets/houston-skyline.jpeg'
-// import { authFetch } from '../authFetch'
-
-// const ZONES = [
-//   { value: '1', label: 'Zone 1 — 1 to 50 miles' },
-//   { value: '2', label: 'Zone 2 — 51 to 150 miles' },
-//   { value: '3', label: 'Zone 3 — 151 to 300 miles' },
-//   { value: '4', label: 'Zone 4 — 301 to 600 miles' },
-//   { value: '5', label: 'Zone 5 — 601 to 1,000 miles' },
-//   { value: '6', label: 'Zone 6 — 1,001 to 1,400 miles' },
-//   { value: '7', label: 'Zone 7 — 1,401 to 1,800 miles' },
-//   { value: '8', label: 'Zone 8 — 1,801 miles or greater' },
-//   { value: '9', label: 'Zone 9 — Territories & military addresses' },
-// ]
-
-// const BOX_TIERS = [
-//   { maxL: 12, maxW: 12, maxH: 12, surcharge: 0, label: 'Small (up to 12×12×12 in)' },
-//   { maxL: 18, maxW: 18, maxH: 18, surcharge: 5, label: 'Medium (up to 18×18×18 in)' },
-//   { maxL: 24, maxW: 24, maxH: 24, surcharge: 10, label: 'Large (up to 24×24×24 in)' },
-//   { maxL: 30, maxW: 30, maxH: 30, surcharge: 20, label: 'Extra Large (up to 30×30×30 in)' },
-// ]
-
-// const MAX_WEIGHT = 30
-// const OVR_THRESHOLD = 15
-
-// function getBoxTier(dx, dy, dz) {
-//   if (!dx && !dy && !dz) return null
-//   for (const tier of BOX_TIERS) {
-//     if (dx <= tier.maxL && dy <= tier.maxW && dz <= tier.maxH) return tier
-//   }
-//   return 'rejected'
-// }
-
-// const emptyAddr = () => ({
-//   house_number: '',
-//   street: '',
-//   city: '',
-//   state: '',
-//   zip_first3: '',
-//   zip_last2: '',
-//   apt_number: '',
-// })
-
-// export default function AddPackage() {
-//   const navigate = useNavigate()
-
-//   // ── Sender ────────────────────────────────────────────────────────────
-//   const [senderEmail, setSenderEmail] = useState('')
-//   const [senderFirst, setSenderFirst] = useState('')
-//   const [senderLast, setSenderLast] = useState('')
-//   const [senderPhone, setSenderPhone] = useState('')
-//   const [senderAddr, setSenderAddr] = useState(emptyAddr)
-//   const [lookingUp, setLookingUp] = useState(false)
-//   const [lookupMsg, setLookupMsg] = useState(null)
-//   const [senderFound, setSenderFound] = useState(false)
-
-//   // ── Recipient ─────────────────────────────────────────────────────────
-//   const [recipientEmail, setRecipientEmail] = useState('')
-//   const [recipientFirst, setRecipientFirst] = useState('')
-//   const [recipientLast, setRecipientLast] = useState('')
-//   const [recipientPhone, setRecipientPhone] = useState('')
-//   const [recipientAddr, setRecipientAddr] = useState(emptyAddr)
-
-//   // ── Package ───────────────────────────────────────────────────────────
-//   const [shipmentType, setShipmentType] = useState('')
-//   const [excessFee, setExcessFee] = useState('')
-//   const [weight, setWeight] = useState('')
-//   const [zone, setZone] = useState('')
-//   const [dimX, setDimX] = useState('')
-//   const [dimY, setDimY] = useState('')
-//   const [dimZ, setDimZ] = useState('')
-
-//   // ── State ─────────────────────────────────────────────────────────────
-//   const [quotedPrice, setQuotedPrice] = useState(null)
-//   const [submitResult, setSubmitResult] = useState(null)
-//   const [error, setError] = useState(null)
-//   const [loadingQuote, setLoadingQuote] = useState(false)
-//   const [loadingPay, setLoadingPay] = useState(false)
-
-//   // ── Derived ───────────────────────────────────────────────────────────
-//   const w = parseFloat(weight) || 0
-//   const dx = parseFloat(dimX) || 0
-//   const dy = parseFloat(dimY) || 0
-//   const dz = parseFloat(dimZ) || 0
-//   const weightTooHeavy = w > MAX_WEIGHT
-//   const isOverweight = w > OVR_THRESHOLD
-//   const boxTier = getBoxTier(dx, dy, dz)
-//   const boxRejected = boxTier === 'rejected'
-//   const effectiveType = isOverweight ? 'oversize' : shipmentType
-
-//   // ── Customer lookup (PROTECTED endpoint) ──────────────────────────────
-//   async function lookupSender() {
-//     if (!senderEmail.trim()) {
-//       setLookupMsg({ type: 'error', text: 'Enter an email to look up.' })
-//       return
-//     }
-
-//     setLookingUp(true)
-//     setLookupMsg(null)
-//     setSenderFound(false)
-
-//     try {
-//       const res = await authFetch(
-//         `/api/customer/lookup?email=${encodeURIComponent(senderEmail.trim())}`
-//       )
-
-//       if (res.status === 404) {
-//         setLookupMsg({
-//           type: 'info',
-//           text: 'No existing customer found — fill in details manually.',
-//         })
-//         setSenderFirst('')
-//         setSenderLast('')
-//         setSenderPhone('')
-//         setSenderAddr(emptyAddr())
-//         return
-//       }
-
-//       if (!res.ok) throw new Error('Lookup failed')
-
-//       const data = await res.json()
-//       const c = data.customer
-
-//       setSenderFirst(c.First_Name || '')
-//       setSenderLast(c.Last_Name || '')
-//       setSenderPhone(c.Phone_Number || '')
-//       setSenderAddr({
-//         house_number: c.House_Number || '',
-//         street: c.Street || '',
-//         city: c.City || '',
-//         state: c.State || '',
-//         zip_first3: c.Zip_First3 || '',
-//         zip_last2: c.Zip_Last2 || '',
-//         apt_number: c.Apt_Number || '',
-//       })
-
-//       setSenderFound(true)
-//       setLookupMsg({ type: 'success', text: `Found: ${c.First_Name} ${c.Last_Name}` })
-//     } catch (err) {
-//       setLookupMsg({ type: 'error', text: err.message || 'Lookup failed' })
-//     } finally {
-//       setLookingUp(false)
-//     }
-//   }
-
-//   // ── Calculate price (PUBLIC endpoint) ──────────────────────────────────
-//   async function calculatePrice() {
-//     if (!effectiveType) {
-//       setError('Select a shipment type.')
-//       return
-//     }
-//     if (!weight || w <= 0) {
-//       setError('Enter a valid weight.')
-//       return
-//     }
-//     if (weightTooHeavy) {
-//       setError(`Max weight is ${MAX_WEIGHT} lbs.`)
-//       return
-//     }
-//     if (!zone) {
-//       setError('Select a zone.')
-//       return
-//     }
-//     if (boxRejected) {
-//       setError('Dimensions exceed 30×30×30 inches.')
-//       return
-//     }
-
-//     setError(null)
-//     setLoadingQuote(true)
-
-//     try {
-//       const q = new URLSearchParams({
-//         package_type: effectiveType,
-//         weight: String(weight),
-//         zone: String(zone),
-//       })
-//       if (excessFee) q.append('excess_fee', excessFee)
-//       if (dx > 0) q.append('dim_x', String(dx))
-//       if (dy > 0) q.append('dim_y', String(dy))
-//       if (dz > 0) q.append('dim_z', String(dz))
-
-//       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-//       const res = await fetch(`${API_BASE}/api/price?${q.toString()}`)
-
-//       const raw = await res.text()
-//       let data = {}
-//       try {
-//         data = raw ? JSON.parse(raw) : {}
-//       } catch {
-//         data = { error: raw?.slice(0, 240) }
-//       }
-
-//       if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`)
-//       setQuotedPrice(data.Tot_Price)
-//     } catch (err) {
-//       setError(err.message || 'Quote failed')
-//       setQuotedPrice(null)
-//     } finally {
-//       setLoadingQuote(false)
-//     }
-//   }
-
-//   // ── Pay & create (PROTECTED endpoint) ──────────────────────────────────
-//   async function payAndCreate() {
-//     setError(null)
-//     setSubmitResult(null)
-
-//     if (!senderEmail.trim() || !senderFirst.trim() || !senderLast.trim()) {
-//       setError('Sender email and name are required.')
-//       return
-//     }
-//     if (!recipientFirst.trim() || !recipientLast.trim()) {
-//       setError('Recipient name is required.')
-//       return
-//     }
-
-//     const sa = senderAddr
-//     const ra = recipientAddr
-
-//     if (
-//       !sa.house_number ||
-//       !sa.street ||
-//       !sa.city ||
-//       !sa.state ||
-//       !sa.zip_first3 ||
-//       !sa.zip_last2
-//     ) {
-//       setError('Complete the sender address.')
-//       return
-//     }
-
-//     if (
-//       !ra.house_number ||
-//       !ra.street ||
-//       !ra.city ||
-//       !ra.state ||
-//       !ra.zip_first3 ||
-//       !ra.zip_last2
-//     ) {
-//       setError('Complete the recipient address.')
-//       return
-//     }
-
-//     if (!effectiveType || !weight || !zone) {
-//       setError('Package type, weight, and zone are required.')
-//       return
-//     }
-
-//     if (boxRejected) {
-//       setError('Dimensions exceed 30×30×30 inches.')
-//       return
-//     }
-
-//     setLoadingPay(true)
-
-//     try {
-//       const body = {
-//         sender_email: senderEmail.trim(),
-//         sender_first_name: senderFirst.trim(),
-//         sender_last_name: senderLast.trim(),
-//         sender_phone: senderPhone || null,
-//         sender_house_number: sa.house_number,
-//         sender_street: sa.street,
-//         sender_city: sa.city,
-//         sender_state: sa.state,
-//         sender_zip_first3: sa.zip_first3,
-//         sender_zip_last2: sa.zip_last2,
-//         sender_apt_number: sa.apt_number || null,
-//         sender_country: 'USA',
-
-//         recipient_email: recipientEmail.trim() || null,
-//         recipient_first_name: recipientFirst.trim(),
-//         recipient_last_name: recipientLast.trim(),
-//         recipient_phone: recipientPhone || null,
-//         recipient_house_number: ra.house_number,
-//         recipient_street: ra.street,
-//         recipient_city: ra.city,
-//         recipient_state: ra.state,
-//         recipient_zip_first3: ra.zip_first3,
-//         recipient_zip_last2: ra.zip_last2,
-//         recipient_apt_number: ra.apt_number || null,
-//         recipient_country: 'USA',
-
-//         package_type: effectiveType,
-//         weight: Number(weight),
-//         zone: Number(zone),
-//         excess_fee: excessFee || null,
-//         dim_x: dx || undefined,
-//         dim_y: dy || undefined,
-//         dim_z: dz || undefined,
-//       }
-
-//       const res = await authFetch('/api/employee/packages', {
-//         method: 'POST',
-//         headers: { 'Content-Type': 'application/json' },
-//         body: JSON.stringify(body),
-//       })
-
-//       const data = await res.json().catch(() => ({}))
-//       if (!res.ok) throw new Error(data.message || 'Could not create package')
-
-//       setSubmitResult(data)
-//       setQuotedPrice(data.price)
-//     } catch (err) {
-//       setError(err.message || 'Payment failed')
-//     } finally {
-//       setLoadingPay(false)
-//     }
-//   }
-
-//   function handleLogout(e) {
-//     e.preventDefault()
-//     localStorage.removeItem('token')
-//     localStorage.removeItem('user')
-//     localStorage.removeItem('userType')
-//     navigate('/')
-//   }
-
-//   return (
-//     <div className="add-package-page">
-//       <header className="site-header">
-//         <div className="header-inner">
-//           <Link className="logo" to="/">
-//             National Postal Service
-//           </Link>
-//           <nav className="top-nav">
-//             <a
-//               href="#"
-//               onClick={(e) => {
-//                 e.preventDefault()
-//                 navigate('/employee_home')
-//               }}
-//             >
-//               Dashboard
-//             </a>
-//             <a
-//               href="#"
-//               onClick={(e) => {
-//                 e.preventDefault()
-//                 navigate('/package_list')
-//               }}
-//             >
-//               Packages
-//             </a>
-//             <a href="#" onClick={handleLogout}>
-//               Logout
-//             </a>
-//           </nav>
-//         </div>
-//       </header>
-
-//       <main>
-//         <div className="price-calculator-hero">
-//           <img src={skyline} alt="" />
-//         </div>
-
-//         <div className="add-package-inner">
-//           <h2>Add package</h2>
-//           <p className="add-package-subtitle">
-//             Fill in sender, recipient, and package details to create a shipment.
-//           </p>
-
-//           {/* ── SENDER ── */}
-//           <div className="add-package-section">
-//             <h3>Sender</h3>
-
-//             {/* Email lookup */}
-//             <div className="ap-lookup-row">
-//               <div className="form-field" style={{ flex: 1 }}>
-//                 <label htmlFor="ap-s-email">Customer email</label>
-//                 <input
-//                   id="ap-s-email"
-//                   type="email"
-//                   value={senderEmail}
-//                   onChange={(e) => {
-//                     setSenderEmail(e.target.value)
-//                     setSenderFound(false)
-//                     setLookupMsg(null)
-//                   }}
-//                   placeholder="customer@example.com"
-//                   autoComplete="off"
-//                 />
-//               </div>
-//               <button
-//                 type="button"
-//                 className="btn-calc ap-lookup-btn"
-//                 onClick={lookupSender}
-//                 disabled={lookingUp}
-//               >
-//                 {lookingUp ? 'Looking up…' : 'Look up'}
-//               </button>
-//             </div>
-
-//             {lookupMsg && (
-//               <div className={`ap-lookup-msg ap-lookup-msg--${lookupMsg.type}`}>
-//                 {lookupMsg.text}
-//               </div>
-//             )}
-
-//             <div className="add-package-grid" style={{ marginTop: 16 }}>
-//               <div className="form-field">
-//                 <label>First name</label>
-//                 <input
-//                   value={senderFirst}
-//                   onChange={(e) => setSenderFirst(e.target.value)}
-//                   disabled={senderFound}
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>Last name</label>
-//                 <input
-//                   value={senderLast}
-//                   onChange={(e) => setSenderLast(e.target.value)}
-//                   disabled={senderFound}
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>Phone (optional)</label>
-//                 <input value={senderPhone} onChange={(e) => setSenderPhone(e.target.value)} />
-//               </div>
-//               <div className="form-field">
-//                 <label>House #</label>
-//                 <input
-//                   value={senderAddr.house_number}
-//                   onChange={(e) =>
-//                     setSenderAddr({ ...senderAddr, house_number: e.target.value })
-//                   }
-//                   disabled={senderFound}
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>Street</label>
-//                 <input
-//                   value={senderAddr.street}
-//                   onChange={(e) => setSenderAddr({ ...senderAddr, street: e.target.value })}
-//                   disabled={senderFound}
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>City</label>
-//                 <input
-//                   value={senderAddr.city}
-//                   onChange={(e) => setSenderAddr({ ...senderAddr, city: e.target.value })}
-//                   disabled={senderFound}
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>State</label>
-//                 <input
-//                   value={senderAddr.state}
-//                   onChange={(e) => setSenderAddr({ ...senderAddr, state: e.target.value })}
-//                   disabled={senderFound}
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>ZIP first 3</label>
-//                 <input
-//                   maxLength={3}
-//                   value={senderAddr.zip_first3}
-//                   onChange={(e) =>
-//                     setSenderAddr({ ...senderAddr, zip_first3: e.target.value })
-//                   }
-//                   disabled={senderFound}
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>ZIP last 2</label>
-//                 <input
-//                   maxLength={2}
-//                   value={senderAddr.zip_last2}
-//                   onChange={(e) =>
-//                     setSenderAddr({ ...senderAddr, zip_last2: e.target.value })
-//                   }
-//                   disabled={senderFound}
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>Apt (optional)</label>
-//                 <input
-//                   value={senderAddr.apt_number}
-//                   onChange={(e) =>
-//                     setSenderAddr({ ...senderAddr, apt_number: e.target.value })
-//                   }
-//                 />
-//               </div>
-//             </div>
-
-//             {senderFound && (
-//               <button
-//                 type="button"
-//                 className="ap-clear-btn"
-//                 onClick={() => {
-//                   setSenderFound(false)
-//                   setSenderFirst('')
-//                   setSenderLast('')
-//                   setSenderPhone('')
-//                   setSenderAddr(emptyAddr())
-//                   setLookupMsg(null)
-//                 }}
-//               >
-//                 ✕ Clear and enter manually
-//               </button>
-//             )}
-//           </div>
-
-//           {/* ── RECIPIENT ── */}
-//           <div className="add-package-section">
-//             <h3>Recipient</h3>
-//             <p className="add-package-hint">
-//               Leave email blank if the recipient does not have one.
-//             </p>
-//             <div className="add-package-grid">
-//               <div className="form-field">
-//                 <label>Email (optional)</label>
-//                 <input
-//                   type="email"
-//                   value={recipientEmail}
-//                   onChange={(e) => setRecipientEmail(e.target.value)}
-//                   placeholder="Optional"
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>First name</label>
-//                 <input value={recipientFirst} onChange={(e) => setRecipientFirst(e.target.value)} />
-//               </div>
-//               <div className="form-field">
-//                 <label>Last name</label>
-//                 <input value={recipientLast} onChange={(e) => setRecipientLast(e.target.value)} />
-//               </div>
-//               <div className="form-field">
-//                 <label>Phone (optional)</label>
-//                 <input value={recipientPhone} onChange={(e) => setRecipientPhone(e.target.value)} />
-//               </div>
-//               <div className="form-field">
-//                 <label>House #</label>
-//                 <input
-//                   value={recipientAddr.house_number}
-//                   onChange={(e) =>
-//                     setRecipientAddr({ ...recipientAddr, house_number: e.target.value })
-//                   }
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>Street</label>
-//                 <input
-//                   value={recipientAddr.street}
-//                   onChange={(e) =>
-//                     setRecipientAddr({ ...recipientAddr, street: e.target.value })
-//                   }
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>City</label>
-//                 <input
-//                   value={recipientAddr.city}
-//                   onChange={(e) =>
-//                     setRecipientAddr({ ...recipientAddr, city: e.target.value })
-//                   }
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>State</label>
-//                 <input
-//                   value={recipientAddr.state}
-//                   onChange={(e) =>
-//                     setRecipientAddr({ ...recipientAddr, state: e.target.value })
-//                   }
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>ZIP first 3</label>
-//                 <input
-//                   maxLength={3}
-//                   value={recipientAddr.zip_first3}
-//                   onChange={(e) =>
-//                     setRecipientAddr({ ...recipientAddr, zip_first3: e.target.value })
-//                   }
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>ZIP last 2</label>
-//                 <input
-//                   maxLength={2}
-//                   value={recipientAddr.zip_last2}
-//                   onChange={(e) =>
-//                     setRecipientAddr({ ...recipientAddr, zip_last2: e.target.value })
-//                   }
-//                 />
-//               </div>
-//               <div className="form-field">
-//                 <label>Apt (optional)</label>
-//                 <input
-//                   value={recipientAddr.apt_number}
-//                   onChange={(e) =>
-//                     setRecipientAddr({ ...recipientAddr, apt_number: e.target.value })
-//                   }
-//                 />
-//               </div>
-//             </div>
-//           </div>
-
-//           {/* The rest of your JSX (package details & pricing, create button, footer) can remain unchanged */}
-//           {/* You can keep the remainder of your original component below this point if you'd like. */}
-//         </div>
-//       </main>
-
-//       <footer className="site-footer">
-//         <div className="footer-inner">
-//           <div>© {new Date().getFullYear()} National Postal Service</div>
-//         </div>
-//       </footer>
-//     </div>
-//   )
-// }
-
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './css/home.css'
 import './css/add_package.css'
 import skyline from '../assets/houston-skyline.jpeg'
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+import { authFetch } from '../authFetch'
 
 const ZONES = [
   { value: '1', label: 'Zone 1 — 1 to 50 miles' },
@@ -639,13 +18,13 @@ const ZONES = [
 ]
 
 const BOX_TIERS = [
-  { maxL: 12, maxW: 12, maxH: 12, surcharge: 0,  label: 'Small (up to 12×12×12 in)' },
-  { maxL: 18, maxW: 18, maxH: 18, surcharge: 5,  label: 'Medium (up to 18×18×18 in)' },
+  { maxL: 12, maxW: 12, maxH: 12, surcharge: 0, label: 'Small (up to 12×12×12 in)' },
+  { maxL: 18, maxW: 18, maxH: 18, surcharge: 5, label: 'Medium (up to 18×18×18 in)' },
   { maxL: 24, maxW: 24, maxH: 24, surcharge: 10, label: 'Large (up to 24×24×24 in)' },
   { maxL: 30, maxW: 30, maxH: 30, surcharge: 20, label: 'Extra Large (up to 30×30×30 in)' },
 ]
 
-const MAX_WEIGHT    = 30
+const MAX_WEIGHT = 30
 const OVR_THRESHOLD = 15
 
 function getBoxTier(dx, dy, dz) {
@@ -657,89 +36,111 @@ function getBoxTier(dx, dy, dz) {
 }
 
 const emptyAddr = () => ({
-  house_number: '', street: '', city: '',
-  state: '', zip_first3: '', zip_last2: '', apt_number: '',
+  house_number: '',
+  street: '',
+  city: '',
+  state: '',
+  zip_first3: '',
+  zip_last2: '',
+  apt_number: '',
 })
 
 export default function AddPackage() {
   const navigate = useNavigate()
-  const token    = localStorage.getItem('token')
 
   // ── Sender ────────────────────────────────────────────────────────────
-  const [senderEmail, setSenderEmail]     = useState('')
-  const [senderFirst, setSenderFirst]     = useState('')
-  const [senderLast, setSenderLast]       = useState('')
-  const [senderPhone, setSenderPhone]     = useState('')
-  const [senderAddr, setSenderAddr]       = useState(emptyAddr)
-  const [lookingUp, setLookingUp]         = useState(false)
-  const [lookupMsg, setLookupMsg]         = useState(null)
-  const [senderFound, setSenderFound]     = useState(false)
+  const [senderEmail, setSenderEmail] = useState('')
+  const [senderFirst, setSenderFirst] = useState('')
+  const [senderLast, setSenderLast] = useState('')
+  const [senderPhone, setSenderPhone] = useState('')
+  const [senderAddr, setSenderAddr] = useState(emptyAddr)
+  const [lookingUp, setLookingUp] = useState(false)
+  const [lookupMsg, setLookupMsg] = useState(null)
+  const [senderFound, setSenderFound] = useState(false)
 
   // ── Recipient ─────────────────────────────────────────────────────────
-  const [recipientEmail, setRecipientEmail]   = useState('')
-  const [recipientFirst, setRecipientFirst]   = useState('')
-  const [recipientLast, setRecipientLast]     = useState('')
-  const [recipientPhone, setRecipientPhone]   = useState('')
-  const [recipientAddr, setRecipientAddr]     = useState(emptyAddr)
+  const [recipientEmail, setRecipientEmail] = useState('')
+  const [recipientFirst, setRecipientFirst] = useState('')
+  const [recipientLast, setRecipientLast] = useState('')
+  const [recipientPhone, setRecipientPhone] = useState('')
+  const [recipientAddr, setRecipientAddr] = useState(emptyAddr)
+  const [recipientLookingUp, setRecipientLookingUp] = useState(false)
+  const [recipientLookupMsg, setRecipientLookupMsg] = useState(null)
+  const [recipientFound, setRecipientFound] = useState(false)
 
   // ── Package ───────────────────────────────────────────────────────────
-  const [shipmentType, setShipmentType]   = useState('')
-  const [excessFee, setExcessFee]         = useState('')
-  const [weight, setWeight]               = useState('')
-  const [zone, setZone]                   = useState('')
-  const [dimX, setDimX]                   = useState('')
-  const [dimY, setDimY]                   = useState('')
-  const [dimZ, setDimZ]                   = useState('')
+  const [shipmentType, setShipmentType] = useState('')
+  const [excessFee, setExcessFee] = useState('')
+  const [weight, setWeight] = useState('')
+  const [zone, setZone] = useState('')
+  const [dimX, setDimX] = useState('')
+  const [dimY, setDimY] = useState('')
+  const [dimZ, setDimZ] = useState('')
 
   // ── State ─────────────────────────────────────────────────────────────
-  const [quotedPrice, setQuotedPrice]     = useState(null)
-  const [submitResult, setSubmitResult]   = useState(null)
-  const [error, setError]                 = useState(null)
-  const [loadingQuote, setLoadingQuote]   = useState(false)
-  const [loadingPay, setLoadingPay]       = useState(false)
+  const [quotedPrice, setQuotedPrice] = useState(null)
+  const [submitResult, setSubmitResult] = useState(null)
+  const [error, setError] = useState(null)
+  const [loadingQuote, setLoadingQuote] = useState(false)
+  const [loadingPay, setLoadingPay] = useState(false)
 
   // ── Derived ───────────────────────────────────────────────────────────
-  const w              = parseFloat(weight) || 0
-  const dx             = parseFloat(dimX) || 0
-  const dy             = parseFloat(dimY) || 0
-  const dz             = parseFloat(dimZ) || 0
+  const w = parseFloat(weight) || 0
+  const dx = parseFloat(dimX) || 0
+  const dy = parseFloat(dimY) || 0
+  const dz = parseFloat(dimZ) || 0
   const weightTooHeavy = w > MAX_WEIGHT
-  const isOverweight   = w > OVR_THRESHOLD
-  const boxTier        = getBoxTier(dx, dy, dz)
-  const boxRejected    = boxTier === 'rejected'
-  const effectiveType  = isOverweight ? 'oversize' : shipmentType
-  //const storeID =  req.user.store_id 
+  const isOverweight = w > OVR_THRESHOLD
+  const boxTier = getBoxTier(dx, dy, dz)
+  const boxRejected = boxTier === 'rejected'
+  const effectiveType = isOverweight ? 'oversize' : shipmentType
 
-  // ── Customer lookup ───────────────────────────────────────────────────
+  // ── Customer lookup (PROTECTED endpoint) ──────────────────────────────
   async function lookupSender() {
-    if (!senderEmail.trim()) { setLookupMsg({ type: 'error', text: 'Enter an email to look up.' }); return }
+    if (!senderEmail.trim()) {
+      setLookupMsg({ type: 'error', text: 'Enter an email to look up.' })
+      return
+    }
+
     setLookingUp(true)
     setLookupMsg(null)
     setSenderFound(false)
+
     try {
-      const res  = await fetch(`${API_BASE}/api/customer/lookup?email=${encodeURIComponent(senderEmail.trim())}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const res = await authFetch(
+        `/api/customer/lookup?email=${encodeURIComponent(senderEmail.trim())}`
+      )
+
       if (res.status === 404) {
-        setLookupMsg({ type: 'info', text: 'No existing customer found — fill in details manually.' })
-        setSenderFirst(''); setSenderLast(''); setSenderPhone(''); setSenderAddr(emptyAddr())
+        setLookupMsg({
+          type: 'info',
+          text: 'No existing customer found — fill in details manually.',
+        })
+        setSenderFirst('')
+        setSenderLast('')
+        setSenderPhone('')
+        setSenderAddr(emptyAddr())
         return
       }
+
       if (!res.ok) throw new Error('Lookup failed')
+
       const data = await res.json()
-      const c    = data.customer
+      const c = data.customer
+
       setSenderFirst(c.First_Name || '')
-      setSenderLast(c.Last_Name   || '')
+      setSenderLast(c.Last_Name || '')
       setSenderPhone(c.Phone_Number || '')
       setSenderAddr({
         house_number: c.House_Number || '',
-        street:       c.Street       || '',
-        city:         c.City         || '',
-        state:        c.State        || '',
-        zip_first3:   c.Zip_First3   || '',
-        zip_last2:    c.Zip_Last2    || '',
-        apt_number:   c.Apt_Number   || '',
+        street: c.Street || '',
+        city: c.City || '',
+        state: c.State || '',
+        zip_first3: c.Zip_First3 || '',
+        zip_last2: c.Zip_Last2 || '',
+        apt_number: c.Apt_Number || '',
       })
+
       setSenderFound(true)
       setLookupMsg({ type: 'success', text: `Found: ${c.First_Name} ${c.Last_Name}` })
     } catch (err) {
@@ -749,75 +150,220 @@ export default function AddPackage() {
     }
   }
 
-  // ── Calculate price ───────────────────────────────────────────────────
-  async function calculatePrice() {
-    if (!effectiveType)    { setError('Select a shipment type.'); return }
-    if (!weight || w <= 0) { setError('Enter a valid weight.'); return }
-    if (weightTooHeavy)    { setError(`Max weight is ${MAX_WEIGHT} lbs.`); return }
-    if (!zone)             { setError('Select a zone.'); return }
-    if (boxRejected)       { setError('Dimensions exceed 30×30×30 inches.'); return }
-    setError(null); setLoadingQuote(true)
+  // ── Recipient lookup ──────────────────────────────────
+  async function lookupRecipient() {
+    if (!recipientEmail.trim()) {
+      setRecipientLookupMsg({ type: 'error', text: 'Enter an email to look up.' })
+      return
+    }
+ 
+    if (recipientEmail.trim().toLowerCase() === senderEmail.trim().toLowerCase()) {
+      setRecipientLookupMsg({
+        type: 'error',
+        text: 'Recipient cannot be the same account as the sender.',
+      })
+      return
+    }
+ 
+    setRecipientLookingUp(true)
+    setRecipientLookupMsg(null)
+    setRecipientFound(false)
+ 
     try {
-      const q = new URLSearchParams({ package_type: effectiveType, weight: String(weight), zone: String(zone) })
+      const res = await authFetch(
+        `/api/customer/lookup?email=${encodeURIComponent(recipientEmail.trim())}`
+      )
+ 
+      if (res.status === 404) {
+        setRecipientLookupMsg({
+          type: 'info',
+          text: 'No existing customer found — fill in details manually.',
+        })
+        setRecipientFirst('')
+        setRecipientLast('')
+        setRecipientPhone('')
+        setRecipientAddr(emptyAddr())
+        return
+      }
+ 
+      if (!res.ok) throw new Error('Lookup failed')
+ 
+      const data = await res.json()
+      const c = data.customer
+ 
+      setRecipientFirst(c.First_Name || '')
+      setRecipientLast(c.Last_Name || '')
+      setRecipientPhone(c.Phone_Number || '')
+      setRecipientAddr({
+        house_number: c.House_Number || '',
+        street: c.Street || '',
+        city: c.City || '',
+        state: c.State || '',
+        zip_first3: c.Zip_First3 || '',
+        zip_last2: c.Zip_Last2 || '',
+        apt_number: c.Apt_Number || '',
+      })
+ 
+      setRecipientFound(true)
+      setRecipientLookupMsg({ type: 'success', text: `Found: ${c.First_Name} ${c.Last_Name}` })
+    } catch (err) {
+      setRecipientLookupMsg({ type: 'error', text: err.message || 'Lookup failed' })
+    } finally {
+      setRecipientLookingUp(false)
+    }
+  }
+
+  // ── Calculate price (PUBLIC endpoint) ──────────────────────────────────
+  async function calculatePrice() {
+    if (!effectiveType) {
+      setError('Select a shipment type.')
+      return
+    }
+    if (!weight || w <= 0) {
+      setError('Enter a valid weight.')
+      return
+    }
+    if (weightTooHeavy) {
+      setError(`Max weight is ${MAX_WEIGHT} lbs.`)
+      return
+    }
+    if (!zone) {
+      setError('Select a zone.')
+      return
+    }
+    if (boxRejected) {
+      setError('Dimensions exceed 30×30×30 inches.')
+      return
+    }
+
+    setError(null)
+    setLoadingQuote(true)
+
+    try {
+      const q = new URLSearchParams({
+        package_type: effectiveType,
+        weight: String(weight),
+        zone: String(zone),
+      })
       if (excessFee) q.append('excess_fee', excessFee)
-      if (dx > 0)    q.append('dim_x', dx)
-      if (dy > 0)    q.append('dim_y', dy)
-      if (dz > 0)    q.append('dim_z', dz)
-      const res  = await fetch(`${API_BASE}/api/price?${q}`)
-      const raw  = await res.text()
-      let data   = {}
-      try { data = raw ? JSON.parse(raw) : {} } catch { data = { error: raw?.slice(0, 240) } }
+      if (dx > 0) q.append('dim_x', String(dx))
+      if (dy > 0) q.append('dim_y', String(dy))
+      if (dz > 0) q.append('dim_z', String(dz))
+
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+      const res = await fetch(`${API_BASE}/api/price?${q.toString()}`)
+
+      const raw = await res.text()
+      let data = {}
+      try {
+        data = raw ? JSON.parse(raw) : {}
+      } catch {
+        data = { error: raw?.slice(0, 240) }
+      }
+
       if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`)
       setQuotedPrice(data.Tot_Price)
     } catch (err) {
-      setError(err.message || 'Quote failed'); setQuotedPrice(null)
+      setError(err.message || 'Quote failed')
+      setQuotedPrice(null)
     } finally {
       setLoadingQuote(false)
     }
   }
 
-  // ── Pay & create ──────────────────────────────────────────────────────
+  // ── Pay & create (PROTECTED endpoint) ──────────────────────────────────
   async function payAndCreate() {
-    setError(null); setSubmitResult(null)
-    if (!senderEmail.trim() || !senderFirst.trim() || !senderLast.trim())
-      { setError('Sender email and name are required.'); return }
-    if (!recipientFirst.trim() || !recipientLast.trim())
-      { setError('Recipient name is required.'); return }
-    const sa = senderAddr; const ra = recipientAddr
-    if (!sa.house_number || !sa.street || !sa.city || !sa.state || !sa.zip_first3 || !sa.zip_last2)
-      { setError('Complete the sender address.'); return }
-    if (!ra.house_number || !ra.street || !ra.city || !ra.state || !ra.zip_first3 || !ra.zip_last2)
-      { setError('Complete the recipient address.'); return }
-    if (!effectiveType || !weight || !zone)
-      { setError('Package type, weight, and zone are required.'); return }
-    if (boxRejected) { setError('Dimensions exceed 30×30×30 inches.'); return }
+    setError(null)
+    setSubmitResult(null)
+
+    if (!senderEmail.trim() || !senderFirst.trim() || !senderLast.trim()) {
+      setError('Sender email and name are required.')
+      return
+    }
+    if (!recipientFirst.trim() || !recipientLast.trim()) {
+      setError('Recipient name is required.')
+      return
+    }
+
+    const sa = senderAddr
+    const ra = recipientAddr
+
+    if (
+      !sa.house_number ||
+      !sa.street ||
+      !sa.city ||
+      !sa.state ||
+      !sa.zip_first3 ||
+      !sa.zip_last2
+    ) {
+      setError('Complete the sender address.')
+      return
+    }
+
+    if (
+      !ra.house_number ||
+      !ra.street ||
+      !ra.city ||
+      !ra.state ||
+      !ra.zip_first3 ||
+      !ra.zip_last2
+    ) {
+      setError('Complete the recipient address.')
+      return
+    }
+
+    if (!effectiveType || !weight || !zone) {
+      setError('Package type, weight, and zone are required.')
+      return
+    }
+
+    if (boxRejected) {
+      setError('Dimensions exceed 30×30×30 inches.')
+      return
+    }
 
     setLoadingPay(true)
+
     try {
       const body = {
         sender_email: senderEmail.trim(),
-        sender_first_name: senderFirst.trim(), sender_last_name: senderLast.trim(),
+        sender_first_name: senderFirst.trim(),
+        sender_last_name: senderLast.trim(),
         sender_phone: senderPhone || null,
-        sender_house_number: sa.house_number, sender_street: sa.street,
-        sender_city: sa.city, sender_state: sa.state,
-        sender_zip_first3: sa.zip_first3, sender_zip_last2: sa.zip_last2,
-        sender_apt_number: sa.apt_number || null, sender_country: 'USA',
+        sender_house_number: sa.house_number,
+        sender_street: sa.street,
+        sender_city: sa.city,
+        sender_state: sa.state,
+        sender_zip_first3: sa.zip_first3,
+        sender_zip_last2: sa.zip_last2,
+        sender_apt_number: sa.apt_number || null,
+        sender_country: 'USA',
+
         recipient_email: recipientEmail.trim() || null,
-        recipient_first_name: recipientFirst.trim(), recipient_last_name: recipientLast.trim(),
+        recipient_first_name: recipientFirst.trim(),
+        recipient_last_name: recipientLast.trim(),
         recipient_phone: recipientPhone || null,
-        recipient_house_number: ra.house_number, recipient_street: ra.street,
-        recipient_city: ra.city, recipient_state: ra.state,
-        recipient_zip_first3: ra.zip_first3, recipient_zip_last2: ra.zip_last2,
-        recipient_apt_number: ra.apt_number || null, recipient_country: 'USA',
+        recipient_house_number: ra.house_number,
+        recipient_street: ra.street,
+        recipient_city: ra.city,
+        recipient_state: ra.state,
+        recipient_zip_first3: ra.zip_first3,
+        recipient_zip_last2: ra.zip_last2,
+        recipient_apt_number: ra.apt_number || null,
+        recipient_country: 'USA',
+
         package_type: effectiveType,
-        weight: Number(weight), zone: Number(zone),
+        weight: Number(weight),
+        zone: Number(zone),
         excess_fee: excessFee || null,
-        dim_x: dx || undefined, dim_y: dy || undefined, dim_z: dz || undefined,
-        //store_id: storeID
+        dim_x: dx || undefined,
+        dim_y: dy || undefined,
+        dim_z: dz || undefined,
       }
-      const res  = await fetch(`${API_BASE}/api/employee/packages`, {
+
+      const res = await authFetch('/api/employee/packages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
       const data = await res.json().catch(() => ({}))
@@ -833,7 +379,9 @@ export default function AddPackage() {
 
   function handleLogout(e) {
     e.preventDefault()
-    localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('userType')
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('userType')
     navigate('/')
   }
 
@@ -841,13 +389,31 @@ export default function AddPackage() {
     <div className="add-package-page">
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/">National Postal Service</Link>
+          <Link className="logo" to="/">
+            National Postal Service
+          </Link>
           <nav className="top-nav">
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
-            <a href="#" onClick={handleLogout}>Logout</a>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/employee_home')
+              }}
+            >
+              Dashboard
+            </a>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                navigate('/package_list')
+              }}
+            >
+              Packages
+            </a>
+            <a href="#" onClick={handleLogout}>
+              Logout
+            </a>
           </nav>
         </div>
       </header>
@@ -859,7 +425,9 @@ export default function AddPackage() {
 
         <div className="add-package-inner">
           <h2>Add package</h2>
-          <p className="add-package-subtitle">Fill in sender, recipient, and package details to create a shipment.</p>
+          <p className="add-package-subtitle">
+            Fill in sender, recipient, and package details to create a shipment.
+          </p>
 
           {/* ── SENDER ── */}
           <div className="add-package-section">
@@ -870,13 +438,24 @@ export default function AddPackage() {
               <div className="form-field" style={{ flex: 1 }}>
                 <label htmlFor="ap-s-email">Customer email</label>
                 <input
-                  id="ap-s-email" type="email"
-                  value={senderEmail} onChange={(e) => { setSenderEmail(e.target.value); setSenderFound(false); setLookupMsg(null) }}
+                  id="ap-s-email"
+                  type="email"
+                  value={senderEmail}
+                  onChange={(e) => {
+                    setSenderEmail(e.target.value)
+                    setSenderFound(false)
+                    setLookupMsg(null)
+                  }}
                   placeholder="customer@example.com"
                   autoComplete="off"
                 />
               </div>
-              <button type="button" className="btn-calc ap-lookup-btn" onClick={lookupSender} disabled={lookingUp}>
+              <button
+                type="button"
+                className="btn-calc ap-lookup-btn"
+                onClick={lookupSender}
+                disabled={lookingUp}
+              >
                 {lookingUp ? 'Looking up…' : 'Look up'}
               </button>
             </div>
@@ -890,11 +469,19 @@ export default function AddPackage() {
             <div className="add-package-grid" style={{ marginTop: 16 }}>
               <div className="form-field">
                 <label>First name</label>
-                <input value={senderFirst} onChange={(e) => setSenderFirst(e.target.value)} disabled={senderFound} />
+                <input
+                  value={senderFirst}
+                  onChange={(e) => setSenderFirst(e.target.value)}
+                  disabled={senderFound}
+                />
               </div>
               <div className="form-field">
                 <label>Last name</label>
-                <input value={senderLast} onChange={(e) => setSenderLast(e.target.value)} disabled={senderFound} />
+                <input
+                  value={senderLast}
+                  onChange={(e) => setSenderLast(e.target.value)}
+                  disabled={senderFound}
+                />
               </div>
               <div className="form-field">
                 <label>Phone (optional)</label>
@@ -902,35 +489,83 @@ export default function AddPackage() {
               </div>
               <div className="form-field">
                 <label>House #</label>
-                <input value={senderAddr.house_number} onChange={(e) => setSenderAddr({ ...senderAddr, house_number: e.target.value })} disabled={senderFound} />
+                <input
+                  value={senderAddr.house_number}
+                  onChange={(e) =>
+                    setSenderAddr({ ...senderAddr, house_number: e.target.value })
+                  }
+                  disabled={senderFound}
+                />
               </div>
               <div className="form-field">
                 <label>Street</label>
-                <input value={senderAddr.street} onChange={(e) => setSenderAddr({ ...senderAddr, street: e.target.value })} disabled={senderFound} />
+                <input
+                  value={senderAddr.street}
+                  onChange={(e) => setSenderAddr({ ...senderAddr, street: e.target.value })}
+                  disabled={senderFound}
+                />
               </div>
               <div className="form-field">
                 <label>City</label>
-                <input value={senderAddr.city} onChange={(e) => setSenderAddr({ ...senderAddr, city: e.target.value })} disabled={senderFound} />
+                <input
+                  value={senderAddr.city}
+                  onChange={(e) => setSenderAddr({ ...senderAddr, city: e.target.value })}
+                  disabled={senderFound}
+                />
               </div>
               <div className="form-field">
                 <label>State</label>
-                <input value={senderAddr.state} onChange={(e) => setSenderAddr({ ...senderAddr, state: e.target.value })} disabled={senderFound} />
+                <input
+                  value={senderAddr.state}
+                  onChange={(e) => setSenderAddr({ ...senderAddr, state: e.target.value })}
+                  disabled={senderFound}
+                />
               </div>
               <div className="form-field">
                 <label>ZIP first 3</label>
-                <input maxLength={3} value={senderAddr.zip_first3} onChange={(e) => setSenderAddr({ ...senderAddr, zip_first3: e.target.value })} disabled={senderFound} />
+                <input
+                  maxLength={3}
+                  value={senderAddr.zip_first3}
+                  onChange={(e) =>
+                    setSenderAddr({ ...senderAddr, zip_first3: e.target.value })
+                  }
+                  disabled={senderFound}
+                />
               </div>
               <div className="form-field">
                 <label>ZIP last 2</label>
-                <input maxLength={2} value={senderAddr.zip_last2} onChange={(e) => setSenderAddr({ ...senderAddr, zip_last2: e.target.value })} disabled={senderFound} />
+                <input
+                  maxLength={2}
+                  value={senderAddr.zip_last2}
+                  onChange={(e) =>
+                    setSenderAddr({ ...senderAddr, zip_last2: e.target.value })
+                  }
+                  disabled={senderFound}
+                />
               </div>
               <div className="form-field">
                 <label>Apt (optional)</label>
-                <input value={senderAddr.apt_number} onChange={(e) => setSenderAddr({ ...senderAddr, apt_number: e.target.value })} />
+                <input
+                  value={senderAddr.apt_number}
+                  onChange={(e) =>
+                    setSenderAddr({ ...senderAddr, apt_number: e.target.value })
+                  }
+                />
               </div>
             </div>
             {senderFound && (
-              <button type="button" className="ap-clear-btn" onClick={() => { setSenderFound(false); setSenderFirst(''); setSenderLast(''); setSenderPhone(''); setSenderAddr(emptyAddr()); setLookupMsg(null) }}>
+              <button
+                type="button"
+                className="ap-clear-btn"
+                onClick={() => {
+                  setSenderFound(false)
+                  setSenderFirst('')
+                  setSenderLast('')
+                  setSenderPhone('')
+                  setSenderAddr(emptyAddr())
+                  setLookupMsg(null)
+                }}
+              >
                 ✕ Clear and enter manually
               </button>
             )}
@@ -939,19 +574,58 @@ export default function AddPackage() {
           {/* ── RECIPIENT ── */}
           <div className="add-package-section">
             <h3>Recipient</h3>
-            <p className="add-package-hint">Leave email blank if the recipient does not have one.</p>
-            <div className="add-package-grid">
-              <div className="form-field">
-                <label>Email (optional)</label>
-                <input type="email" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} placeholder="Optional" />
+            <p className="add-package-hint">
+              Leave email blank if the recipient does not have one.
+            </p>
+ 
+            {/* Email lookup row */}
+            <div className="ap-lookup-row">
+              <div className="form-field" style={{ flex: 1 }}>
+                <label htmlFor="ap-r-email">Email (optional)</label>
+                <input
+                  id="ap-r-email"
+                  type="email"
+                  value={recipientEmail}
+                  onChange={(e) => {
+                    setRecipientEmail(e.target.value)
+                    setRecipientFound(false)
+                    setRecipientLookupMsg(null)
+                  }}
+                  placeholder="Optional"
+                />
               </div>
+              <button
+                type="button"
+                className="btn-calc ap-lookup-btn"
+                onClick={lookupRecipient}
+                disabled={recipientLookingUp}
+              >
+                {recipientLookingUp ? 'Looking up…' : 'Look up'}
+              </button>
+            </div>
+ 
+            {recipientLookupMsg && (
+              <div className={`ap-lookup-msg ap-lookup-msg--${recipientLookupMsg.type}`}>
+                {recipientLookupMsg.text}
+              </div>
+            )}
+ 
+            <div className="add-package-grid" style={{ marginTop: 16 }}>
               <div className="form-field">
                 <label>First name</label>
-                <input value={recipientFirst} onChange={(e) => setRecipientFirst(e.target.value)} />
+                <input
+                  value={recipientFirst}
+                  onChange={(e) => setRecipientFirst(e.target.value)}
+                  disabled={recipientFound}
+                />
               </div>
               <div className="form-field">
                 <label>Last name</label>
-                <input value={recipientLast} onChange={(e) => setRecipientLast(e.target.value)} />
+                <input
+                  value={recipientLast}
+                  onChange={(e) => setRecipientLast(e.target.value)}
+                  disabled={recipientFound}
+                />
               </div>
               <div className="form-field">
                 <label>Phone (optional)</label>
@@ -959,36 +633,96 @@ export default function AddPackage() {
               </div>
               <div className="form-field">
                 <label>House #</label>
-                <input value={recipientAddr.house_number} onChange={(e) => setRecipientAddr({ ...recipientAddr, house_number: e.target.value })} />
+                <input
+                  value={recipientAddr.house_number}
+                  onChange={(e) =>
+                    setRecipientAddr({ ...recipientAddr, house_number: e.target.value })
+                  }
+                  disabled={recipientFound}
+                />
               </div>
               <div className="form-field">
                 <label>Street</label>
-                <input value={recipientAddr.street} onChange={(e) => setRecipientAddr({ ...recipientAddr, street: e.target.value })} />
+                <input
+                  value={recipientAddr.street}
+                  onChange={(e) =>
+                    setRecipientAddr({ ...recipientAddr, street: e.target.value })
+                  }
+                  disabled={recipientFound}
+                />
               </div>
               <div className="form-field">
                 <label>City</label>
-                <input value={recipientAddr.city} onChange={(e) => setRecipientAddr({ ...recipientAddr, city: e.target.value })} />
+                <input
+                  value={recipientAddr.city}
+                  onChange={(e) =>
+                    setRecipientAddr({ ...recipientAddr, city: e.target.value })
+                  }
+                  disabled={recipientFound}
+                />
               </div>
               <div className="form-field">
                 <label>State</label>
-                <input value={recipientAddr.state} onChange={(e) => setRecipientAddr({ ...recipientAddr, state: e.target.value })} />
+                <input
+                  value={recipientAddr.state}
+                  onChange={(e) =>
+                    setRecipientAddr({ ...recipientAddr, state: e.target.value })
+                  }
+                  disabled={recipientFound}
+                />
               </div>
               <div className="form-field">
                 <label>ZIP first 3</label>
-                <input maxLength={3} value={recipientAddr.zip_first3} onChange={(e) => setRecipientAddr({ ...recipientAddr, zip_first3: e.target.value })} />
+                <input
+                  maxLength={3}
+                  value={recipientAddr.zip_first3}
+                  onChange={(e) =>
+                    setRecipientAddr({ ...recipientAddr, zip_first3: e.target.value })
+                  }
+                  disabled={recipientFound}
+                />
               </div>
               <div className="form-field">
                 <label>ZIP last 2</label>
-                <input maxLength={2} value={recipientAddr.zip_last2} onChange={(e) => setRecipientAddr({ ...recipientAddr, zip_last2: e.target.value })} />
+                <input
+                  maxLength={2}
+                  value={recipientAddr.zip_last2}
+                  onChange={(e) =>
+                    setRecipientAddr({ ...recipientAddr, zip_last2: e.target.value })
+                  }
+                  disabled={recipientFound}
+                />
               </div>
               <div className="form-field">
                 <label>Apt (optional)</label>
-                <input value={recipientAddr.apt_number} onChange={(e) => setRecipientAddr({ ...recipientAddr, apt_number: e.target.value })} />
+                <input
+                  value={recipientAddr.apt_number}
+                  onChange={(e) =>
+                    setRecipientAddr({ ...recipientAddr, apt_number: e.target.value })
+                  }
+                />
               </div>
             </div>
+ 
+            {recipientFound && (
+              <button
+                type="button"
+                className="ap-clear-btn"
+                onClick={() => {
+                  setRecipientFound(false)
+                  setRecipientFirst('')
+                  setRecipientLast('')
+                  setRecipientPhone('')
+                  setRecipientAddr(emptyAddr())
+                  setRecipientLookupMsg(null)
+                }}
+              >
+                ✕ Clear and enter manually
+              </button>
+            )}
           </div>
 
-          {/* ── PACKAGE & PRICING ── */}
+              {/* ── PACKAGE & PRICING ── */}
           <div className="add-package-section">
             <h3>Package details &amp; pricing</h3>
             <div className="price-calculator-card" style={{ maxWidth: '100%', boxShadow: 'none', border: 'none', padding: 0 }}>
@@ -1110,6 +844,8 @@ export default function AddPackage() {
             )}
           </div>
 
+          {/* The rest of your JSX (package details & pricing, create button, footer) can remain unchanged */}
+          {/* You can keep the remainder of your original component below this point if you'd like. */}
         </div>
       </main>
 
@@ -1119,5 +855,7 @@ export default function AddPackage() {
         </div>
       </footer>
     </div>
+
+
   )
 }
