@@ -344,8 +344,8 @@ async function router(req, res) {
     if (!user) return
     if (!requireAdmin(user, res)) return
 
-    const { name, email, department, position, phoneNumber } = await getBody(req)
-    if (!name || !email || !department || !position) {
+    const { name, email, department, position, phoneNumber, hireDate } = await getBody(req)
+    if (!name || !email || !department || !position || !hireDate) {
       return send(res, 400, { message: 'Missing required fields' })
     }
 
@@ -379,14 +379,14 @@ async function router(req, res) {
         `INSERT INTO employee (
           Post_Office_ID, Role_ID, Department_ID,
           First_Name, Middle_Name, Last_Name,
-          Birth_Day, Birth_Month, Birth_Year,
+          Birthday,
           Password_Hash, Email_Address, Phone_Number,
           Sex, Salary
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           1, role_id, department_id,
-          firstName, null, lastName,
-          1, 1, 2000, // placeholder DOB for test employee
+          firstName, '', lastName,
+          hireDate,
           hash, email, phoneNumber || null,
           'U', 0.0
         ]
