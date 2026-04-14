@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './css/home.css'
+import { authFetch } from '../authFetch'
 
 export default function Home() {
   const navigate = useNavigate()

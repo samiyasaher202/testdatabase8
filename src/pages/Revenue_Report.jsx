@@ -4,6 +4,7 @@ import './css/Revenue_Report.css';
 import './css/EmployeeSupport.css'
 import ColumnChart from "../components/column_chart";
 import PieChart from "../components/pie_chart";
+import { authFetch } from '../authFetch'
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -41,11 +42,11 @@ export default function DataReport() {
       if (feeTypeFilter) params.append("feeType", feeTypeFilter);
 
       const [feeRes, packagesRes, paymentsRes, excessRes, monthRes] = await Promise.all([
-        fetch(`${API_BASE}/api/report/fee-breakdown?${params}`),
-        fetch(`${API_BASE}/api/report/packages?${params}`),
-        fetch(`${API_BASE}/api/report/payments?${params}`),
-        fetch(`${API_BASE}/api/report/excess-fees?${params}`),
-        fetch(`${API_BASE}/api/report/revenue-by-month`),
+        authFetch(`${API_BASE}/api/report/fee-breakdown?${params}`),
+        authFetch(`${API_BASE}/api/report/packages?${params}`),
+        authFetch(`${API_BASE}/api/report/payments?${params}`),
+        authFetch(`${API_BASE}/api/report/excess-fees?${params}`),
+        authFetch(`${API_BASE}/api/report/revenue-by-month`),
       ]);
       if (!feeRes.ok) console.error(await feeRes.text());
       if (!paymentsRes.ok) console.error(await paymentsRes.text());

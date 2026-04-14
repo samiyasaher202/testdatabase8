@@ -107,9 +107,7 @@ export default function AddPackage() {
     setSenderFound(false)
 
     try {
-      const res = await authFetch(
-        `/api/customer/lookup?email=${encodeURIComponent(senderEmail.trim())}`
-      )
+      const res = await authFetch(`/api/customer/lookup?email=${encodeURIComponent(senderEmail.trim())}`)
 
       if (res.status === 404) {
         setLookupMsg({
@@ -170,9 +168,7 @@ export default function AddPackage() {
     setRecipientFound(false)
  
     try {
-      const res = await authFetch(
-        `/api/customer/lookup?email=${encodeURIComponent(recipientEmail.trim())}`
-      )
+      const res = await authFetch(`/api/customer/lookup?email=${encodeURIComponent(recipientEmail.trim())}`)
  
       if (res.status === 404) {
         setRecipientLookupMsg({
@@ -251,7 +247,7 @@ export default function AddPackage() {
       if (dz > 0) q.append('dim_z', String(dz))
 
       const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-      const res = await fetch(`${API_BASE}/api/price?${q.toString()}`)
+      const res = await authFetch(`${API_BASE}/api/price?${q.toString()}`)
 
       const raw = await res.text()
       let data = {}
@@ -288,26 +284,12 @@ export default function AddPackage() {
     const sa = senderAddr
     const ra = recipientAddr
 
-    if (
-      !sa.house_number ||
-      !sa.street ||
-      !sa.city ||
-      !sa.state ||
-      !sa.zip_first3 ||
-      !sa.zip_last2
-    ) {
+    if (!sa.house_number || !sa.street || !sa.city || !sa.state || !sa.zip_first3 || !sa.zip_last2) {
       setError('Complete the sender address.')
       return
     }
 
-    if (
-      !ra.house_number ||
-      !ra.street ||
-      !ra.city ||
-      !ra.state ||
-      !ra.zip_first3 ||
-      !ra.zip_last2
-    ) {
+    if (!ra.house_number || !ra.street || !ra.city || !ra.state || !ra.zip_first3 || !ra.zip_last2) {
       setError('Complete the recipient address.')
       return
     }

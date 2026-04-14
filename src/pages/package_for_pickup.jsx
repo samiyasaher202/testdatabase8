@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import './css/home.css'
 import './css/packages.css'
 import './css/package_for_pickup.css'
+import { authFetch } from '../authFetch'
 
 const API_BASE =
   import.meta.env.VITE_API_URL != null && String(import.meta.env.VITE_API_URL).trim() !== ''
@@ -48,11 +49,11 @@ export default function PackageForPickup() {
       setError('')
       try {
         const [r1, r2] = await Promise.all([
-          fetch(`${API_BASE}/api/employee/packages-at-office`, {
+          authFetch(`${API_BASE}/api/employee/packages-at-office`, {
             headers: { ...authHeader() },
             signal: ac.signal,
           }),
-          fetch(`${API_BASE}/api/employee/post-offices`, {
+          authFetch(`${API_BASE}/api/employee/post-offices`, {
             headers: { ...authHeader() },
             signal: ac.signal,
           }),
@@ -109,7 +110,7 @@ export default function PackageForPickup() {
   )
 
   async function refreshAtOfficeList() {
-    const r = await fetch(`${API_BASE}/api/employee/packages-at-office`, { headers: { ...authHeader() } })
+    const r = await authFetch(`${API_BASE}/api/employee/packages-at-office`, { headers: { ...authHeader() } })
     const t = await r.text()
     let d = []
     try {
@@ -129,7 +130,7 @@ export default function PackageForPickup() {
     }
     setSubmittingArrival(true)
     try {
-      const res = await fetch(`${API_BASE}/api/employee/package-pickup-arrival`, {
+      const res = await authFetch(`${API_BASE}/api/employee/package-pickup-arrival`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({
@@ -165,7 +166,7 @@ export default function PackageForPickup() {
     }
     setSubmittingPickup(true)
     try {
-      const res = await fetch(`${API_BASE}/api/employee/package-pickup`, {
+      const res = await authFetch(`${API_BASE}/api/employee/package-pickup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeader() },
         body: JSON.stringify({

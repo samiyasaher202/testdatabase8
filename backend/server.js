@@ -252,10 +252,10 @@ async function router(req, res) {
   const method = req.method
   const query = getQueryParams(req.url)
 
-  // ── GET /api/health ──────────────────────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/health') {
-    return send(res, 200, { ok: true, service: 'postoffice-api', has_price: true })
-  }
+  // // ── GET /api/health ──────────────────────────────────────────────────────
+  // if (method === 'GET' && pathname === '/api/health') {
+  //   return send(res, 200, { ok: true, service: 'postoffice-api', has_price: true })
+  // }
 
   // ── POST /api/auth/login ─────────────────────────────────────────────────
   if (method === 'POST' && pathname === '/api/auth/login') {
@@ -458,6 +458,7 @@ async function router(req, res) {
   if (method === 'GET' && pathname === '/api/auth/profile') {
     const user = authenticate(req, res)
     if (!user) return
+    if (!requireEmployee(user, res)) return
 
     try {
       const [rows] = await pool.query(
@@ -486,6 +487,7 @@ async function router(req, res) {
   if (method === 'PUT' && pathname === '/api/auth/profile') {
     const user = authenticate(req, res)
     if (!user) return
+    if (!requireEmployee(user, res)) return
 
     const { Email_Address, Phone_Number } = await getBody(req)
     try {
@@ -520,6 +522,7 @@ async function router(req, res) {
   if (method === 'POST' && pathname === '/api/auth/change-password') {
     const user = authenticate(req, res)
     if (!user) return
+    if (!requireEmployee(user, res)) return
 
     const { currentPassword, newPassword } = await getBody(req)
     if (!currentPassword || !newPassword) return send(res, 400, { message: 'Both passwords are required' })
@@ -629,36 +632,44 @@ async function router(req, res) {
   }
 
   // ── GET /api/packages/track/:trackingNumber (PUBLIC tracking) ────────────
-  {
-    const m = matchPath('/api/packages/track/:trackingNumber', pathname)
-    if (method === 'GET' && m.matched) {
-      const trackingNumber = m.params.trackingNumber.trim()
-      if (!trackingNumber) return send(res, 400, { error: 'trackingNumber is required' })
+  // {
+  //   const m = matchPath('/api/packages/track/:trackingNumber', pathname)
+  //   const user = authenticate(req, res)
+  //   if (!user) return
+  //   if (method === 'GET' && m.matched) {
+  //     const trackingNumber = m.params.trackingNumber.trim()
+  //     if (!trackingNumber) return send(res, 400, { error: 'trackingNumber is required' })
 
-      packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
-        if (err) return send(res, 500, { error: 'Database error' })
-        if (!result) return send(res, 404, { error: 'Package not found' })
-        return send(res, 200, result)
-      })
-      return
-    }
-  }
+  //     packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
+  //       if (err) return send(res, 500, { error: 'Database error' })
+  //       if (!result) return send(res, 404, { error: 'Package not found' })
+  //       return send(res, 200, result)
+  //     })
+  //     return
+  //   }
+  // }
 
   // ── GET /qry_track_package (PUBLIC tracking) ─────────────────────────────
-  if (method === 'GET' && pathname === '/qry_track_package') {
-    const trackingNumber = (query.tracking_number || query.trackingNumber || '').trim()
-    if (!trackingNumber) return send(res, 400, { error: 'tracking_number query parameter is required' })
+  // if (method === 'GET' && pathname === '/qry_track_package') {
+  //   const user = authenticate(req, res)
+  //   if (!user) return
 
-    packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
-      if (err) return send(res, 500, { error: 'Database error' })
-      if (!result) return send(res, 404, { error: 'Package not found' })
-      return send(res, 200, result)
-    })
-    return
-  }
+  //   const trackingNumber = (query.tracking_number || query.trackingNumber || '').trim()
+  //   if (!trackingNumber) return send(res, 400, { error: 'tracking_number query parameter is required' })
+
+  //   packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
+  //     if (err) return send(res, 500, { error: 'Database error' })
+  //     if (!result) return send(res, 404, { error: 'Package not found' })
+  //     return send(res, 200, result)
+  //   })
+  //   return
+  // }
 
   // ── GET /api/price (PUBLIC) ──────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/price') {
+    const user = authenticate(req, res)
+    if (!user) return
+
     const { package_type, weight, zone, excess_fee, dim_x, dim_y, dim_z } = query
     const pt = normalizePackageTypeName(package_type)
     if (!pt || weight === undefined || weight === '' || zone === undefined || zone === '') {
@@ -726,37 +737,19 @@ async function router(req, res) {
 
     const b = await getBody(req)
     const {
-      sender_email,
-      sender_first_name,
-      sender_last_name,
-      sender_house_number,
-      sender_street,
-      sender_city,
-      sender_state,
-      sender_zip_first3,
-      sender_zip_last2,
-      sender_apt_number,
-      sender_country,
+      sender_email, sender_first_name, sender_last_name,
+      sender_house_number, sender_street, sender_city, 
+      sender_state, sender_zip_first3, sender_zip_last2, sender_apt_number,sender_country,
       sender_phone,
-      recipient_email,
-      recipient_first_name,
-      recipient_last_name,
-      recipient_house_number,
-      recipient_street,
-      recipient_city,
-      recipient_state,
-      recipient_zip_first3,
-      recipient_zip_last2,
-      recipient_apt_number,
-      recipient_country,
+      recipient_email, recipient_first_name, recipient_last_name,
+      recipient_house_number, recipient_street, recipient_city,
+      recipient_state, recipient_zip_first3, recipient_zip_last2, recipient_apt_number, recipient_country,
       recipient_phone,
       package_type,
       weight,
       zone,
       excess_fee,
-      dim_x,
-      dim_y,
-      dim_z,
+      dim_x, dim_y,dim_z,
     } = b
 
     const pt = normalizePackageTypeName(package_type)
@@ -957,7 +950,7 @@ async function router(req, res) {
 if (method === 'GET' && pathname === '/api/reports/employee-performance') {
   const user = authenticate(req, res)
   if (!user) return
-  if (!requireEmployee(user, res)) return
+  if (!requireAdmin(user, res)) return
 
   const { department_id, post_office_id, date_from, date_to } = query
 
@@ -1039,7 +1032,7 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
 if (method === 'GET' && pathname === '/api/reports/location-stats') {
   const user = authenticate(req, res)
   if (!user) return
-  if (!requireEmployee(user, res)) return
+  if (!requireAdmin(user, res)) return
 
   const { date_from, date_to } = query
   const conditions = []
@@ -1082,7 +1075,7 @@ if (method === 'GET' && pathname === '/api/reports/location-stats') {
 if (method === 'GET' && pathname === '/api/reports/department-stats') {
   const user = authenticate(req, res)
   if (!user) return
-  if (!requireEmployee(user, res)) return
+  if (!requireAdmin(user, res)) return
 
   const { date_from, date_to } = query
   const conditions = []
@@ -1127,7 +1120,7 @@ if (method === 'GET' && pathname === '/api/reports/department-stats') {
 if (method === 'GET' && pathname === '/api/reports/zone-stats') {
   const user = authenticate(req, res)
   if (!user) return
-  if (!requireEmployee(user, res)) return
+  if (!requireAdmin(user, res)) return
 
   const { date_from, date_to } = query
   const conditions = []
@@ -1164,7 +1157,7 @@ if (method === 'GET' && pathname === '/api/reports/zone-stats') {
 if (method === 'GET' && pathname === '/api/reports/departments') {
   const user = authenticate(req, res)
   if (!user) return
-  if (!requireEmployee(user, res)) return
+  if (!requireAdmin(user, res)) return
   try {
     const [rows] = await pool.query('SELECT Department_ID, Department_Name FROM department ORDER BY Department_Name ASC')
     return send(res, 200, rows)
@@ -1177,7 +1170,7 @@ if (method === 'GET' && pathname === '/api/reports/departments') {
 if (method === 'GET' && pathname === '/api/reports/post-offices') {
   const user = authenticate(req, res)
   if (!user) return
-  if (!requireEmployee(user, res)) return
+  if (!requireAdmin(user, res)) return
   try {
     const [rows] = await pool.query('SELECT Post_Office_ID, City, State FROM post_office ORDER BY State, City ASC')
     return send(res, 200, rows)
@@ -1352,8 +1345,8 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   {
     const m = matchPath('/api/packages/:tracking_number/tracking', pathname)
     if (method === 'GET' && m.matched) {
-      // const user = authenticate(req, res)
-      // if (!user) return
+      const user = authenticate(req, res)
+      if (!user) return
       // if (!requireEmployee(user, res)) return
 
       packageTrackDB.getPackageTracking(pool, m.params.tracking_number, (err, results) => {
@@ -1411,9 +1404,9 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   // {
     const m = matchPath('/api/employee/:employee_id/tickets', pathname)
     if (method === 'GET' && m.matched) {
-      // const user = authenticate(req, res)
-      // if (!user) return
-      // if (!requireEmployee(user, res)) return
+      const user = authenticate(req, res)
+      if (!user) return
+      if (!requireEmployee(user, res)) return
       try {
         const results = await employeeDB.getTicketsByEmployee(pool, m.params.employee_id)
         return send(res, 200, results)
@@ -1560,8 +1553,13 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // Revenue Report calls
+  // ========================================
+  // Revinue-Report
+  // ========================================
   if(method === 'GET' && pathname === '/api/report/fee-breakdown') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
     revenueReportDB.getFeeBreakdown(pool, query, (err,results) => {
       if(err) return send(res,500, {error: err.message})
       return send(res, 200, results)
@@ -1570,8 +1568,9 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   }
 
   if(method === 'GET' && pathname === '/api/report/packages') {
-    //const user = authenticate(req,res); if(!user) return
-    //if(!requireEmployee(user,res)) return
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
     revenueReportDB.getReportPackages(pool,query, (err,results) => {
       if(err) return send(res,500, {error:err.message })
         return send(res, 200, results)
@@ -1580,8 +1579,9 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   }
 
   if(method === 'GET' && pathname === '/api/report/payments') {
-    //const user= authenticate(req,res); if(!user) return
-    //if(!requireEmployee(user,res))return
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
     revenueReportDB.getReportPayments(pool,query, (err,results) => {
       if(err) return send(res,500, {error: err.message })
         return send(res,200,results)
@@ -1590,8 +1590,9 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   }
 
   if (method === 'GET' && pathname === '/api/report/excess-fees') {
-    //const user = authenticate(req,res); if (!user) return
-    //if(!requireEmployee(user,res)) return
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
     revenueReportDB.getExcessFees(pool,query,(err,results) => {
       if(err) return send(res,500, {error: err.message})
         return send(res, 200, results)
@@ -1600,8 +1601,9 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   }
 
   if(method === 'GET' && pathname === '/api/report/revenue-by-month') {
-    //const user = authenticate(req,res); if (!user) return
-    //if(!requireEmployee(user,res)) return
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
     revenueReportDB.getRevenueByMonth(pool, (err,results) => {
       if(err) return send(res, 500, {error: err.message})
         return send(res,200,results)
@@ -1610,6 +1612,39 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   }
   //end  rev report calls
 
+  if (method === 'GET' && pathname.startsWith('/api/packages/lost/')) {
+    const user = authenticate(req, res)
+    if (!user) return
+
+    const customerId = pathname.split('/').pop()
+
+    try {
+      const results = await lostNotifsDB.getLostPackagesByCustomer(pool, customerId)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+  if (method === 'PATCH' && pathname.includes('/api/packages/lost/') && pathname.endsWith('/dismiss')) {
+    const user = authenticate(req, res)
+    if (!user) return
+
+    const parts = pathname.split('/')
+    const trackingNumber = parts[parts.length - 2]
+
+    try {
+      const result = await lostNotifsDB.dismissLostPackage(pool, trackingNumber)
+
+      if (result.affectedRows === 0) {
+        return send(res, 404, { error: 'Package not found or already dismissed' })
+      }
+
+      return send(res, 200, { success: true })
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+  }
 
 
   // Default

@@ -5,6 +5,7 @@ import './css/home.css'
 import './css/inventory.css'
 import './css/package_list.css'
 import skyline from '../assets/houston-skyline.jpeg'
+import { authFetch } from '../authFetch'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -197,9 +198,9 @@ export default function AllPackages() {
 
     // Load packages, status codes, post offices in parallel
     Promise.all([
-      fetch(`${API_BASE}/api/packages/full`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-      fetch(`${API_BASE}/api/status-codes`,  { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
-      fetch(`${API_BASE}/api/reports/post-offices`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+      authFetch(`${API_BASE}/api/packages/full`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+      authFetch(`${API_BASE}/api/status-codes`,  { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+      authFetch(`${API_BASE}/api/reports/post-offices`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
     ])
     .then(([pkgs, codes, offices]) => {
       setPackages(Array.isArray(pkgs) ? pkgs : [])
@@ -213,7 +214,7 @@ export default function AllPackages() {
   async function handleStatusChange(trackingNumber, statusCodeStr) {
     setStatusUpdating(trackingNumber); setError(null)
     try {
-      const res = await fetch(`${API_BASE}/api/employee/packages/${encodeURIComponent(trackingNumber)}/status`, {
+      const res = await authFetch(`${API_BASE}/api/employee/packages/${encodeURIComponent(trackingNumber)}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status_code: Number(statusCodeStr) }),

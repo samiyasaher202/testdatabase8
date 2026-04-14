@@ -4,6 +4,7 @@ import PriceCalculatorForm from '../components/PriceCalculatorForm'
 import './css/home.css'
 import './css/price_calculator.css'
 import skyline from '../assets/houston-skyline.jpeg'
+import { authFetch } from '../authFetch'
 
 export default function PriceCalculator() {
   const navigate = useNavigate()

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import './css/home.css'
 import './css/packages.css'
+import { authFetch } from '../authFetch'
 
 // In dev, prefer same-origin `/api` so Vite's proxy can reach the backend without CORS surprises.
 const envApi = import.meta.env.VITE_API_URL
@@ -57,7 +58,7 @@ export default function EmployeesPage() {
       setLoading(true)
       setError('')
       try {
-        const res = await fetch(`${API_BASE}/api/admin/employees`, {
+        const res = await authFetch(`${API_BASE}/api/admin/employees`, {
           headers: { ...getAuthHeader() },
         })
         const text = await res.text()
@@ -123,7 +124,7 @@ export default function EmployeesPage() {
     if (!ok) return
 
     try {
-      const res = await fetch(`${API_BASE}/api/admin/employees/${employeeId}/deactivate`, {
+      const res = await authFetch(`${API_BASE}/api/admin/employees/${employeeId}/deactivate`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
       })

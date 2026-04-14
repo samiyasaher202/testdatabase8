@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../components/Auth.css';
+import { authFetch } from '../authFetch'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -38,7 +39,7 @@ const AdminRegister = () => {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE}/api/auth/admin-register`, {
+      const response = await authFetch(`${API_BASE}/api/auth/admin-register`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

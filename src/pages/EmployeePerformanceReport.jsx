@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { authFetch } from '../authFetch'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -158,10 +159,10 @@ export default function EmployeePerformanceReport() {
       const h = { Authorization: `Bearer ${token}` }
 
       const [empRes, locRes, deptRes, zoneRes] = await Promise.all([
-        fetch(`${API_BASE}/api/reports/employee-performance?${empParams}`, { headers: h }),
-        fetch(`${API_BASE}/api/reports/location-stats?${otherParams}`,     { headers: h }),
-        fetch(`${API_BASE}/api/reports/department-stats?${otherParams}`,   { headers: h }),
-        fetch(`${API_BASE}/api/reports/zone-stats?${otherParams}`,         { headers: h }),
+        authFetch(`${API_BASE}/api/reports/employee-performance?${empParams}`, { headers: h }),
+        authFetch(`${API_BASE}/api/reports/location-stats?${otherParams}`,     { headers: h }),
+        authFetch(`${API_BASE}/api/reports/department-stats?${otherParams}`,   { headers: h }),
+        authFetch(`${API_BASE}/api/reports/zone-stats?${otherParams}`,         { headers: h }),
       ])
 
       const [empData, locData, deptData, zoneData] = await Promise.all([
@@ -184,8 +185,8 @@ export default function EmployeePerformanceReport() {
     if (!token) { navigate('/login'); return }
     const h = { Authorization: `Bearer ${token}` }
     Promise.all([
-      fetch(`${API_BASE}/api/reports/departments`,  { headers: h }).then(r => r.json()),
-      fetch(`${API_BASE}/api/reports/post-offices`, { headers: h }).then(r => r.json()),
+      authFetch(`${API_BASE}/api/reports/departments`,  { headers: h }).then(r => r.json()),
+      authFetch(`${API_BASE}/api/reports/post-offices`, { headers: h }).then(r => r.json()),
     ]).then(([d, o]) => { setDeptOpts(Array.isArray(d) ? d : []); setOfficeOpts(Array.isArray(o) ? o : []) })
     fetchAll()
   }, [])

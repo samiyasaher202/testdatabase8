@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './css/home.css'
 import './css/package_tracking.css'
+import { authFetch } from '../authFetch'
 
 // In dev, prefer same-origin `/api` so Vite's proxy can reach the backend without CORS surprises.
 const envApi = import.meta.env.VITE_API_URL
@@ -48,7 +49,7 @@ export default function PackageTracking() {
     const id = encodeURIComponent(trackingNumber.trim())
     try {
       // const res = await fetch(`${API_BASE}/api/packages/track/${id}`)
-      const res = await fetch(`${API_BASE}/api/packages/${id}/tracking`)
+      const res = await authFetch(`${API_BASE}/api/packages/${id}/tracking`)
       const raw = await res.text()
       const contentType = res.headers.get('content-type') || ''
       let data = {}

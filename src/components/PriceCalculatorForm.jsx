@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { authFetch } from '../authFetch'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -86,7 +87,7 @@ export default function PriceCalculatorForm({
       if (dy > 0)         params.append('dim_y', dy)
       if (dz > 0)         params.append('dim_z', dz)
 
-      const res  = await fetch(`${API_BASE}/api/price?${params.toString()}`)
+      const res  = await authFetch(`${API_BASE}/api/price?${params.toString()}`)
       const raw  = await res.text()
       let data   = {}
       try { data = raw ? JSON.parse(raw) : {} }

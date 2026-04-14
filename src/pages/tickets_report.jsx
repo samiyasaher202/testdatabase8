@@ -6,6 +6,7 @@ import skyline from "../assets/houston-skyline.jpeg";
 import ColumnChart from "../components/column_chart";
 import PieChart from "../components/pie_chart";
 import React from 'react'
+import { authFetch } from '../authFetch'
 
 import { Link, useNavigate } from 'react-router-dom';
 //import { netTicketsWeek } from "../../backend/db/employees";
@@ -59,7 +60,7 @@ export default function TicketsReport() {
 
 useEffect(() => {
   // console.log("Fetching from:", `${API_BASE}/api/employee/weeklyTickets`)
-  fetch(`${API_BASE}/api/employee/weeklyTickets`, {
+  authFetch(`${API_BASE}/api/employee/weeklyTickets`, {
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('token')}`
     }
@@ -92,7 +93,7 @@ useEffect(() => {
 
 useEffect(() => {
     // console.log("Fetching from:", `${API_BASE}/api/employee/net-tickets`);
-    fetch(`${API_BASE}/api/employee/net-tickets`,{
+    authFetch(`${API_BASE}/api/employee/net-tickets`,{
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -119,7 +120,7 @@ useEffect(() => {
 
 useEffect(() => {
     // console.log("Fetching from:", `${API_BASE}/api/employee/week-net-tickets`);
-    fetch(`${API_BASE}/api/employee/week-net-tickets`,{
+    authFetch(`${API_BASE}/api/employee/week-net-tickets`,{
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -146,7 +147,7 @@ useEffect(() => {
 
   useEffect(() => {
     // console.log("Fetching from:", `${API_BASE}/api/employee/tickets-by-issue`);
-    fetch(`${API_BASE}/api/employee/tickets-by-issue`,{
+    authFetch(`${API_BASE}/api/employee/tickets-by-issue`,{
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -171,7 +172,7 @@ useEffect(() => {
 
   useEffect(() => {
     // console.log("Fetching from:", `${API_BASE}/api/employee/tickets_comp`);
-    fetch(`${API_BASE}/api/employee/tickets_comp`,{
+    authFetch(`${API_BASE}/api/employee/tickets_comp`,{
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       }
@@ -247,7 +248,7 @@ function toggleDropdown(employeeId, type) {
 
    
     if (!employeeTickets[employeeId]) {
-        fetch(`${API_BASE}/api/employee/${employeeId}/tickets`)
+        authFetch(`${API_BASE}/api/employee/${employeeId}/tickets`)
             .then(res => res.json())
             .then(data => setEmployeeTickets(prev => ({ ...prev, [employeeId]: data })))
             .catch(() => setEmployeeTickets(prev => ({ ...prev, [employeeId]: [] })));
@@ -283,7 +284,7 @@ function handleLogout(e) {
 
 
         <div className="page-content">
-          <h2>Employee Support Tickets</h2>
+          <h2>Support Ticket Report</h2>
 
           {error && (
             <div className="error-banner">
