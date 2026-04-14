@@ -123,9 +123,8 @@ export default function EmployeePerformanceReport() {
   const navigate = useNavigate()
   const token    = localStorage.getItem('token')
 
-  // Data (current vs past come from separate SQL cohorts on the server)
-  const [employeesCurrent, setEmployeesCurrent] = useState([])
-  const [employeesPast, setEmployeesPast] = useState([])
+  // Data
+  const [employees,   setEmployees]   = useState([])
   const [locations,   setLocations]   = useState([])
   const [departments, setDepartments] = useState([])
   const [zones,       setZones]       = useState([])
@@ -169,23 +168,7 @@ export default function EmployeePerformanceReport() {
         empRes.json(), locRes.json(), deptRes.json(), zoneRes.json()
       ])
 
-      if (Array.isArray(empData.reportCurrent) && Array.isArray(empData.reportPast)) {
-        setEmployeesCurrent(empData.reportCurrent)
-        setEmployeesPast(empData.reportPast)
-      } else if (Array.isArray(empData.report)) {
-        const cur = []
-        const pst = []
-        for (const r of empData.report) {
-          const v = r?.Is_Active ?? r?.is_Active ?? r?.is_active
-          if (v === 1 || v === true || v === '1') cur.push(r)
-          else pst.push(r)
-        }
-        setEmployeesCurrent(cur)
-        setEmployeesPast(pst)
-      } else {
-        setEmployeesCurrent([])
-        setEmployeesPast([])
-      }
+      setEmployees(empData.report     || [])
       setLocations(locData.locations  || [])
       setDepartments(deptData.departments || [])
       setZones(zoneData.zones         || [])
@@ -207,22 +190,12 @@ export default function EmployeePerformanceReport() {
     fetchAll()
   }, [])
 
-  const employees = [...employeesCurrent, ...employeesPast]
-  const currentIdSet = new Set(employeesCurrent.map((e) => e.Employee_ID))
-
-  //  Sort (same comparator applied within each cohort)
-  const sortRows = (rows) =>
-    [...rows].sort((a, b) => {
-      const av = a[sortKey], bv = b[sortKey]
-      if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
-      return sortDir === 'asc' ? av - bv : bv - av
-    })
-
-  const sortedCurrent = sortRows(employeesCurrent)
-  const sortedPast = sortRows(employeesPast)
-  const sortedForCsv = sortRows(employees)
-  /** Bar chart: current employees first, then past. */
-  const sortedForBars = [...sortedCurrent, ...sortedPast]
+  //  Sort 
+  const sorted = [...employees].sort((a, b) => {
+    const av = a[sortKey], bv = b[sortKey]
+    if (typeof av === 'string') return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av)
+    return sortDir === 'asc' ? av - bv : bv - av
+  })
 
   function handleSort(key) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -231,15 +204,13 @@ export default function EmployeePerformanceReport() {
   function si(key) { if (sortKey !== key) return ' ↕'; return sortDir === 'asc' ? ' ↑' : ' ↓' }
 
   //  Summary stats 
-  const totalEmpActive = employeesCurrent.length
-  const totalEmpPast = employeesPast.length
+  const totalEmp      = employees.length
   const totalPkgs     = employees.reduce((s, r) => s + Number(r.Total_Packages), 0)
   const totalRev      = employees.reduce((s, r) => s + Number(r.Total_Revenue), 0)
   const totalShips    = employees.reduce((s, r) => s + Number(r.Total_Shipments), 0)
-  const activePool = employeesCurrent
-  const topEmp        = [...activePool].sort((a,b) => b.Total_Packages - a.Total_Packages)[0]
-  const topRevEmp     = [...activePool].sort((a,b) => b.Total_Revenue  - a.Total_Revenue)[0]
-  const bestRate      = [...activePool].filter(e => e.Delivery_Success_Rate != null).sort((a,b) => b.Delivery_Success_Rate - a.Delivery_Success_Rate)[0]
+  const topEmp        = [...employees].sort((a,b) => b.Total_Packages - a.Total_Packages)[0]
+  const topRevEmp     = [...employees].sort((a,b) => b.Total_Revenue  - a.Total_Revenue)[0]
+  const bestRate      = [...employees].filter(e => e.Delivery_Success_Rate != null).sort((a,b) => b.Delivery_Success_Rate - a.Delivery_Success_Rate)[0]
   const maxPkgs       = Math.max(...employees.map(e => e.Total_Packages), 1)
   const maxLocPkgs    = Math.max(...locations.map(l => l.Total_Packages), 1)
   const maxZonePkgs   = Math.max(...zones.map(z => z.Total_Packages), 1)
@@ -271,9 +242,9 @@ export default function EmployeePerformanceReport() {
             style={{ padding: '9px 18px', background: '#fff', border: '1px solid #dbe4ef', borderRadius: 10, cursor: 'pointer', fontWeight: 600, color: '#374151' }}>
             {loading ? '⏳ Loading...' : '🔄 Refresh'}
           </button>
-          <button onClick={() => downloadCSV(sortedForCsv, 'employee_performance',
-            ['ID','Name','Email','Status','Role','Department','Office','Shipments','Packages','Avg Pkgs/Shipment','Revenue','Avg Rev/Shipment','Success Rate','Oversize','Last Shipment'],
-            r => [r.Employee_ID, r.Employee_Name, r.Email_Address, currentIdSet.has(r.Employee_ID) ? 'Current' : 'Past', r.Role_Name, r.Department_Name, `${r.Office_City}, ${r.Office_State}`, r.Total_Shipments, r.Total_Packages, r.Avg_Packages_Per_Shipment || '—', fmt(r.Total_Revenue), fmt(r.Avg_Revenue_Per_Shipment), fmtPct(r.Delivery_Success_Rate), r.Oversize_Packages, fmtDate(r.Last_Shipment_Date)]
+          <button onClick={() => downloadCSV(sorted, 'employee_performance',
+            ['ID','Name','Email','Role','Department','Office','Shipments','Packages','Avg Pkgs/Shipment','Revenue','Avg Rev/Shipment','Success Rate','Oversize','Last Shipment'],
+            r => [r.Employee_ID, r.Employee_Name, r.Email_Address, r.Role_Name, r.Department_Name, `${r.Office_City}, ${r.Office_State}`, r.Total_Shipments, r.Total_Packages, r.Avg_Packages_Per_Shipment || '—', fmt(r.Total_Revenue), fmt(r.Avg_Revenue_Per_Shipment), fmtPct(r.Delivery_Success_Rate), r.Oversize_Packages, fmtDate(r.Last_Shipment_Date)]
           )}
             style={{ padding: '9px 18px', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 10, cursor: 'pointer', fontWeight: 600, color: '#065f46' }}>
             ⬇ Download All
@@ -328,7 +299,7 @@ export default function EmployeePerformanceReport() {
 
         {/* ── SUMMARY CARDS ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
-          <Card label="Active Employees"    value={totalEmpActive} sub={totalEmpPast ? `${totalEmpPast} past` : undefined} color="#1d4ed8" />
+          <Card label="Active Employees"    value={totalEmp}                                          color="#1d4ed8" />
           <Card label="Total Shipments"     value={totalShips}                                        color="#0891b2" />
           <Card label="Total Packages"      value={totalPkgs}                                         color="#059669" />
           <Card label="Total Revenue"       value={`$${totalRev.toLocaleString('en-US', { minimumFractionDigits: 2 })}`} color="#7c3aed" />
@@ -340,12 +311,10 @@ export default function EmployeePerformanceReport() {
 
         {/* ── EMPLOYEE PERFORMANCE TABLE ── */}
         <Section>
-          <SectionHeader title="👤 Employee Performance" onDownload={() => downloadCSV(sortedForCsv, 'employee_performance',
-            ['ID','Name','Status','Role','Department','Office','Shipments','Packages','Avg Pkgs/Ship','Revenue','Avg Rev/Ship','Success Rate','Oversize','Last Shipment'],
-            r => [r.Employee_ID, r.Employee_Name, currentIdSet.has(r.Employee_ID) ? 'Current' : 'Past', r.Role_Name, r.Department_Name, `${r.Office_City}, ${r.Office_State}`, r.Total_Shipments, r.Total_Packages, r.Avg_Packages_Per_Shipment || 0, fmt(r.Total_Revenue), fmt(r.Avg_Revenue_Per_Shipment), fmtPct(r.Delivery_Success_Rate), r.Oversize_Packages, fmtDate(r.Last_Shipment_Date)]
+          <SectionHeader title="👤 Employee Performance" onDownload={() => downloadCSV(sorted, 'employee_performance',
+            ['ID','Name','Role','Department','Office','Shipments','Packages','Avg Pkgs/Ship','Revenue','Avg Rev/Ship','Success Rate','Oversize','Last Shipment'],
+            r => [r.Employee_ID, r.Employee_Name, r.Role_Name, r.Department_Name, `${r.Office_City}, ${r.Office_State}`, r.Total_Shipments, r.Total_Packages, r.Avg_Packages_Per_Shipment || 0, fmt(r.Total_Revenue), fmt(r.Avg_Revenue_Per_Shipment), fmtPct(r.Delivery_Success_Rate), r.Oversize_Packages, fmtDate(r.Last_Shipment_Date)]
           )} />
-
-          <h3 style={{ margin: '0 0 12px', fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>Current employees <span style={{ fontWeight: 500, color: '#64748b' }}></span></h3>
           <TableWrap>
             <thead>
               <tr>
@@ -363,9 +332,9 @@ export default function EmployeePerformanceReport() {
               </tr>
             </thead>
             <tbody>
-              {sortedCurrent.length === 0 ? (
-                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 32, color: '#94a3b8' }}>No current employees in this report.</td></tr>
-              ) : sortedCurrent.map((r, i) => (
+              {sorted.length === 0 ? (
+                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 48, color: '#94a3b8' }}>No data found.</td></tr>
+              ) : sorted.map((r, i) => (
                 <tr key={r.Employee_ID} style={{ background: i % 2 === 0 ? '#fff' : '#fafbfc' }}>
                   <Td><div style={{ fontWeight: 700 }}>{r.Employee_Name}</div><div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{r.Email_Address}</div></Td>
                   <Td>{r.Department_Name}</Td>
@@ -386,63 +355,15 @@ export default function EmployeePerformanceReport() {
               ))}
             </tbody>
           </TableWrap>
-
-          <h3 style={{ margin: '28px 0 12px', fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>Past employees <span style={{ fontWeight: 500, color: '#64748b' }}></span></h3>
-          <TableWrap>
-            <thead>
-              <tr>
-                <Th onClick={() => handleSort('Employee_Name')}     sorted={si('Employee_Name')}>Employee</Th>
-                <Th onClick={() => handleSort('Department_Name')}   sorted={si('Department_Name')}>Department</Th>
-                <Th onClick={() => handleSort('Role_Name')}         sorted={si('Role_Name')}>Role</Th>
-                <Th onClick={() => handleSort('Office_City')}       sorted={si('Office_City')}>Office</Th>
-                <Th onClick={() => handleSort('Total_Shipments')}   sorted={si('Total_Shipments')}>Shipments</Th>
-                <Th onClick={() => handleSort('Total_Packages')}    sorted={si('Total_Packages')}>Packages</Th>
-                <Th onClick={() => handleSort('Avg_Packages_Per_Shipment')} sorted={si('Avg_Packages_Per_Shipment')}>Avg/Ship</Th>
-                <Th onClick={() => handleSort('Total_Revenue')}     sorted={si('Total_Revenue')}>Revenue</Th>
-                <Th onClick={() => handleSort('Delivery_Success_Rate')} sorted={si('Delivery_Success_Rate')}>Success %</Th>
-                <Th onClick={() => handleSort('Oversize_Packages')} sorted={si('Oversize_Packages')}>Oversize</Th>
-                <Th onClick={() => handleSort('Last_Shipment_Date')} sorted={si('Last_Shipment_Date')}>Last Shipment</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedPast.length === 0 ? (
-                <tr><td colSpan={11} style={{ textAlign: 'center', padding: 32, color: '#94a3b8' }}>No past employees in this report.</td></tr>
-              ) : sortedPast.map((r, i) => (
-                <tr key={r.Employee_ID} style={{ background: i % 2 === 0 ? '#fff' : '#fafbfc', opacity: 0.92 }}>
-                  <Td><div style={{ fontWeight: 700 }}>{r.Employee_Name}</div><div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{r.Email_Address}</div></Td>
-                  <Td>{r.Department_Name}</Td>
-                  <Td>{r.Role_Name}</Td>
-                  <Td>{r.Office_City}, {r.Office_State}</Td>
-                  <Td center><Badge value={r.Total_Shipments} color="#64748b" bg="#f1f5f9" /></Td>
-                  <Td center><Badge value={r.Total_Packages}  color="#64748b" bg="#f1f5f9" /></Td>
-                  <Td center>{r.Avg_Packages_Per_Shipment || '—'}</Td>
-                  <Td bold blue>${fmt(r.Total_Revenue)}</Td>
-                  <Td center>
-                    <span style={{ color: r.Delivery_Success_Rate >= 80 ? '#059669' : r.Delivery_Success_Rate >= 50 ? '#d97706' : '#dc2626', fontWeight: 700 }}>
-                      {fmtPct(r.Delivery_Success_Rate)}
-                    </span>
-                  </Td>
-                  <Td center>{r.Oversize_Packages}</Td>
-                  <Td>{fmtDate(r.Last_Shipment_Date)}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </TableWrap>
         </Section>
 
         {/* ── EMPLOYEE BAR CHART ── */}
         <Section>
           <SectionHeader title="📊 Packages Processed per Employee" />
-          {sortedForBars.length === 0 ? (
+          {sorted.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 32, color: '#94a3b8' }}>No data.</div>
-          ) : sortedForBars.map(r => (
-            <HBar
-              key={r.Employee_ID}
-              label={`${r.Employee_Name}${currentIdSet.has(r.Employee_ID) ? '' : ' (past)'}`}
-              value={r.Total_Packages}
-              max={maxPkgs}
-              color={currentIdSet.has(r.Employee_ID) ? '#1d4ed8' : '#64748b'}
-            />
+          ) : sorted.map(r => (
+            <HBar key={r.Employee_ID} label={r.Employee_Name} value={r.Total_Packages} max={maxPkgs} color="#1d4ed8" />
           ))}
         </Section>
 

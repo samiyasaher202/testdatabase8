@@ -58,38 +58,7 @@ function getPackageByTracking(pool, trackingNumber, callback) {
       CONCAT(cs.First_Name,' ',cs.Last_Name) AS Sender_Name,
       CONCAT(cr.First_Name,' ',cr.Last_Name) AS Recipient_Name,
       sc.Status_Name, sc.Is_Final_Status,
-      d.Delivery_Status_Code,
-      d.Delivered_Date, d.Signature_Required, d.Signature_Received,
-      cr.House_Number AS Recipient_House_Number,
-      cr.Street AS Recipient_Street,
-      cr.Apt_Number AS Recipient_Apt_Number,
-      cr.City AS Recipient_City,
-      cr.State AS Recipient_State,
-      cr.Zip_First3 AS Recipient_Zip_First3,
-      cr.Zip_Last2 AS Recipient_Zip_Last2,
-      TRIM(CONCAT_WS(', ',
-        NULLIF(TRIM(CONCAT_WS(' ',
-          NULLIF(TRIM(CONCAT_WS(' ', cr.House_Number, cr.Street)), ''),
-          IF(TRIM(IFNULL(cr.Apt_Number, '')) <> '', CONCAT('Apt ', TRIM(cr.Apt_Number)), NULL)
-        )), ''),
-        NULLIF(TRIM(CONCAT_WS(' ', NULLIF(TRIM(cr.City), ''), NULLIF(TRIM(cr.State), ''))), ''),
-        NULLIF(TRIM(CONCAT(IFNULL(cr.Zip_First3, ''), IFNULL(cr.Zip_Last2, ''))), '')
-      )) AS Recipient_Address_Line,
-      (
-        SELECT TRIM(CONCAT_WS(', ',
-          NULLIF(TRIM(CONCAT_WS(' ', NULLIF(TRIM(sh.To_House_Number), ''), NULLIF(TRIM(sh.To_Street), ''))), ''),
-          NULLIF(TRIM(CONCAT_WS(' ', NULLIF(TRIM(sh.To_City), ''), NULLIF(TRIM(sh.To_State), ''))), ''),
-          NULLIF(TRIM(CONCAT(IFNULL(sh.To_Zip_First3, ''), IFNULL(sh.To_Zip_Last2, ''))), '')
-        ))
-        FROM shipment_package spx
-        INNER JOIN shipment sh ON sh.Shipment_ID = spx.Shipment_ID
-        WHERE spx.Tracking_Number = p.Tracking_Number
-        ORDER BY spx.Shipment_ID DESC
-        LIMIT 1
-      ) AS Leg_Destination_Address,
-      (
-        SELECT MAX(spm.Shipment_ID) FROM shipment_package spm WHERE spm.Tracking_Number = p.Tracking_Number
-      ) AS Shipment_ID_For_Display
+      d.Delivered_Date, d.Signature_Required, d.Signature_Received
     FROM package p
     JOIN package_type pt  ON p.Package_Type_Code = pt.Package_Type_Code
     JOIN customer cs      ON p.Sender_ID         = cs.Customer_ID

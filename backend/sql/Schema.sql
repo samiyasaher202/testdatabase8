@@ -282,23 +282,6 @@ foreign key (Shipment_ID) references Shipment(Shipment_ID),
 foreign key (Tracking_Number) references Package(Tracking_Number)
 );
 
-CREATE TABLE Shipment_Routing_Event (
-    Event_ID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    Shipment_ID INT NOT NULL,
-    Post_Office_ID INT NULL,
-    Event_Type ENUM('arrival', 'departure', 'delivered') NOT NULL,
-    Event_Time DATETIME NOT NULL,
-    Location_Description VARCHAR(512) NULL,
-    Logged_By_Employee_ID INT NULL,
-    KEY idx_sre_shipment_time (Shipment_ID, Event_Time),
-    FOREIGN KEY (Shipment_ID) REFERENCES Shipment(Shipment_ID)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (Post_Office_ID) REFERENCES Post_Office(Post_Office_ID)
-        ON UPDATE CASCADE,
-    FOREIGN KEY (Logged_By_Employee_ID) REFERENCES Employee(Employee_ID)
-        ON DELETE SET NULL ON UPDATE CASCADE
-);
-
 create table package_pricing (
     Pricing_ID INT NOT NULL AUTO_INCREMENT,
     Package_Type_Code VARCHAR(50) NOT NULL,
