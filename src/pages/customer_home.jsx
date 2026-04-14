@@ -30,6 +30,20 @@ export default function CustomerHome() {
     navigate('/')
   }
 
+// const [lostPackages, setLostPackages] = useState([])
+// const [showLostBanner, setShowLostBanner] = useState(true)
+
+// useEffect(() => {
+//   const user = JSON.parse(localStorage.getItem('user') || '{}')
+//   const token = localStorage.getItem('token')
+//   fetch(`${API_BASE}/api/packages/lost?customer_id=${user.Customer_ID}`, {
+//     headers: { Authorization: `Bearer ${token}` }
+//   })
+//     .then(r => r.json())
+//     .then(data => setLostPackages(data))
+//     .catch(() => {})
+// }, [])
+
   return (
     <div className="customer-home">
       <header className="site-header">
@@ -43,6 +57,49 @@ export default function CustomerHome() {
           </nav>
         </div>
       </header>
+
+      {/* Lost Package Banner */}
+      {/* {lostPackages.length > 0 && showLostBanner && (
+        <div className="lost-banner">
+          <div className="lost-banner-inner">
+            <div className="lost-icon">
+              <svg viewBox="0 0 20 20" fill="none">
+                <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="1.25"/>
+                <path d="M10 6v4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="10" cy="13.5" r="0.75" fill="currentColor"/>
+              </svg>
+            </div>
+            <div className="lost-content">
+              <p className="lost-title">
+                One or more of your packages have been marked as lost
+              </p>
+              <ul className="lost-list">
+                {lostPackages.map(pkg => (
+                  <li key={pkg.Tracking_Number}>
+                    <span className="track">{pkg.Tracking_Number}</span>
+                    <span>{pkg.last_location ?? 'Location unknown'}</span>
+                    <span className="date">· Lost since {new Date(pkg.Date_Updated ?? pkg.Date_Created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="lost-action">
+                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/submit_ticket') }}>
+                  Submit a support ticket
+                </a>
+                {' '}or{' '}
+                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_packages') }}>
+                  view package details
+                </a>
+              </p>
+            </div>
+            <button className="lost-dismiss" onClick={() => setShowLostBanner(false)}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )} */}
 
       <main>
         <div className="customer-hero">
