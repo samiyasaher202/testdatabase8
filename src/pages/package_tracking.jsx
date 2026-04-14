@@ -53,8 +53,7 @@ export default function PackageTracking() {
 
     const id = encodeURIComponent(trackingNumber.trim())
     try {
-      // const res = await fetch(`${API_BASE}/api/packages/track/${id}`)
-      const res = await fetch(`${API_BASE}/api/packages/${id}/tracking`)
+      const res = await fetch(`${API_BASE}/api/packages/track/${id}`)
       const raw = await res.text()
       const contentType = res.headers.get('content-type') || ''
       let data = {}
