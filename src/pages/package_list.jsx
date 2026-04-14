@@ -178,7 +178,7 @@ const ScrollToTop = () => {
       window.scrollTo(0,0);
     }, [pathname]);
     return null;
-  }
+}
 
 export default function AllPackages() {
   const navigate   = useNavigate()
@@ -203,6 +203,15 @@ export default function AllPackages() {
   const [dateFromFilter, setDateFromFilter] = useState('')
   const [dateToFilter,   setDateToFilter]   = useState('')
   const [sigFilter,      setSigFilter]      = useState('')
+
+  const ScrollToTop = () => {
+      const {pathname} = useLocation();
+        useEffect(()=> {
+          window.scrollTo(0,0);
+        }, [pathname]);
+        return null;
+    }
+
 
   useEffect(() => {
     if (userType !== 'employee') { navigate('/login'); return }
