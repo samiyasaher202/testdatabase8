@@ -1,0 +1,83 @@
+.shipment-routing-main {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 24px 20px 56px;
+}
+
+.shipment-routing-page h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.5rem, 2.5vw, 1.85rem);
+  color: var(--text, #0f172a);
+}
+
+.shipment-routing-lead {
+  margin: 0 0 24px;
+  color: var(--text-soft, #475569);
+  line-height: 1.55;
+  max-width: 780px;
+}
+
+.sr-banner {
+  margin-bottom: 16px;
+}
+
+.sr-success {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.sr-section {
+  margin-bottom: 28px;
+}
+
+.sr-section h2 {
+  margin: 0 0 12px;
+  font-size: 1.12rem;
+  color: var(--text, #0f172a);
+}
+
+.sr-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.sr-row .search-input {
+  flex: 1;
+  min-width: 220px;
+}
+
+.sr-form {
+  display: grid;
+  gap: 14px;
+  max-width: 420px;
+}
+
+.sr-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text, #0f172a);
+}
+
+.sr-form select,
+.sr-form input[type='datetime-local'] {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #dbe4ef);
+  background: #fff;
+}
+
+.shipment-routing-page .inventory-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}

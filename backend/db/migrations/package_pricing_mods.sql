@@ -405,16 +405,16 @@ ALTER TABLE ticket_issue_type
   ADD COLUMN Date_Updated DATETIME ON UPDATE CURRENT_TIMESTAMP;
 
 --seed data to test weekly report things
-  INSERT INTO support_ticket 
+  INSERT INTO Tickets 
 (User_ID, Package_ID, Assigned_Employee_ID, Issue_Type, Description, Resolution_Note, Ticket_Status_Code, Date_Created, Date_Updated)
 VALUES
 (10, 'TRK0000001', 8,  1, 'Package not delivered on expected date.',   NULL, 0, '2026-03-18 08:30:00', NULL),
 (5,  'TRK0000002', 10, 2, 'Package arrived visibly damaged.',          NULL, 1, '2026-03-19 09:15:00', NULL),
 (11, 'TRK0000003', 12, 3, 'Incorrect item received in shipment.',      NULL, 1, '2026-03-20 10:00:00', NULL),
 (7,  'TRK0000004', 4,  4, 'Tracking number not updating in system.',   'updated number', 2, '2026-03-21 11:45:00', NULL),
-(12, 'TRK0000005', 5,  1, 'Package stuck in transit over a week.',     'found pacakage', 2, '2026-03-22 08:00:00', NULL),
+(23, 'TRK0000005', 5,  1, 'Package stuck in transit over a week.',     'found pacakage', 2, '2026-03-22 08:00:00', NULL),
 
-(11, 'TRK0000006', 6,  2, 'Item missing from delivered package.',      NULL, 0, '2026-03-25 09:30:00', NULL),
+(24, 'TRK0000006', 6,  2, 'Item missing from delivered package.',      NULL, 0, '2026-03-25 09:30:00', NULL),
 (1,  'TRK0000007', 7,  3, 'Package delivered to wrong address.',       NULL, 1, '2026-03-26 10:00:00', NULL),
 (4,  'TRK0000008', 1,  4, 'Unable to update delivery address online.', 'assisted customer', 2, '2026-03-27 13:00:00', NULL),
 (2,  'TRK0000009', 2,  1, 'No delivery attempt made by courier.',      'refuned customer', 2, '2026-03-28 14:30:00', NULL),
@@ -426,29 +426,3 @@ ADD FOREIGN KEY (Payment_ID) REFERENCES payment(Payment_ID);
 ALTER TABLE payment 
 ADD COLUMN Employee_ID INT,
 ADD FOREIGN KEY (Employee_ID) REFERENCES Employee(Employee_ID);
-
--- 4/11 adding bobs discord modifys onto github,
-ALTER TABLE package_excess_fee MODIFY Fee_Type_Code VARCHAR(50) NOT NULL;
-ALTER TABLE package_excess_fee ADD FOREIGN KEY (Fee_Type_Code) REFERENCES excess_fee(Fee_Type_Code);
-
--- 4/11 fixing duplicate date_creates and deleted credit_debit_information
-ALTER TABLE payment DROP COLUMN Date_Created;
-ALTER TABLE payment RENAME column payment_date TO date_created;
- ALTER TABLE payment DROP COLUMN credit_debit_information;
-
- -- correcting the fact that shipment_package will never be updated;
- ALTER TABLE shipment_package DROP COLUMN date_updated;
-
- INSERT INTO package_excess_fee (Tracking_Number, Fee_Type_Code) VALUES
-('TRK0000001', 'FRAG'),
-('TRK0000001', 'FUEL'),
-('TRK0000002', 'HAZ'),
-('TRK0000002', 'FUEL'),
-('TRK0000003', 'FRAG'),
-('TRK0000011', 'SIG'),
-('TRK0000011', 'FUEL'),
-('TRK0000013', 'HAZ'); seed data  for package_excess_fees
-
-
-ALTER TABLE employee
-ADD COLUMN is_active ENUM('1','0') NOT NULL DEFAULT '1';

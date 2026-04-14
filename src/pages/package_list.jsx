@@ -6,7 +6,12 @@ import './css/inventory.css'
 import './css/package_list.css'
 import skyline from '../assets/houston-skyline.jpeg'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API_BASE =
+  import.meta.env.VITE_API_URL != null && String(import.meta.env.VITE_API_URL).trim() !== ''
+    ? String(import.meta.env.VITE_API_URL).replace(/\/$/, '')
+    : import.meta.env.DEV
+      ? ''
+      : 'http://localhost:5000'
 
 const ZONES = [
   { value: '1', label: 'Zone 1 — 1-50 mi' },
