@@ -28,13 +28,14 @@ function getStatusBadgeClass(status) {
   if (status === 2) return 'closed'
   
   return 'status-default'
-}
+ }
+
+
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 export default function TicketsReport() {
-  const [employeesCurrent, setEmployeesCurrent] = useState([]);
-  const [employeesPast, setEmployeesPast] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const userType = localStorage.getItem('userType');
   const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('token'))
@@ -181,23 +182,8 @@ useEffect(() => {
         return res.json();
       })
       .then((data) => {
-        if (data && Array.isArray(data.current) && Array.isArray(data.past)) {
-          setEmployeesCurrent(data.current);
-          setEmployeesPast(data.past);
-        } else if (Array.isArray(data)) {
-          const cur = [];
-          const pst = [];
-          for (const e of data) {
-            const v = e?.Is_Active ?? e?.is_Active ?? e?.is_active;
-            if (v === 1 || v === true || v === '1') cur.push(e);
-            else pst.push(e);
-          }
-          setEmployeesCurrent(cur);
-          setEmployeesPast(pst);
-        } else {
-          setEmployeesCurrent([]);
-          setEmployeesPast([]);
-        }
+        // console.log("Data received:", data);
+        setEmployees(data);
         setLoading(false);
       })
       .catch((err) => {
@@ -211,47 +197,39 @@ useEffect(() => {
 
   
 
-  const matchesSearch = (e) => {
+  // console.log("employees[0]:", JSON.stringify(employees[0]));
+  let filtered = employees.filter((e) => {
     const q = search.toLowerCase();
     return (
       (e.E_Full_Name || "").toLowerCase().includes(q) ||
-      (e.M_Full_Name || "").toLowerCase().includes(q) ||
+      (e.M_Full_Name ||"").toLowerCase().includes(q) ||
       (e.Department_Name || "").toLowerCase().includes(q) ||
       (e.Role_Name || "").toLowerCase().includes(q)
     );
-  };
+  });
 
-  function applyTicketEmployeeSort(list) {
-    let r = [...list];
-    if (sortValue === "employee_name_asc") r.sort((a, b) => a.E_Full_Name.localeCompare(b.E_Full_Name));
-    if (sortValue === "employee_name_desc") r.sort((a, b) => b.E_Full_Name.localeCompare(a.E_Full_Name));
-    if (sortValue === "supervisor_name_asc") {
-      r.sort((a, b) => {
-        if (!a.M_Full_Name) return 1;
-        if (!b.M_Full_Name) return -1;
+    const totalResolved = filtered.reduce((sum, emp) => 
+    sum + (emp.Ticket_Counts?.['2'] || 0), 0);
+
+    const totalUnresolved = filtered.reduce((sum, emp) => 
+    sum + (emp.Ticket_Counts?.['0'] || emp.Ticket_Counts?.['1']|| 0), 0);
+
+    if (sortValue === "employee_name_asc")  filtered = [...filtered].sort((a, b) => a.E_Full_Name.localeCompare(b.E_Full_Name));
+    if (sortValue === "employee_name_desc") filtered = [...filtered].sort((a, b) => b.E_Full_Name.localeCompare(a.E_Full_Name));
+    if (sortValue === "supervisor_name_asc") { filtered = [...filtered].sort((a, b) => {
+        if (!a.M_Full_Name) return 1;   // a is null → goes after b
+        if (!b.M_Full_Name) return -1;  // b is null → a comes first
         return a.M_Full_Name.localeCompare(b.M_Full_Name);
-      });
+        });
     }
-    if (sortValue === "supervisor_name_desc") {
-      r.sort((a, b) => {
+    if (sortValue === "supervisor_name_desc"){ filtered = [...filtered].sort((a, b) => {
         if (!a.M_Full_Name) return 1;
         if (!b.M_Full_Name) return -1;
         return b.M_Full_Name.localeCompare(a.M_Full_Name);
-      });
+        });
     }
-    return r;
-  }
 
-  const filteredCurrent = applyTicketEmployeeSort(employeesCurrent.filter(matchesSearch));
-  const filteredPast = applyTicketEmployeeSort(employeesPast.filter(matchesSearch));
-  const filtered = [...filteredCurrent, ...filteredPast];
-
-  const totalResolved = filtered.reduce((sum, emp) => sum + (emp.Ticket_Counts?.['2'] || 0), 0);
-  const totalUnresolved = filtered.reduce(
-    (sum, emp) => sum + (emp.Ticket_Counts?.['0'] || emp.Ticket_Counts?.['1'] || 0),
-    0
-  );
-
+    
 function toggleDropdown(employeeId, type) {
     setOpenDropdowns(prev => {
         const resolvedKey = `${employeeId}-resolved`;
@@ -281,154 +259,7 @@ function handleLogout(e) {
     localStorage.removeItem('token'); localStorage.removeItem('user'); localStorage.removeItem('userType')
     navigate('/')
   }
-
-  function renderTicketEmployeeRows(rows) {
-    return rows.map((c) => (
-      <React.Fragment key={c.Employee_ID}>
-        <tr>
-          <td><code>{c.Employee_ID}</code></td>
-          <td>{c.E_Full_Name}</td>
-          <td>{c.M_Full_Name}</td>
-          <td>{c.Role_Name}</td>
-          <td>{c.Department_Name}</td>
-          <td>{c.Hours_Worked}</td>
-          <td>{c.Ticket_Counts?.['2'] || 0}</td>
-          <td>{(c.Ticket_Counts?.['0'] || 0) + (c.Ticket_Counts?.['1'] || 0)}</td>
-          <td>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <button
-                type="button"
-                className="button"
-                style={{ padding: '5px 12px', fontSize: '0.8rem', marginTop: 0 }}
-                onClick={() => toggleDropdown(c.Employee_ID, 'resolved')}
-              >
-                {openDropdowns[`${c.Employee_ID}-resolved`] ? '\u25b2 Hide Resolved' : '\u25bc Show Resolved'}
-              </button>
-              <button
-                type="button"
-                className="button"
-                style={{ padding: '5px 12px', fontSize: '0.8rem', marginTop: 0 }}
-                onClick={() => toggleDropdown(c.Employee_ID, 'unresolved')}
-              >
-                {openDropdowns[`${c.Employee_ID}-unresolved`] ? '\u25b2 Hide Unresolved' : '\u25bc Show Unresolved'}
-              </button>
-            </div>
-          </td>
-        </tr>
-        {(openDropdowns[`${c.Employee_ID}-resolved`] || openDropdowns[`${c.Employee_ID}-unresolved`]) && (
-          <tr className="detail-row">
-            <td colSpan={9}>
-              {openDropdowns[`${c.Employee_ID}-resolved`] && (
-                <div style={{ marginBottom: '10px' }}>
-                  <strong>Resolved Tickets</strong>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '6px' }}>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>User ID</th>
-                        <th>Package ID</th>
-                        <th>Issue Type</th>
-                        <th>Date Issued</th>
-                        <th>Date Resolved</th>
-                        <th>Status</th>
-                        <th>Resolution Note</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(employeeTickets[c.Employee_ID] || [])
-                        .filter((t) => t.Ticket_Status_Code == 2)
-                        .map((t) => {
-                          const ticketStatus = STATUS_MAP[t.Ticket_Status_Code] || STATUS_MAP[0]
-                          return (
-                            <tr key={t.Ticket_ID}>
-                              <td><code>{t.Ticket_ID}</code></td>
-                              <td>{t.User_ID || '—'}</td>
-                              <td>{t.Package_ID || '—'}</td>
-                              <td>{t.Name || '—'}</td>
-                              <td>{t.Date_Created ? new Date(t.Date_Created).toLocaleDateString() : '—'}</td>
-                              <td>{t.Date_Updated ? new Date(t.Date_Updated).toLocaleDateString() : '—'}</td>
-                              <td>
-                                <span className={`status-badge ${getStatusBadgeClass(t.Ticket_Status_Code)}`}>
-                                  {ticketStatus.label}
-                                </span>
-                              </td>
-                              <td>{t.Resolution_Note || '—'}</td>
-                            </tr>
-                          )
-                        })}
-                      {!(employeeTickets[c.Employee_ID] || []).some((t) => t.Ticket_Status_Code == 1) && (
-                        <tr><td colSpan={7} style={{ textAlign: 'center' }}>—</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-              {openDropdowns[`${c.Employee_ID}-unresolved`] && (
-                <div>
-                  <strong>Unresolved Tickets</strong>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '6px' }}>
-                    <thead>
-                      <tr>
-                        <th>ID</th>
-                        <th>User ID</th>
-                        <th>Package ID</th>
-                        <th>Issue Type</th>
-                        <th>Date Issued</th>
-                        <th>Date Updated</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(employeeTickets[c.Employee_ID] || [])
-                        .filter((t) => t.Ticket_Status_Code == 0 || t.Ticket_Status_Code == 1)
-                        .map((t) => {
-                          const ticketStatus = STATUS_MAP[t.Ticket_Status_Code] || STATUS_MAP[0]
-                          return (
-                            <tr key={t.Ticket_ID}>
-                              <td><code>{t.Ticket_ID}</code></td>
-                              <td>{t.User_ID || '—'}</td>
-                              <td>{t.Package_ID || '—'}</td>
-                              <td>{t.Name || '—'}</td>
-                              <td>{t.Date_Created ? new Date(t.Date_Created).toLocaleDateString() : '—'}</td>
-                              <td>{t.Date_Updated ? new Date(t.Date_Updated).toLocaleDateString() : '—'}</td>
-                              <td>
-                                <span className={`status-badge ${getStatusBadgeClass(t.Ticket_Status_Code)}`}>
-                                  {ticketStatus.label}
-                                </span>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      {!(employeeTickets[c.Employee_ID] || []).some((t) => t.Ticket_Status_Code == 0) && (
-                        <tr><td colSpan={8} style={{ textAlign: 'center' }}>—</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </td>
-          </tr>
-        )}
-      </React.Fragment>
-    ))
-  }
-
-  const ticketTableHead = (
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Supervisor</th>
-        <th>Role</th>
-        <th>Department</th>
-        <th>Hours</th>
-        <th>Resolved Tickets</th>
-        <th>Unresolved Tickets</th>
-        <th></th>
-      </tr>
-    </thead>
-  )
-
+  
   return (
     <div className={`packages-page ${userType === 'employee' ? 'employee-home' : ''}`}>
       <header className="site-header">
@@ -507,7 +338,7 @@ function handleLogout(e) {
             <div className="stats-row">
               <div className="stat-card">
                 <span className="stat-num">{filtered.length}</span>
-                <span className="stat-label">Employees ({filteredCurrent.length} current · {filteredPast.length} past)</span>
+                <span className="stat-label">Employees</span>
               </div>
               <div className="stat-card">
                 <span className="stat-num delivered">{totalResolved}</span>
@@ -544,46 +375,167 @@ function handleLogout(e) {
           ) : filtered.length === 0 ? (
             <p className="state-msg">No employees match your search.</p>
           ) : (
-            <>
-              <h3 style={{ margin: '16px 0 8px', fontSize: '1.05rem', fontWeight: 700 }}>
-                Current employees <span style={{ fontWeight: 500, color: '#64748b' }}></span>
-              </h3>
-              <div className="table-wrapper">
-                <table className="data-table">
-                  {ticketTableHead}
-                  <tbody>
-                    {filteredCurrent.length === 0 ? (
-                      <tr>
-                        <td colSpan={9} style={{ textAlign: 'center', padding: 24, color: '#64748b' }}>
-                          No current employees match your search.
-                        </td>
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Supervisor</th>
+                    <th>Role</th>
+                    <th>Department</th>
+                    <th>Hours</th>
+                    <th>Resolved Tickets</th>
+                    <th>Unresolved Tickets</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((c) => (
+                    <React.Fragment key={c.Employee_ID}>
+                      <tr key={c.Employee_ID}>
+                        <td><code>{c.Employee_ID}</code></td>
+                        <td>{c.E_Full_Name}</td>
+                        <td>{c.M_Full_Name}</td>
+                        <td>{c.Role_Name}</td>
+                        <td>{c.Department_Name}</td>
+                        <td>{c.Hours_Worked}</td>
+                        <td>{c.Ticket_Counts?.['2'] || 0}</td>
+                        <td>{(c.Ticket_Counts?.['0'] || 0) + (c.Ticket_Counts?.['1'] || 0)}</td>
+                        
+                        <td>
+                            <div style={{ display: "flex", gap: "6px" }}>
+                                <button
+                                    className="button"
+                                    style={{ padding: "5px 12px", fontSize: "0.8rem", marginTop: 0 }}
+                                    onClick={() => toggleDropdown(c.Employee_ID, 'resolved')}
+                                    >
+                                    {openDropdowns[`${c.Employee_ID}-resolved`] ? "▲ Hide Resolved" : "▼ Show Resolved"}
+                                </button>
+
+                                <button
+                                    className="button"
+                                    style={{ padding: "5px 12px", fontSize: "0.8rem", marginTop: 0 }}
+                                    onClick={() => toggleDropdown(c.Employee_ID, 'unresolved')}
+                                    >
+                                    {openDropdowns[`${c.Employee_ID}-unresolved`] ? "▲ Hide Unresolved" : "▼ Show Unresolved"}
+                                </button>
+                            </div>
+                        </td> 
                       </tr>
-                    ) : (
-                      renderTicketEmployeeRows(filteredCurrent)
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <h3 style={{ margin: '24px 0 8px', fontSize: '1.05rem', fontWeight: 700 }}>
-                Past employees <span style={{ fontWeight: 500, color: '#64748b' }}></span>
-              </h3>
-              <div className="table-wrapper">
-                <table className="data-table">
-                  {ticketTableHead}
-                  <tbody>
-                    {filteredPast.length === 0 ? (
-                      <tr>
-                        <td colSpan={9} style={{ textAlign: 'center', padding: 24, color: '#64748b' }}>
-                          No past employees match your search.
+
+                        {(openDropdowns[`${c.Employee_ID}-resolved`] || openDropdowns[`${c.Employee_ID}-unresolved`]) && (
+                            <tr key={`${c.Employee_ID}-detail`} className="detail-row">
+                            <td colSpan={9}>
+      
+                            {/* Resolved Tickets Table */}
+                            {openDropdowns[`${c.Employee_ID}-resolved`] && (
+                               
+                                <div style={{ marginBottom: '10px' }}>
+                                <strong>Resolved Tickets</strong>
+                                <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "6px" }}>
+                                    <thead>
+                                    <tr>
+                                    <th>ID</th>
+                                    <th>User ID</th>
+                                    <th>Package ID</th>
+                                    <th>Issue Type</th>
+                                    <th>Date Issued</th>
+                                    <th>Date Resolved</th>
+                                    <th>Status</th>
+                                    <th>Resolution Note</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {(employeeTickets[c.Employee_ID] || [])
+                                    .filter(t => t.Ticket_Status_Code == 2)
+                                    .map(t => {
+                                     const ticketStatus = STATUS_MAP[t.Ticket_Status_Code] || STATUS_MAP[0];
+                                    return(
+                                    <tr key={t.Ticket_ID}>
+                                        <td><code>{t.Ticket_ID}</code></td>
+                                        <td>{t.User_ID || "—"}</td>
+                                        <td>{t.Package_ID || "—"}</td>
+                                        <td>{t.Name || "—"}</td>
+                                        <td>{t.Date_Created ? new Date(t.Date_Created).toLocaleDateString() : "—"}</td>
+                                        <td>{t.Date_Updated ? new Date(t.Date_Updated).toLocaleDateString() : "—"}</td>
+                                        
+                                        <td>
+                                          <span className={`status-badge ${getStatusBadgeClass(t.Ticket_Status_Code)}`}>
+                                            {ticketStatus.label}
+                                          </span>
+                                        </td>
+                                        <td>{t.Resolution_Note || "—"}</td>
+                                        
+                                    </tr>
+                                    );
+                                  })
+                                }
+                                {!(employeeTickets[c.Employee_ID] || []).some(t => t.Ticket_Status_Code == 1) && (
+                                    <tr><td colSpan={7} style={{ textAlign: "center" }}>—</td></tr>
+                                )}
+                                </tbody>
+                            </table>
+                            </div>
+                        )}
+
+                        {/* Unresolved Tickets Table */}
+                        {openDropdowns[`${c.Employee_ID}-unresolved`] && (
+                            <div>
+                            <strong>Unresolved Tickets</strong>
+                            <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "6px" }}>
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>User ID</th>
+                                    <th>Package ID</th>
+                                    <th>Issue Type</th>
+                                    <th>Date Issued</th>
+                                    <th>Date Updated</th>
+                                    <th>Status</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {(employeeTickets[c.Employee_ID] || [])
+                                    .filter(t => t.Ticket_Status_Code == 0 || t.Ticket_Status_Code == 1)
+                                    .map(t => {
+                                      const ticketStatus = STATUS_MAP[t.Ticket_Status_Code] || STATUS_MAP[0];
+                                        return(
+                                    
+                                    <tr key={t.Ticket_ID}>
+                                        <td><code>{t.Ticket_ID}</code></td>
+                                        <td>{t.User_ID || "—"}</td>
+                                        <td>{t.Package_ID || "—"}</td>
+                                        <td>{t.Name || "—"}</td>
+                                        <td>{t.Date_Created ? new Date(t.Date_Created).toLocaleDateString() : "—"}</td>
+                                        <td>{t.Date_Updated ? new Date(t.Date_Updated).toLocaleDateString() : "—"}</td>
+                                        
+                                        <td>
+                                          <span className={`status-badge ${getStatusBadgeClass(t.Ticket_Status_Code)}`}>
+                                            {ticketStatus.label}
+                                          </span>
+                                        </td>
+                                        
+                                    </tr>
+                                    );
+                                    })
+                                }
+                                {!(employeeTickets[c.Employee_ID] || []).some(t => t.Ticket_Status_Code == 0) && (
+                                    <tr><td colSpan={8} style={{ textAlign: "center" }}>—</td></tr>
+                                )}
+                                </tbody>
+                            </table>
+                            </div>
+                        )}
+
                         </td>
-                      </tr>
-                    ) : (
-                      renderTicketEmployeeRows(filteredPast)
+                    </tr>
                     )}
-                  </tbody>
-                </table>
-              </div>
-            </>
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </main>

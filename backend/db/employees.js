@@ -2,64 +2,15 @@
 // from support ticket sum up every support ticket resolved by employee, and support tickets still unresolved by employee
 // from payment sum up total tickets completed, and total price sold out
 
-/** mysql2 row keys may be Is_Active, is_active, Emp_Is_Active (alias), etc. */
-function getRawEmployeeIsActive(row) {
-  if (!row || typeof row !== 'object') return undefined
-  return (
-    row.Is_Active ??
-    row.Emp_Is_Active ??
-    row.emp_is_active ??
-    row.is_active ??
-    row.is_Active ??
-    row.IS_ACTIVE
-  )
-}
-
-/**
- * Coerce DB/driver Is_Active to 0 | 1 for JSON.
- * Unknown / odd values default to 1 (active) so rows are not all pushed to "past".
- */
-function normalizeEmployeeIsActiveForApi(v) {
-  if (v == null) return 1
-  if (typeof Buffer !== 'undefined' && typeof Buffer.isBuffer === 'function' && Buffer.isBuffer(v)) {
-    if (v.length === 1) {
-      const b = v[0]
-      if (b === 1 || b === 0x31) return 1
-      if (b === 0 || b === 0x30) return 0
-    }
-    const s = v.toString('utf8').replace(/^\uFEFF/, '').trim().toLowerCase()
-    if (s === '1' || s === 'true' || s === 'yes' || s === 'active' || s === 'y') return 1
-    if (s === '0' || s === 'false' || s === 'no' || s === 'inactive' || s === 'n' || s === '') return 0
-    const n = Number(s)
-    if (n === 1) return 1
-    if (n === 0) return 0
-    return 1
-  }
-  if (typeof v === 'boolean') return v ? 1 : 0
-  if (typeof v === 'bigint') return v === 1n ? 1 : 0
-  if (typeof v === 'number' && Number.isFinite(v)) {
-    if (v === 1) return 1
-    if (v === 0) return 0
-    return 1
-  }
-  const s = String(v).replace(/^\uFEFF/, '').trim().toLowerCase()
-  if (s === '1' || s === 'true' || s === 'yes' || s === 'active' || s === 'y') return 1
-  if (s === '0' || s === 'false' || s === 'no' || s === 'inactive' || s === 'n' || s === '') return 0
-  const n = Number(s)
-  if (n === 1) return 1
-  if (n === 0) return 0
-  return 1
-}
-
-async function getEmployeesRatios(pool) {
-  const employeeQBase = `
-        SELECT
+async function getEmployeesRatios(pool){
+   // console.log("getEmployeesRatios called");
+    const employeeQ =
+        `SELECT
             CONCAT(
             e.First_Name, ' ',
             IF(e.Middle_Name IS NOT NULL, CONCAT(e.Middle_Name, ' '), ''),
-            e.Last_Name) AS E_Full_Name,
+            e.Last_Name) AS E_Full_Name,      
             e.Employee_ID,
-            e.Is_Active,
             r.Role_Name,
             d.Department_Name,
             e.Hours_Worked,
@@ -67,47 +18,35 @@ async function getEmployeesRatios(pool) {
              m.First_Name, ' ',
             IF(m.Middle_Name IS NOT NULL, CONCAT(m.Middle_Name, ' '), ''),
             m.Last_Name) AS M_Full_Name
-        FROM employee e
+
+
+        From employee e
         LEFT JOIN employee m ON m.Employee_ID = e.Supervisor_ID
         JOIN role r ON r.Role_ID = e.Role_ID
         JOIN department d ON d.Department_ID = e.Department_ID
         WHERE r.Role_ID != 2
-        `
+        `;
 
-  const ticketQ = `
-        SELECT
+        const ticketQ =
+        `SELECT
             s.Ticket_Status_Code,
             COUNT(*) AS Ticket_Count
          FROM support_ticket s
         WHERE s.Assigned_Employee_ID = ?
-        GROUP BY s.Ticket_Status_Code`
+        GROUP BY s.Ticket_Status_Code`;
+        const [employeeResults] = await pool.query(employeeQ);
+    
+        const ans = await Promise.all(employeeResults.map(async (emp) => {
+            const [ticketResults] = await pool.query(ticketQ, [emp.Employee_ID]);
+             console.log(`Employee ${emp.Employee_ID} tickets:`, ticketResults);
+            const ticketCounts = ticketResults.reduce((acc, row) => {
+                acc[row.Ticket_Status_Code] = row.Ticket_Count;
+                    return acc;
+            }, {});
+            return { ...emp, Ticket_Counts: ticketCounts };  
+        }));
 
-  async function withTickets(rows) {
-    return Promise.all(
-      rows.map(async (emp) => {
-        const [ticketResults] = await pool.query(ticketQ, [emp.Employee_ID])
-        const ticketCounts = ticketResults.reduce((acc, row) => {
-          acc[row.Ticket_Status_Code] = row.Ticket_Count
-          return acc
-        }, {})
-        return { ...emp, Ticket_Counts: ticketCounts }
-      })
-    )
-  }
-
-  const [employeeResults] = await pool.query(employeeQBase)
-  const withCounts = await withTickets(employeeResults)
-
-  const current = []
-  const past = []
-  for (const emp of withCounts) {
-    const n = normalizeEmployeeIsActiveForApi(getRawEmployeeIsActive(emp))
-    const row = { ...emp, Is_Active: n }
-    if (n === 1) current.push(row)
-    else past.push(row)
-  }
-
-  return { current, past }
+    return ans;
 }
 
 async function getTicketsByEmployee(pool,employeeId){
@@ -207,13 +146,4 @@ async function getWeeklyStatus(pool){
 
   return formatted;
 }
-module.exports = {
-  getEmployeesRatios,
-  getTicketsByEmployee,
-  getNetAverage,
-  getWeeklyStatus,
-  netTicketsWeek,
-  ticketByIssue,
-  normalizeEmployeeIsActiveForApi,
-  getRawEmployeeIsActive,
-}
+module.exports = {getEmployeesRatios,getTicketsByEmployee, getNetAverage, getWeeklyStatus,netTicketsWeek,ticketByIssue}

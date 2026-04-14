@@ -108,39 +108,6 @@
   line-height: 1.45;
 }
 
-.customer-alerts-panel {
-  margin-bottom: 1.25rem;
-  padding: 14px 16px;
-  border-radius: 12px;
-  border: 1px solid #fecaca;
-  background: #fef2f2;
-  color: #7f1d1d;
-  max-width: 100%;
-}
-
-.customer-alerts-panel h3 {
-  margin: 0 0 10px;
-  font-size: 1rem;
-  color: #991b1b;
-}
-
-.customer-alerts-panel ul {
-  margin: 0;
-  padding-left: 1.2rem;
-}
-
-.customer-alerts-panel li {
-  margin-bottom: 8px;
-  line-height: 1.45;
-}
-
-.customer-alert-meta {
-  display: block;
-  font-size: 0.78rem;
-  color: #9ca3af;
-  margin-top: 4px;
-}
-
 @media (max-width: 760px) {
   .customer-home .header-inner {
     flex-direction: column;

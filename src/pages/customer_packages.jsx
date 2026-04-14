@@ -8,7 +8,6 @@ import { authFetch } from '../authFetch'
 
 function getStatusBadgeClass(status) {
   const s = (status || '').toLowerCase()
-  if (s.includes('lost')) return 'status-delayed'
   if (s.includes('deliver')) return 'status-delivered'
   if (s.includes('transit') || s.includes('shipping')) return 'status-transit'
   if (s.includes('pending') || s.includes('processing')) return 'status-pending'
@@ -19,51 +18,27 @@ function getStatusBadgeClass(status) {
 export default function CustomerPackages() {
   const navigate = useNavigate()
   const [rows, setRows] = useState([])
-  const [alerts, setAlerts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-
-    ;(async () => {
-      try {
-        const [resPkg, resAlerts] = await Promise.all([
-          authFetch('/api/customer/my-packages'),
-          authFetch('/api/customer/my-package-alerts'),
-        ])
-
-        if (resPkg.status === 401 || resAlerts.status === 401) {
+    authFetch('/api/customer/my-packages')
+      .then((res) => {
+        if (res.status === 401) {
           navigate('/login')
-          return
+          throw new Error('Unauthorized')
         }
-
-        if (!resPkg.ok) {
-          const t = await resPkg.text().catch(() => '')
-          throw new Error(t || 'Failed to load packages')
-        }
-
-        const data = await resPkg.json().catch(() => [])
-        if (!cancelled) setRows(Array.isArray(data) ? data : [])
-
-        if (resAlerts.ok) {
-          const a = await resAlerts.json().catch(() => ({}))
-          if (!cancelled) setAlerts(Array.isArray(a.alerts) ? a.alerts : [])
-        } else {
-          if (!cancelled) setAlerts([])
-        }
-      } catch (err) {
-        if (!cancelled) setError(err?.message || 'Could not load data')
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
+        if (!res.ok) throw new Error('Failed to load packages')
+        return res.json()
+      })
+      .then((data) => {
+        setRows(Array.isArray(data) ? data : [])
+        setLoading(false)
+      })
+      .catch((err) => {
+        setError(err.message)
+        setLoading(false)
+      })
   }, [navigate])
 
   function handleLogout() {
@@ -77,40 +52,12 @@ export default function CustomerPackages() {
     <div className="customer-home inventory-page">
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/">
-            National Postal Service
-          </Link>
+           <Link className="logo" to="/"> National Postal Service</Link>
           <nav className="top-nav">
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/customer_home')
-              }}
-            >
-              Customer Home
-            </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/price_calculator')
-              }}
-            >
-              Calculator
-            </a>
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                navigate('/customer_profile')
-              }}
-            >
-              Profile
-            </a>
-            <a href="#" onClick={handleLogout}>
-              Logout
-            </a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>Customer Home</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_profile') }}>Profile</a>
+            <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
         </div>
       </header>
@@ -133,30 +80,6 @@ export default function CustomerPackages() {
               >
                 ×
               </button>
-            </div>
-          )}
-
-          {!loading && alerts.length > 0 && (
-            <div
-              className="customer-alerts-panel"
-              role="region"
-              aria-label="Package notifications"
-            >
-              <h3>Important package notices</h3>
-              <ul>
-                {alerts.map((a) => (
-                  <li key={a.Alert_ID}>
-                    <code>{a.Tracking_Number}</code>
-                    {' — '}
-                    {a.Message_Text}
-                    {a.Created_At && (
-                      <span className="customer-alert-meta">
-                        {new Date(a.Created_At).toLocaleString()}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
             </div>
           )}
 
