@@ -123,7 +123,7 @@ const AdminRegister = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="hireDate">Hire Date *</label>
+              <label htmlFor="hireDate">Birthday *</label>
               <input
                 type="date"
                 id="hireDate"

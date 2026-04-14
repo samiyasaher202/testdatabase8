@@ -101,7 +101,7 @@ export default function CustomerHome() {
                 className="btn primary"
                 onClick={() => navigate('/customer_packages')}
               >
-                Calculate
+                View now
               </button>
             </div>
             

@@ -517,8 +517,8 @@ async function router(req, res) {
     if (!user) return
     if (!requireAdmin(user, res)) return
 
-    const { name, email, department, position, phoneNumber } = await getBody(req)
-    if (!name || !email || !department || !position) {
+    const { name, email, department, position, phoneNumber, hireDate } = await getBody(req)
+    if (!name || !email || !department || !position || !hireDate) {
       return send(res, 400, { message: 'Missing required fields' })
     }
 
@@ -552,14 +552,14 @@ async function router(req, res) {
         `INSERT INTO employee (
           Post_Office_ID, Role_ID, Department_ID,
           First_Name, Middle_Name, Last_Name,
-          Birth_Day, Birth_Month, Birth_Year,
+          Birthday,
           Password_Hash, Email_Address, Phone_Number,
           Sex, Salary
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           1, role_id, department_id,
-          firstName, null, lastName,
-          1, 1, 2000, // placeholder DOB for test employee
+          firstName, '', lastName,
+          hireDate,
           hash, email, phoneNumber || null,
           'U', 0.0
         ]
@@ -2056,16 +2056,31 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
   // ── POST /api/tickets (PUBLIC submit) ────────────────────────────────────
   if (method === 'POST' && pathname === '/api/tickets') {
-    const { name, email, transactionId, category, description, submittedAt } = await getBody(req)
+    const user = authenticate(req, res)
+    if (!user) return
+    if (user?.type !== 'customer' || user.customer_id == null) {
+      return send(res, 403, { message: 'Customer access required' })
+    }
 
-    if (!name || !email || !transactionId || !category || !description) {
+    const { Tracking_Number, Issue_Type, Description } = await getBody(req)
+    if (!Tracking_Number || Issue_Type === undefined || !Description) {
       return send(res, 400, { message: 'Missing required fields' })
     }
 
-    console.log('New support ticket:', { name, email, transactionId, category, description, submittedAt })
-    return send(res, 201, { message: 'Ticket submitted successfully' })
+    try {
+      await pool.query(
+        `INSERT INTO support_ticket (User_ID, Package_ID, Issue_Type, Description, Ticket_Status_Code)
+        VALUES (?, ?, ?, ?, 0)`,
+        [user.customer_id, Tracking_Number, Issue_Type, Description]
+      )
+      return send(res, 201, { message: 'Ticket submitted successfully' })
+    } catch (err) {
+      console.error('POST /api/tickets error:', err)
+      return send(res, 500, { error: err.message || 'Failed to create ticket' })
+    }
   }
 
+  
   // ── GET /api/customers (employee+admin) ──────────────────────────────────
   if (method === 'GET' && pathname === '/api/customers') {
     const user = authenticate(req, res)
@@ -2082,6 +2097,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   // ── GET /api/customers/:id/packages (employee+admin) ─────────────────────
   {
     const m = matchPath('/api/customers/:id/packages', pathname)
+    // console.log("at customer/packages")
     if (method === 'GET' && m.matched) {
       const user = authenticate(req, res)
       if (!user) return
@@ -2169,6 +2185,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       }
     }
   // }
+
 
   // ── GET /api/employee/weeklyTickets ─────────────────────────────────────
   if (method === 'GET' && pathname === '/api/employee/weeklyTickets') {
