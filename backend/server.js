@@ -1332,7 +1332,29 @@ if (method === 'POST' && pathname === '/api/employee/package-pickup-arrival') {
       [tracking_number, recipient_id, post_office_id, resolvedArrival]
     )
 
-    return send(res, 200, { ok: true, tracking_number, arrival_time: resolvedArrival, shipment_id: sh?.Shipment_ID ?? null })
+    const lateFeeAtConfirm = pickupLateFeeFromArrivalAndPickup(resolvedArrival, new Date())
+    const [[parties]] = await pool.query(
+      `SELECT
+         CONCAT(cs.First_Name, ' ', cs.Last_Name) AS Sender_Name,
+         CONCAT(cr.First_Name, ' ', cr.Last_Name) AS Recipient_Name
+       FROM package p
+       LEFT JOIN customer cs ON cs.Customer_ID = p.Sender_ID
+       LEFT JOIN customer cr ON cr.Customer_ID = p.Recipient_ID
+       WHERE p.Tracking_Number = ?
+       LIMIT 1`,
+      [tracking_number]
+    )
+
+    return send(res, 200, {
+      ok: true,
+      tracking_number,
+      arrival_time: resolvedArrival,
+      shipment_id: sh?.Shipment_ID ?? null,
+      late_fee_amount: lateFeeAtConfirm,
+      late_fee_triggered: lateFeeAtConfirm > 0,
+      sender_name: parties?.Sender_Name ?? null,
+      recipient_name: parties?.Recipient_Name ?? null,
+    })
   } catch (err) {
     console.error(err)
     return send(res, 500, { message: err.sqlMessage || err.message || 'Could not record pickup arrival' })
@@ -1483,12 +1505,27 @@ if (method === 'POST' && pathname === '/api/employee/package-pickup') {
       status_updated = true
     }
 
+    const [[partiesPickup]] = await pool.query(
+      `SELECT
+         CONCAT(cs.First_Name, ' ', cs.Last_Name) AS Sender_Name,
+         CONCAT(cr.First_Name, ' ', cr.Last_Name) AS Recipient_Name
+       FROM package p
+       LEFT JOIN customer cs ON cs.Customer_ID = p.Sender_ID
+       LEFT JOIN customer cr ON cr.Customer_ID = p.Recipient_ID
+       WHERE p.Tracking_Number = ?
+       LIMIT 1`,
+      [tracking_number]
+    )
+
     return send(res, 200, {
       ok: true,
       tracking_number,
       arrival_time: resolvedArrival,
       pickup_time: resolvedPickup,
       late_fee_amount: lateFeeAmount,
+      late_fee_triggered: lateFeeAmount > 0,
+      sender_name: partiesPickup?.Sender_Name ?? null,
+      recipient_name: partiesPickup?.Recipient_Name ?? null,
       shipment_id: sh?.Shipment_ID ?? null,
       status_updated,
     })
@@ -2037,7 +2074,6 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = Number(process.env.PORT) || 5000
 console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
-http.createServer(router).listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
 console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
 const server = http.createServer(router)
 server.on('error', (err) => {
@@ -2053,7 +2089,6 @@ server.on('error', (err) => {
   process.exit(1)
 })
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`)
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
   console.log(`Health check: http://localhost:${PORT}/api/health`)
 })
-console.log('Connecting to Database:', process.env.MYSQL_DATABASE)

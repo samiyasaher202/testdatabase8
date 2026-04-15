@@ -131,10 +131,10 @@ function getPackagesForCustomer(pool, customerID, callback) {
     LEFT JOIN customer cr ON p.Recipient_ID       = cr.Customer_ID
     LEFT JOIN delivery d  ON p.Tracking_Number    = d.Tracking_Number
     LEFT JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
-    LEFT JOIN package_pickup pp ON pp.Tracking_Number = p.Tracking_Number AND pp.Recipient_ID = ?
+    LEFT JOIN package_pickup pp ON pp.Tracking_Number = p.Tracking_Number
     WHERE p.Sender_ID = ? OR p.Recipient_ID = ?
     ORDER BY p.Date_Created DESC
-  `, [customerID, customerID, customerID, customerID, customerID])
+  `, [customerID, customerID, customerID, customerID])
   .then(([results]) => callback(null, results))
   .catch(err => callback(err, null))
 }
