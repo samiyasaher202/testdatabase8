@@ -3,7 +3,7 @@ const http = require('http')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-require('dotenv').config({ path: path.join(__dirname, '.env') })
+require('dotenv').config()
 
 const packagesDB = require('./db/packages')
 const inventoryDB = require('./db/inventory')
@@ -16,14 +16,20 @@ const revenueReportDB = require('./db/revenue_report')
 const { report } = require('process')
 
 // ── DB pool ───────────────────────────────────────────────────────────────
+const useSsl =
+  String(process.env.MYSQL_SSL || '').toLowerCase() === 'true' ||
+  process.env.MYSQL_SSL === '1'
+
 const pool = mysql.createPool({
   host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT,
+  port: Number(process.env.MYSQLPORT || 3306),
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQL_DATABASE,
   waitForConnections: true,
   connectionLimit: 10,
+  // Azure MySQL commonly requires TLS:
+  ssl: useSsl ? { rejectUnauthorized: true } : undefined,
 })
 
 pool
@@ -2070,25 +2076,22 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   return send(res, 404, { message: 'Not found' })
 }
 
-
-// ── Start ─────────────────────────────────────────────────────────────────
+// ── Start ────────────────────────────────────────────────────────────────
 const PORT = Number(process.env.PORT) || 5000
-console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
-console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
+
+console.log(
+  '[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate'
+)
+
 const server = http.createServer(router)
+
 server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(
-      `\nPort ${PORT} is already in use (another backend may be running).\n` +
-        `  Stop that process, or set PORT=5001 in backend/.env and restart.\n` +
-        `  Windows: netstat -ano | findstr :${PORT}  then  taskkill /PID <pid> /F\n`
-    )
-  } else {
-    console.error(err)
-  }
+  // On Render, exiting is fine—Render will restart the service and logs will show the real error.
+  console.error('Server error:', err)
   process.exit(1)
 })
+
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
-  console.log(`Health check: http://localhost:${PORT}/api/health`)
+  console.log(`🚀 Server running on port ${PORT}`)
+  console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
 })
